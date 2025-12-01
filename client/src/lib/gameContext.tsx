@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CommanderState, Item, RaceId, ClassId, SubClassId, RACES, CLASSES, SUBCLASSES } from './commanderTypes';
+import { GovernmentState, GOVERNMENTS, GovernmentId, POLICIES } from './governmentData';
 
 interface Resources {
   metal: number;
@@ -68,6 +69,7 @@ interface GameState {
   research: {[key: string]: number};
   units: Units;
   commander: CommanderState;
+  government: GovernmentState;
   planetName: string;
   events: GameEvent[];
   queue: QueueItem[];
@@ -80,6 +82,9 @@ interface GameState {
   craftItem: (item: Item, cost: {metal: number, crystal: number, deuterium?: number}) => void;
   temperItem: (itemId: string) => void;
   setCommanderIdentity: (race: RaceId, cls: ClassId, subClass: SubClassId | null) => void;
+  setGovernmentType: (type: GovernmentId) => void;
+  togglePolicy: (policyId: string) => void;
+  setTaxRate: (rate: number) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -144,6 +149,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     ]
   });
 
+  const [government, setGovernment] = useState<GovernmentState>({
+    type: "democracy",
+    policies: [],
+    stats: {
+      stability: 60,
+      publicSupport: 50,
+      efficiency: 50,
+      militaryReadiness: 40,
+      corruption: 10
+    },
+    taxRate: 20
+  });
+
   const [events, setEvents] = useState<GameEvent[]>([
     { id: "1", title: "Welcome Commander", description: "Colony established on Homeworld.", type: "success", timestamp: Date.now() }
   ]);
@@ -162,9 +180,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (commander.race === "lithoid") logisticsBonus += 0.10; // Mock
     if (commander.class === "industrialist") logisticsBonus += 0.15;
 
-    const metalProd = 30 * buildings.metalMine * Math.pow(1.1, buildings.metalMine) * logisticsBonus;
-    const crystalProd = 20 * buildings.crystalMine * Math.pow(1.1, buildings.crystalMine) * logisticsBonus;
-    const deutProd = 10 * buildings.deuteriumSynthesizer * Math.pow(1.1, buildings.deuteriumSynthesizer) * logisticsBonus;
+    // Add Government Bonuses (Stability & Corruption)
+    const stabilityFactor = government.stats.stability / 100; // 0.0 - 1.0
+    const corruptionFactor = government.stats.corruption / 100; // 0.0 - 1.0
+    const govBonus = 1 + (stabilityFactor * 0.2) - (corruptionFactor * 0.5); // Up to +20%, down to -50%
+
+    const totalBonus = logisticsBonus * govBonus;
+
+    const metalProd = 30 * buildings.metalMine * Math.pow(1.1, buildings.metalMine) * totalBonus;
+    const crystalProd = 20 * buildings.crystalMine * Math.pow(1.1, buildings.crystalMine) * totalBonus;
+    const deutProd = 10 * buildings.deuteriumSynthesizer * Math.pow(1.1, buildings.deuteriumSynthesizer) * totalBonus;
     const energyProd = 20 * buildings.solarPlant * Math.pow(1.1, buildings.solarPlant);
     
     const metalCons = 10 * buildings.metalMine * Math.pow(1.1, buildings.metalMine);
@@ -233,7 +258,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [buildings, commander.stats.logistics, commander.race, commander.class]);
+  }, [buildings, commander, government]);
 
   const addEvent = (title: string, description: string, type: GameEvent["type"]) => {
     setEvents(prev => [{
@@ -353,6 +378,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     addEvent("Identity Updated", `Commander identity re-sequenced to ${RACES[race].name} ${CLASSES[cls].name}.`, "info");
   };
 
+  const setGovernmentType = (type: GovernmentId) => {
+     setGovernment(prev => {
+        const newBase = GOVERNMENTS[type].baseStats;
+        return {
+           ...prev,
+           type,
+           stats: {
+              ...prev.stats,
+              stability: newBase.stability,
+              efficiency: newBase.efficiency,
+              militaryReadiness: newBase.military
+           }
+        };
+     });
+     addEvent("Revolution", `Government reformed into ${GOVERNMENTS[type].name}.`, "warning");
+  };
+
+  const togglePolicy = (policyId: string) => {
+     setGovernment(prev => {
+        const isActive = prev.policies.includes(policyId);
+        return {
+           ...prev,
+           policies: isActive ? prev.policies.filter(p => p !== policyId) : [...prev.policies, policyId]
+        };
+     });
+  };
+
+  const setTaxRate = (rate: number) => {
+     setGovernment(prev => ({ ...prev, taxRate: rate }));
+  };
+
   return (
     <GameContext.Provider value={{ 
        resources, 
@@ -360,6 +416,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        research,
        units,
        commander,
+       government,
        planetName, 
        events,
        queue,
@@ -371,7 +428,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        unequipItem,
        craftItem,
        temperItem,
-       setCommanderIdentity
+       setCommanderIdentity,
+       setGovernmentType,
+       togglePolicy,
+       setTaxRate
     }}>
       {children}
     </GameContext.Provider>
