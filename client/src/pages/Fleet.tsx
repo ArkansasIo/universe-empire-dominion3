@@ -14,32 +14,32 @@ export default function Fleet() {
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-          <h2 className="text-3xl font-orbitron font-bold text-white glow-text">Fleet Command</h2>
+          <h2 className="text-3xl font-orbitron font-bold text-slate-900">Fleet Command</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Select ships and dispatch them on missions across the galaxy.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Ship Selection */}
-          <Card className="col-span-2 bg-black/40 border-white/10 backdrop-blur-sm">
+          <Card className="col-span-2 bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-orbitron flex items-center gap-2">
+              <CardTitle className="text-lg font-orbitron flex items-center gap-2 text-slate-900">
                 <Rocket className="w-5 h-5 text-primary" /> Select Fleet
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="text-white">Ship Type</TableHead>
-                    <TableHead className="text-right text-white">Available</TableHead>
-                    <TableHead className="text-right text-white w-[100px]">Select</TableHead>
+                  <TableRow className="border-slate-200 hover:bg-transparent">
+                    <TableHead className="text-slate-900">Ship Type</TableHead>
+                    <TableHead className="text-right text-slate-900">Available</TableHead>
+                    <TableHead className="text-right text-slate-900 w-[100px]">Select</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {Object.entries(ships).map(([key, count]) => (
                     count > 0 && (
-                      <TableRow key={key} className="border-white/5 hover:bg-white/5">
-                        <TableCell className="font-medium capitalize text-slate-300">
+                      <TableRow key={key} className="border-slate-100 hover:bg-slate-50">
+                        <TableCell className="font-medium capitalize text-slate-700">
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </TableCell>
                         <TableCell className="text-right font-mono text-primary">{count}</TableCell>
@@ -47,7 +47,7 @@ export default function Fleet() {
                           <Input 
                             type="number" 
                             placeholder="0" 
-                            className="h-8 bg-black/50 border-white/10 text-right w-20 ml-auto" 
+                            className="h-8 bg-slate-50 border-slate-200 text-right w-20 ml-auto text-slate-900" 
                           />
                         </TableCell>
                       </TableRow>
@@ -67,30 +67,30 @@ export default function Fleet() {
 
           {/* Right Column: Mission Details */}
           <div className="space-y-6">
-            <Card className="bg-black/40 border-white/10 backdrop-blur-sm">
+            <Card className="bg-white border-slate-200 shadow-sm">
                <CardHeader>
-                 <CardTitle className="text-lg font-orbitron flex items-center gap-2">
-                   <MapPin className="w-5 h-5 text-blue-400" /> Destination
+                 <CardTitle className="text-lg font-orbitron flex items-center gap-2 text-slate-900">
+                   <MapPin className="w-5 h-5 text-blue-600" /> Destination
                  </CardTitle>
                </CardHeader>
                <CardContent className="space-y-4">
                   <div className="grid grid-cols-3 gap-2">
                      <div>
                         <label className="text-xs text-muted-foreground uppercase">Galaxy</label>
-                        <Input defaultValue="1" className="bg-black/50 border-white/10 font-mono" />
+                        <Input defaultValue="1" className="bg-slate-50 border-slate-200 font-mono text-slate-900" />
                      </div>
                      <div>
                         <label className="text-xs text-muted-foreground uppercase">System</label>
-                        <Input defaultValue="102" className="bg-black/50 border-white/10 font-mono" />
+                        <Input defaultValue="102" className="bg-slate-50 border-slate-200 font-mono text-slate-900" />
                      </div>
                      <div>
                         <label className="text-xs text-muted-foreground uppercase">Planet</label>
-                        <Input defaultValue="8" className="bg-black/50 border-white/10 font-mono" />
+                        <Input defaultValue="8" className="bg-slate-50 border-slate-200 font-mono text-slate-900" />
                      </div>
                   </div>
                   
                   <Select defaultValue="planet">
-                     <SelectTrigger className="bg-black/50 border-white/10">
+                     <SelectTrigger className="bg-slate-50 border-slate-200 text-slate-900">
                         <SelectValue placeholder="Target Type" />
                      </SelectTrigger>
                      <SelectContent>
@@ -102,29 +102,29 @@ export default function Fleet() {
                </CardContent>
             </Card>
 
-            <Card className="bg-black/40 border-white/10 backdrop-blur-sm">
+            <Card className="bg-white border-slate-200 shadow-sm">
                <CardHeader>
-                 <CardTitle className="text-lg font-orbitron flex items-center gap-2">
-                   <Crosshair className="w-5 h-5 text-red-400" /> Mission
+                 <CardTitle className="text-lg font-orbitron flex items-center gap-2 text-slate-900">
+                   <Crosshair className="w-5 h-5 text-red-600" /> Mission
                  </CardTitle>
                </CardHeader>
                <CardContent className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start border-white/10 hover:bg-white/5 hover:text-primary">
-                     <Search className="w-4 h-4 mr-2 text-blue-400" /> Espionage
+                  <Button variant="outline" className="w-full justify-start border-slate-200 hover:bg-slate-50 hover:text-primary text-slate-700">
+                     <Search className="w-4 h-4 mr-2 text-blue-600" /> Espionage
                   </Button>
-                  <Button variant="outline" className="w-full justify-start border-white/10 hover:bg-white/5 hover:text-primary">
-                     <Crosshair className="w-4 h-4 mr-2 text-red-400" /> Attack
+                  <Button variant="outline" className="w-full justify-start border-slate-200 hover:bg-slate-50 hover:text-primary text-slate-700">
+                     <Crosshair className="w-4 h-4 mr-2 text-red-600" /> Attack
                   </Button>
-                  <Button variant="outline" className="w-full justify-start border-white/10 hover:bg-white/5 hover:text-primary">
-                     <Truck className="w-4 h-4 mr-2 text-green-400" /> Transport
+                  <Button variant="outline" className="w-full justify-start border-slate-200 hover:bg-slate-50 hover:text-primary text-slate-700">
+                     <Truck className="w-4 h-4 mr-2 text-green-600" /> Transport
                   </Button>
-                  <Button variant="outline" className="w-full justify-start border-white/10 hover:bg-white/5 hover:text-primary">
-                     <MapPin className="w-4 h-4 mr-2 text-yellow-400" /> Colonize
+                  <Button variant="outline" className="w-full justify-start border-slate-200 hover:bg-slate-50 hover:text-primary text-slate-700">
+                     <MapPin className="w-4 h-4 mr-2 text-yellow-600" /> Colonize
                   </Button>
                </CardContent>
             </Card>
             
-            <Button className="w-full bg-primary hover:bg-primary/80 text-black font-bold font-orbitron h-12 text-lg shadow-[0_0_20px_rgba(0,255,255,0.3)]">
+            <Button className="w-full bg-primary text-white hover:bg-primary/90 font-bold font-orbitron h-12 text-lg shadow-md">
                SEND FLEET
             </Button>
           </div>

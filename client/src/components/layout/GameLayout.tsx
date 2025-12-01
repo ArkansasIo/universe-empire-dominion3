@@ -15,15 +15,14 @@ import {
   Box,
   Gem
 } from "lucide-react";
-import background from "@assets/generated_images/deep_space_background_with_nebula.png";
 
 const SidebarItem = ({ href, icon: Icon, label, active }: { href: string, icon: any, label: string, active: boolean }) => (
   <Link href={href}>
     <div className={cn(
       "flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-l-2",
       active 
-        ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(0,255,255,0.2)]" 
-        : "border-transparent hover:bg-white/5 hover:text-primary hover:border-primary/50 text-muted-foreground"
+        ? "bg-primary/10 border-primary text-primary font-bold" 
+        : "border-transparent hover:bg-slate-200 hover:text-primary hover:border-primary/50 text-muted-foreground"
     )}>
       <Icon className="w-5 h-5" />
       <span className="font-rajdhani font-semibold tracking-wider uppercase text-sm">{label}</span>
@@ -32,8 +31,8 @@ const SidebarItem = ({ href, icon: Icon, label, active }: { href: string, icon: 
 );
 
 const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, label: string, value: number, colorClass: string }) => (
-  <div className="flex items-center gap-3 bg-black/40 border border-white/10 px-4 py-2 rounded backdrop-blur-sm min-w-[140px]">
-    <div className={cn("p-2 rounded-full bg-black/50", colorClass)}>
+  <div className="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded shadow-sm min-w-[140px]">
+    <div className={cn("p-2 rounded-full bg-slate-100", colorClass)}>
       <Icon className="w-4 h-4" />
     </div>
     <div className="flex flex-col">
@@ -50,42 +49,38 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
   const { resources, planetName } = useGame();
 
   return (
-    <div className="min-h-screen text-white overflow-hidden flex flex-col bg-cover bg-center bg-fixed"
-         style={{ backgroundImage: `url(${background})` }}>
+    <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
       
-      {/* Overlay for better readability */}
-      <div className="fixed inset-0 bg-background/80 pointer-events-none z-0" />
-
       {/* Top Bar - Resources */}
-      <header className="relative z-20 h-20 border-b border-white/10 bg-background/60 backdrop-blur-md flex items-center justify-between px-6 shadow-2xl">
+      <header className="relative z-20 h-20 border-b border-slate-200 bg-white flex items-center justify-between px-6 shadow-sm">
         <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary rounded flex items-center justify-center shadow-[0_0_15px_rgba(0,255,255,0.5)]">
-             <Rocket className="text-black w-6 h-6" />
+           <div className="w-10 h-10 bg-primary rounded flex items-center justify-center shadow-sm">
+             <Rocket className="text-white w-6 h-6" />
            </div>
            <div>
-             <h1 className="font-orbitron font-bold text-xl tracking-wider text-white">OGAME <span className="text-primary text-sm font-normal">REMASTERED</span></h1>
+             <h1 className="font-orbitron font-bold text-xl tracking-wider text-slate-900">OGAME <span className="text-primary text-sm font-normal">REMASTERED</span></h1>
              <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">Server: Nexus-Alpha // User: Commander</p>
            </div>
         </div>
 
         <div className="flex gap-4">
-          <ResourceDisplay icon={Box} label="Metal" value={resources.metal} colorClass="text-slate-300" />
-          <ResourceDisplay icon={Gem} label="Crystal" value={resources.crystal} colorClass="text-blue-400" />
-          <ResourceDisplay icon={Database} label="Deuterium" value={resources.deuterium} colorClass="text-green-400" />
-          <ResourceDisplay icon={Zap} label="Energy" value={resources.energy} colorClass={resources.energy >= 0 ? "text-yellow-400" : "text-red-500"} />
+          <ResourceDisplay icon={Box} label="Metal" value={resources.metal} colorClass="text-slate-600" />
+          <ResourceDisplay icon={Gem} label="Crystal" value={resources.crystal} colorClass="text-blue-600" />
+          <ResourceDisplay icon={Database} label="Deuterium" value={resources.deuterium} colorClass="text-green-600" />
+          <ResourceDisplay icon={Zap} label="Energy" value={resources.energy} colorClass={resources.energy >= 0 ? "text-yellow-600" : "text-red-600"} />
         </div>
       </header>
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-background/60 backdrop-blur-md border-r border-white/10 flex flex-col overflow-y-auto scrollbar-hide">
+        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col overflow-y-auto scrollbar-hide">
           
           <div className="p-6">
-             <div className="bg-gradient-to-br from-slate-800 to-black border border-white/10 p-4 rounded text-center">
-                <div className="w-16 h-16 mx-auto bg-primary/20 rounded-full border-2 border-primary mb-3 shadow-[0_0_20px_rgba(0,255,255,0.3)] flex items-center justify-center">
-                  <Globe className="w-8 h-8 text-primary animate-pulse" />
+             <div className="bg-slate-100 border border-slate-200 p-4 rounded text-center">
+                <div className="w-16 h-16 mx-auto bg-white rounded-full border-2 border-primary mb-3 shadow-sm flex items-center justify-center">
+                  <Globe className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="font-orbitron font-bold text-white">{planetName}</h3>
+                <h3 className="font-orbitron font-bold text-slate-900">{planetName}</h3>
                 <p className="text-xs text-muted-foreground">[1:102:8]</p>
              </div>
           </div>
@@ -108,7 +103,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+        <main className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent bg-slate-50">
            <div className="max-w-6xl mx-auto">
              {children}
            </div>

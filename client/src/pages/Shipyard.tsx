@@ -26,29 +26,29 @@ const ShipCard = ({
   const canAfford = resources.metal >= totalMetal && resources.crystal >= totalCrystal;
 
   return (
-    <Card className="bg-black/40 border-white/10 backdrop-blur-sm hover:border-primary/50 transition-all group overflow-hidden">
-       <div className="h-24 bg-gradient-to-br from-slate-900 to-black relative border-b border-white/5">
+    <Card className="bg-white border-slate-200 hover:border-primary/50 transition-all group overflow-hidden shadow-sm">
+       <div className="h-24 bg-slate-100 relative border-b border-slate-200">
           <div className="absolute inset-0 flex items-center justify-center">
-            <Icon className="w-12 h-12 text-white/10 group-hover:text-primary/20 transition-colors" />
+            <Icon className="w-12 h-12 text-slate-300 group-hover:text-primary/20 transition-colors" />
           </div>
-          <div className="absolute top-2 right-2 bg-primary/20 px-2 py-1 rounded text-xs font-mono text-primary border border-primary/20">
+          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-mono text-primary border border-slate-200 shadow-sm">
             Owned: {count}
           </div>
        </div>
        
        <CardHeader className="pb-2">
-         <CardTitle className="text-lg font-orbitron text-white">{name}</CardTitle>
+         <CardTitle className="text-lg font-orbitron text-slate-900">{name}</CardTitle>
        </CardHeader>
        
        <CardContent className="pb-2 space-y-3">
          <p className="text-xs text-muted-foreground h-10">{description}</p>
          
          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-300">
+            <div className="flex items-center justify-between text-xs text-slate-600">
                <span className="flex items-center gap-1"><Box className="w-3 h-3" /> Metal</span>
                <span>{metalCost.toLocaleString()}</span>
             </div>
-            <div className="flex items-center justify-between text-xs text-blue-300">
+            <div className="flex items-center justify-between text-xs text-blue-600">
                <span className="flex items-center gap-1"><Gem className="w-3 h-3" /> Crystal</span>
                <span>{crystalCost.toLocaleString()}</span>
             </div>
@@ -61,14 +61,14 @@ const ShipCard = ({
               max="100"
               value={amount}
               onChange={(e) => setAmount(parseInt(e.target.value) || 1)}
-              className="bg-black/50 border-white/10 h-8 text-xs font-mono"
+              className="bg-slate-50 border-slate-200 h-8 text-xs font-mono text-slate-900"
             />
          </div>
        </CardContent>
        
        <CardFooter>
          <Button 
-            className="w-full bg-primary/10 hover:bg-primary hover:text-black border border-primary/50 text-primary font-orbitron text-xs h-8"
+            className="w-full bg-primary text-white hover:bg-primary/90 font-orbitron text-xs h-8"
             disabled={!canAfford}
             onClick={() => onBuild(id, amount)}
          >
@@ -92,12 +92,12 @@ export default function Shipyard() {
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-          <h2 className="text-3xl font-orbitron font-bold text-white glow-text">Orbital Shipyard</h2>
+          <h2 className="text-3xl font-orbitron font-bold text-slate-900">Orbital Shipyard</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Construct fleets for combat, transport, and colonization.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-primary/20 pb-2 mb-2">Combat Ships</div>
+           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-slate-200 pb-2 mb-2">Combat Ships</div>
            
            <ShipCard 
               id="lightFighter"
@@ -136,7 +136,7 @@ export default function Shipyard() {
               onBuild={buildShip}
            />
 
-           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-primary/20 pb-2 mb-2 mt-4">Civil Ships</div>
+           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-slate-200 pb-2 mb-2 mt-4">Civil Ships</div>
            
            <ShipCard 
               id="smallCargo"

@@ -29,41 +29,41 @@
 }
 
 :root {
-  /* Dark Space Theme - Deep Blue/Black background with Cyan/Neon accents */
-  --background: 230 35% 7%;
-  --foreground: 180 20% 95%;
+  /* Light Mode / Steel Theme */
+  --background: 210 20% 98%;
+  --foreground: 220 40% 10%;
 
-  --card: 230 40% 12%;
-  --card-foreground: 180 20% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 40% 10%;
 
-  --popover: 230 40% 10%;
-  --popover-foreground: 180 20% 90%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 40% 10%;
 
-  --primary: 190 90% 50%; /* Neon Cyan */
-  --primary-foreground: 230 40% 10%;
+  --primary: 210 100% 45%; /* Steel Blue */
+  --primary-foreground: 210 40% 98%;
 
-  --secondary: 260 60% 60%; /* Space Purple */
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 210 20% 90%; /* Light Steel */
+  --secondary-foreground: 220 40% 10%;
 
-  --muted: 230 30% 20%;
-  --muted-foreground: 215 20% 65%;
+  --muted: 210 20% 90%;
+  --muted-foreground: 215 20% 40%;
 
-  --accent: 190 90% 50%;
-  --accent-foreground: 230 40% 10%;
+  --accent: 210 100% 45%;
+  --accent-foreground: 210 40% 98%;
 
   --destructive: 0 85% 60%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 230 30% 25%;
-  --input: 230 30% 20%;
-  --ring: 190 90% 50%;
+  --border: 215 20% 85%;
+  --input: 215 20% 85%;
+  --ring: 210 100% 45%;
 
   --radius: 0.25rem;
 }
 
 body {
   @apply font-rajdhani antialiased bg-background text-foreground;
-  background-image: radial-gradient(circle at 50% 0%, hsl(260 40% 20% / 0.3), transparent 70%);
+  background-color: hsl(var(--background));
   min-height: 100vh;
 }
 
@@ -87,7 +87,7 @@ body {
 }
 
 .glass-panel {
-  @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-xl;
+  @apply bg-card/80 backdrop-blur-md border border-border shadow-sm;
 }
 
 .tech-border {

@@ -20,18 +20,18 @@ const ResearchCard = ({
   const canAfford = resources.metal >= metalCost && resources.crystal >= crystalCost && resources.deuterium >= deutCost;
 
   return (
-    <Card className="bg-black/40 border-white/10 backdrop-blur-sm hover:border-primary/50 transition-all group overflow-hidden">
-       <div className="h-32 bg-gradient-to-br from-indigo-900 to-black relative group-hover:scale-105 transition-transform duration-500">
+    <Card className="bg-white border-slate-200 hover:border-primary/50 transition-all group overflow-hidden shadow-sm">
+       <div className="h-32 bg-slate-100 relative group-hover:bg-slate-200 transition-colors duration-500 border-b border-slate-200">
           <div className="absolute inset-0 flex items-center justify-center">
-            <Icon className="w-16 h-16 text-white/10 group-hover:text-indigo-400/20 transition-colors" />
+            <Icon className="w-16 h-16 text-slate-300 group-hover:text-primary/20 transition-colors" />
           </div>
-          <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-xs font-mono text-indigo-400 border border-indigo-400/20">
+          <div className="absolute bottom-2 right-2 bg-white px-2 py-1 rounded text-xs font-mono text-primary border border-slate-200 shadow-sm">
             Lvl {level}
           </div>
        </div>
        
        <CardHeader className="pb-2">
-         <CardTitle className="text-lg font-orbitron text-white group-hover:text-indigo-400 transition-colors">{name}</CardTitle>
+         <CardTitle className="text-lg font-orbitron text-slate-900 group-hover:text-primary transition-colors">{name}</CardTitle>
        </CardHeader>
        
        <CardContent className="pb-2">
@@ -40,23 +40,23 @@ const ResearchCard = ({
          <div className="mt-4 space-y-1">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Research Costs</div>
             <div className="flex items-center justify-between text-sm">
-               <span className="flex items-center gap-2 text-slate-300"><Box className="w-3 h-3" /> Metal</span>
-               <span className={resources.metal < metalCost ? "text-red-500" : "text-white"}>{metalCost.toLocaleString()}</span>
+               <span className="flex items-center gap-2 text-slate-600"><Box className="w-3 h-3" /> Metal</span>
+               <span className={resources.metal < metalCost ? "text-red-600 font-bold" : "text-slate-900"}>{metalCost.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-               <span className="flex items-center gap-2 text-blue-300"><Gem className="w-3 h-3" /> Crystal</span>
-               <span className={resources.crystal < crystalCost ? "text-red-500" : "text-white"}>{crystalCost.toLocaleString()}</span>
+               <span className="flex items-center gap-2 text-blue-600"><Gem className="w-3 h-3" /> Crystal</span>
+               <span className={resources.crystal < crystalCost ? "text-red-600 font-bold" : "text-slate-900"}>{crystalCost.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-               <span className="flex items-center gap-2 text-green-400"><Database className="w-3 h-3" /> Deuterium</span>
-               <span className={resources.deuterium < deutCost ? "text-red-500" : "text-white"}>{deutCost.toLocaleString()}</span>
+               <span className="flex items-center gap-2 text-green-600"><Database className="w-3 h-3" /> Deuterium</span>
+               <span className={resources.deuterium < deutCost ? "text-red-600 font-bold" : "text-slate-900"}>{deutCost.toLocaleString()}</span>
             </div>
          </div>
        </CardContent>
        
        <CardFooter>
          <Button 
-            className="w-full bg-indigo-500/10 hover:bg-indigo-500 hover:text-white border border-indigo-500/50 text-indigo-400 font-orbitron tracking-wider"
+            className="w-full bg-primary text-white hover:bg-primary/90 font-orbitron tracking-wider"
             disabled={!canAfford}
             onClick={() => onUpgrade(id)}
          >
@@ -80,7 +80,7 @@ export default function Research() {
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-          <h2 className="text-3xl font-orbitron font-bold text-white glow-text">Research Lab</h2>
+          <h2 className="text-3xl font-orbitron font-bold text-slate-900">Research Lab</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Unlock new technologies to improve ships, defenses, and resource production.</p>
         </div>
 
