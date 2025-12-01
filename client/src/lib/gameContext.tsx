@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Research } from './researchData'; // Keep this import if we need the interface, but we redefine state here
+// Removed the invalid import of Research interface
+// import { Research } from './researchData'; 
 
 interface Resources {
   metal: number;
@@ -18,20 +19,62 @@ interface Buildings {
   researchLab: number;
 }
 
+// Define Research interface locally if not exported, or match the structure
+export interface Research {
+  energyTech: number;
+  laserTech: number;
+  ionTech: number;
+  hyperspaceTech: number;
+  plasmaTech: number;
+  combustionDrive: number;
+  impulseDrive: number;
+  hyperspaceDrive: number;
+  espionageTech: number;
+  computerTech: number;
+  astrophysics: number;
+  intergalacticResearchNetwork: number;
+  gravitonTech: number;
+  weaponsTech: number;
+  shieldingTech: number;
+  armourTech: number;
+  aiTech: number;
+  quantumTech: number;
+  [key: string]: number; 
+}
+
 // Dynamic unit storage
 type Units = {
   [key: string]: number;
 };
 
+export interface GameEvent {
+  id: string;
+  title: string;
+  description: string;
+  type: "info" | "warning" | "danger" | "success";
+  timestamp: number;
+}
+
+export interface QueueItem {
+  id: string;
+  name: string;
+  endTime: number;
+  type: "building" | "research" | "unit";
+  amount?: number;
+}
+
 interface GameState {
   resources: Resources;
   buildings: Buildings;
   research: {[key: string]: number};
-  units: Units; // Replaces 'ships' with generic units
+  units: Units;
   planetName: string;
-  updateBuilding: (building: keyof Buildings) => void;
-  updateResearch: (tech: string) => void;
-  buildUnit: (unitId: string, amount: number) => void; // Replaces buildShip
+  events: GameEvent[];
+  queue: QueueItem[];
+  updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
+  updateResearch: (tech: string, name: string, time: number) => void;
+  buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
+  addEvent: (title: string, description: string, type: GameEvent["type"]) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -83,6 +126,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     colonist: 100
   });
 
+  const [events, setEvents] = useState<GameEvent[]>([
+    { id: "1", title: "Welcome Commander", description: "Colony established on Homeworld.", type: "success", timestamp: Date.now() }
+  ]);
+
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+
   const planetName = "Homeworld";
 
   // Calculate production
@@ -117,12 +166,57 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         deuterium: prev.deuterium + (production.deuterium * 10),
         energy: production.energy
       }));
+
+      // Process Queue
+      const now = Date.now();
+      setQueue(prev => {
+        const finished = prev.filter(item => item.endTime <= now);
+        const remaining = prev.filter(item => item.endTime > now);
+
+        finished.forEach(item => {
+           if (item.type === "building") {
+             setBuildings(b => ({ ...b, [item.id]: b[item.id as keyof Buildings] + 1 }));
+             addEvent("Construction Complete", `${item.name} upgrade finished.`, "success");
+           } else if (item.type === "research") {
+             setResearch(r => ({ ...r, [item.id]: (r[item.id] || 0) + 1 }));
+             addEvent("Research Complete", `${item.name} research finished.`, "info");
+           } else if (item.type === "unit" && item.amount) {
+             setUnits(u => ({ ...u, [item.id]: (u[item.id] || 0) + item.amount! }));
+             addEvent("Shipyard Order", `${item.amount}x ${item.name} constructed.`, "success");
+           }
+        });
+
+        return remaining;
+      });
+
+      // Random Events (Mock)
+      if (Math.random() > 0.995) {
+         const randomEvents = [
+            { title: "Merchant Arrival", desc: "A wandering trader has docked at the spaceport.", type: "info" },
+            { title: "Solar Flare", desc: "Energy production increased by 10% momentarily.", type: "success" },
+            { title: "Pirate Signal", desc: "Intercepcted coded transmission from local pirate gang.", type: "warning" },
+            { title: "Sensor Malfunction", desc: "Long range scanners offline for maintenance.", type: "danger" }
+         ];
+         const ev = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+         addEvent(ev.title, ev.desc, ev.type as any);
+      }
+
     }, 1000);
 
     return () => clearInterval(interval);
   }, [buildings]);
 
-  const updateBuilding = (building: keyof Buildings) => {
+  const addEvent = (title: string, description: string, type: GameEvent["type"]) => {
+    setEvents(prev => [{
+      id: Math.random().toString(36).substr(2, 9),
+      title,
+      description,
+      type,
+      timestamp: Date.now()
+    }, ...prev].slice(0, 10)); // Keep last 10
+  };
+
+  const updateBuilding = (building: keyof Buildings, name: string, time: number = 5000) => {
     const costMetal = 100 * Math.pow(2, buildings[building]);
     const costCrystal = 50 * Math.pow(2, buildings[building]);
 
@@ -132,35 +226,36 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         metal: prev.metal - costMetal,
         crystal: prev.crystal - costCrystal
       }));
-      setBuildings(prev => ({
-        ...prev,
-        [building]: prev[building] + 1
-      }));
+      // Add to queue instead of instant
+      setQueue(prev => [...prev, {
+        id: building,
+        name: name,
+        endTime: Date.now() + time,
+        type: "building"
+      }]);
     } else {
       alert("Not enough resources!");
     }
   };
 
-  const updateResearch = (tech: string) => {
-     setResearch(prev => ({
-       ...prev,
-       [tech]: (prev[tech] || 0) + 1
-     }));
+  const updateResearch = (tech: string, name: string, time: number = 5000) => {
+     // Mock cost check skipped for prototype brevity in this update
+     setQueue(prev => [...prev, {
+        id: tech,
+        name: name,
+        endTime: Date.now() + time,
+        type: "research"
+      }]);
   };
 
-  // Replaces buildShip, works for all units
-  const buildUnit = (unitId: string, amount: number) => {
-    // In a real app, we'd import unitData here to check costs
-    // For now, we mock the deduction or rely on the UI to have checked it
-    // We'll assume the UI call is valid for this prototype
-    setUnits(prev => ({
-      ...prev,
-      [unitId]: (prev[unitId] || 0) + amount
-    }));
-    
-    // Mock resource deduction (simplified, ideally strictly checked)
-    // Not implementing specific cost deduction here without importing unitData to avoid circular deps in this simple setup
-    // In a real app, GameContext would import a pure data file.
+  const buildUnit = (unitId: string, amount: number, name: string, time: number = 2000) => {
+    setQueue(prev => [...prev, {
+      id: unitId,
+      name: name,
+      endTime: Date.now() + (time * amount),
+      type: "unit",
+      amount
+    }]);
   };
 
   return (
@@ -170,9 +265,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        research,
        units,
        planetName, 
+       events,
+       queue,
        updateBuilding,
        updateResearch,
-       buildUnit
+       buildUnit,
+       addEvent
     }}>
       {children}
     </GameContext.Provider>

@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Box, Gem, Database, Plus, Info, Shield, Sword, Zap, User, Truck } from "lucide-react";
-import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Box, Gem, Database, Plus, Info, Shield, Sword, Zap, User, Truck, Clock, Hammer } from "lucide-react";
+import { useState, useEffect } from "react";
 import { unitData, UnitItem } from "@/lib/unitData";
 
 const UnitCard = ({ 
@@ -16,7 +18,7 @@ const UnitCard = ({
 }: { 
   item: UnitItem, 
   count: number, 
-  onBuild: (id: string, amount: number) => void, 
+  onBuild: (id: string, amount: number, name: string, time: number) => void, 
   resources: any 
 }) => {
   const [amount, setAmount] = useState(1);
@@ -26,6 +28,8 @@ const UnitCard = ({
   const totalCrystal = item.cost.crystal * amount;
   const totalDeut = item.cost.deuterium * amount;
   
+  const buildTime = 2000; // Mock time per unit (2s)
+
   const canAfford = 
     resources.metal >= totalMetal && 
     resources.crystal >= totalCrystal && 
@@ -53,7 +57,13 @@ const UnitCard = ({
             <div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Hull: {item.stats.structure.toLocaleString()}</div>
             <div className="flex items-center gap-1"><Sword className="w-3 h-3" /> Atk: {item.stats.attack.toLocaleString()}</div>
             <div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Shld: {item.stats.shield.toLocaleString()}</div>
-            <div className="flex items-center gap-1"><Zap className="w-3 h-3" /> Spd: {item.stats.speed.toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> Time: {buildTime/1000}s</div>
+         </div>
+
+         {/* Requirements Mock */}
+         <div className="text-[10px] text-slate-400 flex flex-wrap gap-1">
+            <Badge variant="outline" className="border-slate-200 text-slate-400 h-5">Shipyard Lvl 1</Badge>
+            {item.class === "capital" && <Badge variant="outline" className="border-slate-200 text-slate-400 h-5">Impulse Drive Lvl 4</Badge>}
          </div>
 
          <div className="space-y-1 pt-1">
@@ -93,7 +103,7 @@ const UnitCard = ({
          <Button 
             className="w-full bg-primary text-white hover:bg-primary/90 font-orbitron text-xs h-8"
             disabled={!canAfford}
-            onClick={() => onBuild(item.id, amount)}
+            onClick={() => onBuild(item.id, amount, item.name, buildTime)}
          >
            {canAfford ? (
              <>
@@ -109,13 +119,16 @@ const UnitCard = ({
 };
 
 export default function Shipyard() {
-  const { units, resources, buildUnit } = useGame();
+  const { units, resources, buildUnit, queue } = useGame();
 
   const combatShips = unitData.filter(u => u.class === "fighter" || u.class === "capital");
   const civilShips = unitData.filter(u => u.class === "civilian");
   const troops = unitData.filter(u => u.class === "troop");
   const vehicles = unitData.filter(u => u.class === "vehicle");
   const supers = unitData.filter(u => u.class === "super");
+
+  // Filter queue for units
+  const unitQueue = queue.filter(q => q.type === "unit");
 
   return (
     <GameLayout>
@@ -124,6 +137,38 @@ export default function Shipyard() {
           <h2 className="text-3xl font-orbitron font-bold text-slate-900">Orbital Shipyard</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Construct fleets, recruit personnel, and build ground vehicles.</p>
         </div>
+
+        {/* Production Queue */}
+        {unitQueue.length > 0 && (
+          <Card className="bg-white border-primary/20 shadow-sm mb-6">
+             <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                   <Hammer className="w-4 h-4" /> Production Queue
+                </CardTitle>
+             </CardHeader>
+             <CardContent>
+                <div className="space-y-2">
+                   {unitQueue.map((item, i) => {
+                      const timeLeft = Math.max(0, Math.floor((item.endTime - Date.now()) / 1000));
+                      return (
+                         <div key={i} className="flex items-center gap-4 bg-slate-50 p-2 rounded border border-slate-100">
+                            <div className="w-8 h-8 flex items-center justify-center bg-white rounded border border-slate-200">
+                               <Hammer className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="flex-1">
+                               <div className="flex justify-between text-sm font-medium text-slate-900">
+                                  <span>{item.amount}x {item.name}</span>
+                                  <span className="font-mono text-primary">{timeLeft}s</span>
+                               </div>
+                               <Progress value={Math.max(0, 100 - (timeLeft / 2) * 100)} className="h-1 mt-1" />
+                            </div>
+                         </div>
+                      )
+                   })}
+                </div>
+             </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="combat" className="w-full">
           <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">

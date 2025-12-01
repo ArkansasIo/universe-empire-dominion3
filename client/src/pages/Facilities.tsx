@@ -2,7 +2,8 @@ import GameLayout from "@/components/layout/GameLayout";
 import { useGame } from "@/lib/gameContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Factory, FlaskConical, Rocket, Shield, ArrowUpCircle, Box, Gem } from "lucide-react";
+import { Factory, FlaskConical, Rocket, Shield, ArrowUpCircle, Box, Gem, Hammer, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const FacilityCard = ({ 
   id, 
@@ -15,6 +16,8 @@ const FacilityCard = ({
 }: any) => {
   const metalCost = Math.floor(200 * Math.pow(2, level));
   const crystalCost = Math.floor(100 * Math.pow(2, level));
+  const buildTime = (level + 1) * 20; // Mock time
+
   const canAfford = resources.metal >= metalCost && resources.crystal >= crystalCost;
 
   return (
@@ -45,6 +48,10 @@ const FacilityCard = ({
                <span className="flex items-center gap-2 text-blue-600"><Gem className="w-3 h-3" /> Crystal</span>
                <span className={resources.crystal < crystalCost ? "text-red-600 font-bold" : "text-slate-900"}>{crystalCost.toLocaleString()}</span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+               <span className="flex items-center gap-2 text-slate-500"><Clock className="w-3 h-3" /> Time</span>
+               <span className="text-slate-900">{buildTime}s</span>
+            </div>
          </div>
        </CardContent>
        
@@ -52,7 +59,7 @@ const FacilityCard = ({
          <Button 
             className="w-full bg-primary text-white hover:bg-primary/90 font-orbitron tracking-wider"
             disabled={!canAfford}
-            onClick={() => onUpgrade(id)}
+            onClick={() => onUpgrade(id, name, buildTime * 1000)}
          >
            {canAfford ? (
              <>
@@ -68,7 +75,9 @@ const FacilityCard = ({
 };
 
 export default function Facilities() {
-  const { buildings, resources, updateBuilding } = useGame();
+  const { buildings, resources, updateBuilding, queue } = useGame();
+  
+  const buildQueue = queue.filter(q => q.type === "building");
 
   return (
     <GameLayout>
@@ -77,6 +86,38 @@ export default function Facilities() {
           <h2 className="text-3xl font-orbitron font-bold text-slate-900">Facilities</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Construct advanced facilities to research technologies and build fleets.</p>
         </div>
+
+        {/* Construction Queue */}
+        {buildQueue.length > 0 && (
+          <Card className="bg-white border-primary/20 shadow-sm mb-6">
+             <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                   <Hammer className="w-4 h-4" /> Construction Queue
+                </CardTitle>
+             </CardHeader>
+             <CardContent>
+                <div className="space-y-2">
+                   {buildQueue.map((item, i) => {
+                      const timeLeft = Math.max(0, Math.floor((item.endTime - Date.now()) / 1000));
+                      return (
+                         <div key={i} className="flex items-center gap-4 bg-slate-50 p-2 rounded border border-slate-100">
+                            <div className="w-8 h-8 flex items-center justify-center bg-white rounded border border-slate-200">
+                               <Hammer className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="flex-1">
+                               <div className="flex justify-between text-sm font-medium text-slate-900">
+                                  <span>{item.name}</span>
+                                  <span className="font-mono text-primary">{timeLeft}s</span>
+                               </div>
+                               <Progress value={Math.max(0, 100 - (timeLeft / 20) * 100)} className="h-1 mt-1" />
+                            </div>
+                         </div>
+                      )
+                   })}
+                </div>
+             </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            <FacilityCard 

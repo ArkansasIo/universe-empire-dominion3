@@ -5,8 +5,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpCircle, Box, Gem, Database, Zap, Lock, Info } from "lucide-react";
+import { ArrowUpCircle, Box, Gem, Database, Zap, Lock, Info, FlaskConical, Clock } from "lucide-react";
 import { researchData, ResearchItem } from "@/lib/researchData";
+import { Progress } from "@/components/ui/progress";
 
 const ResearchCard = ({ 
   item, 
@@ -16,17 +17,17 @@ const ResearchCard = ({
 }: { 
   item: ResearchItem, 
   level: number, 
-  onUpgrade: (id: string) => void, 
+  onUpgrade: (id: string, name: string, time: number) => void, 
   resources: any 
 }) => {
   const Icon = item.icon;
   
-  // Calculate cost based on level
   const metalCost = Math.floor(item.baseCost.metal * Math.pow(item.costFactor, level));
   const crystalCost = Math.floor(item.baseCost.crystal * Math.pow(item.costFactor, level));
   const deutCost = Math.floor(item.baseCost.deuterium * Math.pow(item.costFactor, level));
   const energyCost = item.baseCost.energy ? Math.floor(item.baseCost.energy * Math.pow(item.costFactor, level)) : 0;
-  
+  const buildTime = (level + 1) * 5000; // Mock time 5s
+
   const canAfford = 
     resources.metal >= metalCost && 
     resources.crystal >= crystalCost && 
@@ -95,6 +96,10 @@ const ResearchCard = ({
                     <span className={resources.energy < energyCost ? "text-red-600 font-bold" : "text-slate-900"}>{energyCost.toLocaleString()}</span>
                  </div>
                )}
+               <div className="flex items-center justify-between text-sm">
+                   <span className="flex items-center gap-2 text-slate-500"><Clock className="w-3 h-3" /> Time</span>
+                   <span className="text-slate-900">{buildTime / 1000}s</span>
+               </div>
             </div>
          </div>
        </CardContent>
@@ -105,9 +110,7 @@ const ResearchCard = ({
             disabled={!canAfford}
             onClick={() => {
                if (canAfford) {
-                  // Manually deduct resources in UI mock since gameContext doesn't have cost logic for dynamic techs yet
-                  // Ideally this logic is all in gameContext
-                  onUpgrade(item.id);
+                  onUpgrade(item.id, item.name, buildTime);
                }
             }}
          >
@@ -125,7 +128,9 @@ const ResearchCard = ({
 };
 
 export default function Research() {
-  const { research, resources, updateResearch } = useGame();
+  const { research, resources, updateResearch, queue } = useGame();
+
+  const researchQueue = queue.filter(q => q.type === "research");
 
   // Categorize research
   const basicTech = researchData.filter(r => !["combustionDrive", "impulseDrive", "hyperspaceDrive", "weaponsTech", "shieldingTech", "armourTech"].includes(r.id) && r.tier <= 4);
@@ -140,6 +145,38 @@ export default function Research() {
           <h2 className="text-3xl font-orbitron font-bold text-slate-900">Research Lab</h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Unlock new technologies to improve ships, defenses, and resource production.</p>
         </div>
+
+        {/* Research Queue */}
+        {researchQueue.length > 0 && (
+          <Card className="bg-white border-primary/20 shadow-sm mb-6">
+             <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                   <FlaskConical className="w-4 h-4" /> Research Queue
+                </CardTitle>
+             </CardHeader>
+             <CardContent>
+                <div className="space-y-2">
+                   {researchQueue.map((item, i) => {
+                      const timeLeft = Math.max(0, Math.floor((item.endTime - Date.now()) / 1000));
+                      return (
+                         <div key={i} className="flex items-center gap-4 bg-slate-50 p-2 rounded border border-slate-100">
+                            <div className="w-8 h-8 flex items-center justify-center bg-white rounded border border-slate-200">
+                               <FlaskConical className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="flex-1">
+                               <div className="flex justify-between text-sm font-medium text-slate-900">
+                                  <span>{item.name}</span>
+                                  <span className="font-mono text-primary">{timeLeft}s</span>
+                               </div>
+                               <Progress value={Math.max(0, 100 - (timeLeft / 5) * 100)} className="h-1 mt-1" />
+                            </div>
+                         </div>
+                      )
+                   })}
+                </div>
+             </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-white border border-slate-200 h-12">
