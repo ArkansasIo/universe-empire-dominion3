@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Rocket, MapPin, Crosshair, Truck, Search } from "lucide-react";
 
 export default function Fleet() {
-  const { ships } = useGame();
+  const { units } = useGame();
 
   return (
     <GameLayout>
@@ -30,13 +30,13 @@ export default function Fleet() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-slate-200 hover:bg-transparent">
-                    <TableHead className="text-slate-900">Ship Type</TableHead>
+                    <TableHead className="text-slate-900">Unit Type</TableHead>
                     <TableHead className="text-right text-slate-900">Available</TableHead>
                     <TableHead className="text-right text-slate-900 w-[100px]">Select</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(ships).map(([key, count]) => (
+                  {Object.entries(units).map(([key, count]) => (
                     count > 0 && (
                       <TableRow key={key} className="border-slate-100 hover:bg-slate-50">
                         <TableCell className="font-medium capitalize text-slate-700">
@@ -53,10 +53,10 @@ export default function Fleet() {
                       </TableRow>
                     )
                   ))}
-                  {Object.values(ships).every(val => val === 0) && (
+                  {Object.values(units).every(val => val === 0) && (
                      <TableRow>
                         <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                           No ships available. Build some in the Shipyard!
+                           No units available. Build some in the Shipyard!
                         </TableCell>
                      </TableRow>
                   )}

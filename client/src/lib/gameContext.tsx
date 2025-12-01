@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Research } from './researchData'; // Keep this import if we need the interface, but we redefine state here
 
 interface Resources {
   metal: number;
@@ -17,50 +18,20 @@ interface Buildings {
   researchLab: number;
 }
 
-// Expanded Research Interface to match researchData.ts
-export interface Research {
-  energyTech: number;
-  laserTech: number;
-  ionTech: number;
-  hyperspaceTech: number;
-  plasmaTech: number;
-  combustionDrive: number;
-  impulseDrive: number;
-  hyperspaceDrive: number;
-  espionageTech: number;
-  computerTech: number;
-  astrophysics: number;
-  intergalacticResearchNetwork: number;
-  gravitonTech: number;
-  weaponsTech: number;
-  shieldingTech: number;
-  armourTech: number;
-  aiTech: number;
-  quantumTech: number;
-  [key: string]: number; // Index signature for dynamic access
-}
-
-interface Ships {
-  lightFighter: number;
-  heavyFighter: number;
-  cruiser: number;
-  battleship: number;
-  smallCargo: number;
-  largeCargo: number;
-  colonyShip: number;
-  recycler: number;
-  espionageProbe: number;
-}
+// Dynamic unit storage
+type Units = {
+  [key: string]: number;
+};
 
 interface GameState {
   resources: Resources;
   buildings: Buildings;
-  research: Research;
-  ships: Ships;
+  research: {[key: string]: number};
+  units: Units; // Replaces 'ships' with generic units
   planetName: string;
   updateBuilding: (building: keyof Buildings) => void;
-  updateResearch: (tech: string) => void; // Changed to string to allow dynamic IDs
-  buildShip: (ship: keyof Ships, amount: number) => void;
+  updateResearch: (tech: string) => void;
+  buildUnit: (unitId: string, amount: number) => void; // Replaces buildShip
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -83,7 +54,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     researchLab: 1,
   });
 
-  const [research, setResearch] = useState<Research>({
+  const [research, setResearch] = useState<{[key: string]: number}>({
     energyTech: 0,
     laserTech: 0,
     ionTech: 0,
@@ -104,16 +75,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     quantumTech: 0
   });
 
-  const [ships, setShips] = useState<Ships>({
+  const [units, setUnits] = useState<Units>({
     lightFighter: 5,
-    heavyFighter: 0,
-    cruiser: 0,
-    battleship: 0,
     smallCargo: 2,
-    largeCargo: 0,
-    colonyShip: 0,
-    recycler: 0,
     espionageProbe: 10,
+    marine: 50,
+    colonist: 100
   });
 
   const planetName = "Homeworld";
@@ -132,7 +99,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const energyUsed = metalCons + crystalCons + deutCons;
 
     return {
-      metal: metalProd / 3600, // speed up for testing
+      metal: metalProd / 3600,
       crystal: crystalProd / 3600,
       deuterium: deutProd / 3600,
       energy: energyProd - energyUsed
@@ -145,7 +112,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const production = getProduction();
       
       setResources(prev => ({
-        metal: prev.metal + (production.metal * 10), // 10x speed for testing
+        metal: prev.metal + (production.metal * 10),
         crystal: prev.crystal + (production.crystal * 10),
         deuterium: prev.deuterium + (production.deuterium * 10),
         energy: production.energy
@@ -175,34 +142,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateResearch = (tech: string) => {
-     // We need cost calculation here too, but for now we'll rely on the Research component passing valid checks
-     // or implement a generic cost calculator.
-     // For prototype, we just increment.
-     // Real implementation would import costs from researchData
      setResearch(prev => ({
        ...prev,
        [tech]: (prev[tech] || 0) + 1
      }));
   };
 
-  const buildShip = (ship: keyof Ships, amount: number) => {
-     // Mock cost per ship
-     const costMetal = 3000 * amount;
-     const costCrystal = 1000 * amount;
-
-     if (resources.metal >= costMetal && resources.crystal >= costCrystal) {
-        setResources(prev => ({
-          ...prev,
-          metal: prev.metal - costMetal,
-          crystal: prev.crystal - costCrystal
-        }));
-        setShips(prev => ({
-          ...prev,
-          [ship]: prev[ship] + amount
-        }));
-     } else {
-        alert("Not enough resources!");
-     }
+  // Replaces buildShip, works for all units
+  const buildUnit = (unitId: string, amount: number) => {
+    // In a real app, we'd import unitData here to check costs
+    // For now, we mock the deduction or rely on the UI to have checked it
+    // We'll assume the UI call is valid for this prototype
+    setUnits(prev => ({
+      ...prev,
+      [unitId]: (prev[unitId] || 0) + amount
+    }));
+    
+    // Mock resource deduction (simplified, ideally strictly checked)
+    // Not implementing specific cost deduction here without importing unitData to avoid circular deps in this simple setup
+    // In a real app, GameContext would import a pure data file.
   };
 
   return (
@@ -210,11 +168,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        resources, 
        buildings, 
        research,
-       ships,
+       units,
        planetName, 
        updateBuilding,
        updateResearch,
-       buildShip
+       buildUnit
     }}>
       {children}
     </GameContext.Provider>

@@ -3,31 +3,37 @@ import { useGame } from "@/lib/gameContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Rocket, Shield, Swords, Box, Gem, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Box, Gem, Database, Plus, Info, Shield, Sword, Zap, User, Truck } from "lucide-react";
 import { useState } from "react";
+import { unitData, UnitItem } from "@/lib/unitData";
 
-const ShipCard = ({ 
-  id, 
-  name, 
+const UnitCard = ({ 
+  item, 
   count, 
-  description, 
-  icon: Icon, 
   onBuild, 
   resources 
-}: any) => {
+}: { 
+  item: UnitItem, 
+  count: number, 
+  onBuild: (id: string, amount: number) => void, 
+  resources: any 
+}) => {
   const [amount, setAmount] = useState(1);
+  const Icon = item.icon;
   
-  const metalCost = 3000; // Simplified flat cost for mockup
-  const crystalCost = 1000;
-
-  const totalMetal = metalCost * amount;
-  const totalCrystal = crystalCost * amount;
+  const totalMetal = item.cost.metal * amount;
+  const totalCrystal = item.cost.crystal * amount;
+  const totalDeut = item.cost.deuterium * amount;
   
-  const canAfford = resources.metal >= totalMetal && resources.crystal >= totalCrystal;
+  const canAfford = 
+    resources.metal >= totalMetal && 
+    resources.crystal >= totalCrystal && 
+    resources.deuterium >= totalDeut;
 
   return (
-    <Card className="bg-white border-slate-200 hover:border-primary/50 transition-all group overflow-hidden shadow-sm">
-       <div className="h-24 bg-slate-100 relative border-b border-slate-200">
+    <Card className="bg-white border-slate-200 hover:border-primary/50 transition-all group overflow-hidden shadow-sm flex flex-col h-full">
+       <div className="h-24 bg-slate-50 relative border-b border-slate-200">
           <div className="absolute inset-0 flex items-center justify-center">
             <Icon className="w-12 h-12 text-slate-300 group-hover:text-primary/20 transition-colors" />
           </div>
@@ -37,30 +43,47 @@ const ShipCard = ({
        </div>
        
        <CardHeader className="pb-2">
-         <CardTitle className="text-lg font-orbitron text-slate-900">{name}</CardTitle>
+         <CardTitle className="text-lg font-orbitron text-slate-900">{item.name}</CardTitle>
        </CardHeader>
        
-       <CardContent className="pb-2 space-y-3">
-         <p className="text-xs text-muted-foreground h-10">{description}</p>
+       <CardContent className="pb-2 flex-1 space-y-3">
+         <p className="text-xs text-muted-foreground min-h-[2.5rem]">{item.description}</p>
          
-         <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-600">
-               <span className="flex items-center gap-1"><Box className="w-3 h-3" /> Metal</span>
-               <span>{metalCost.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs text-blue-600">
-               <span className="flex items-center gap-1"><Gem className="w-3 h-3" /> Crystal</span>
-               <span>{crystalCost.toLocaleString()}</span>
-            </div>
+         <div className="grid grid-cols-2 gap-1 text-[10px] uppercase tracking-wider text-slate-500 bg-slate-50 p-2 rounded">
+            <div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Hull: {item.stats.structure.toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Sword className="w-3 h-3" /> Atk: {item.stats.attack.toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Shield className="w-3 h-3" /> Shld: {item.stats.shield.toLocaleString()}</div>
+            <div className="flex items-center gap-1"><Zap className="w-3 h-3" /> Spd: {item.stats.speed.toLocaleString()}</div>
+         </div>
+
+         <div className="space-y-1 pt-1">
+            {item.cost.metal > 0 && (
+              <div className="flex items-center justify-between text-xs text-slate-600">
+                 <span className="flex items-center gap-1"><Box className="w-3 h-3" /> Metal</span>
+                 <span className={resources.metal < totalMetal ? "text-red-600 font-bold" : ""}>{item.cost.metal.toLocaleString()}</span>
+              </div>
+            )}
+            {item.cost.crystal > 0 && (
+              <div className="flex items-center justify-between text-xs text-blue-600">
+                 <span className="flex items-center gap-1"><Gem className="w-3 h-3" /> Crystal</span>
+                 <span className={resources.crystal < totalCrystal ? "text-red-600 font-bold" : ""}>{item.cost.crystal.toLocaleString()}</span>
+              </div>
+            )}
+            {item.cost.deuterium > 0 && (
+              <div className="flex items-center justify-between text-xs text-green-600">
+                 <span className="flex items-center gap-1"><Database className="w-3 h-3" /> Deuterium</span>
+                 <span className={resources.deuterium < totalDeut ? "text-red-600 font-bold" : ""}>{item.cost.deuterium.toLocaleString()}</span>
+              </div>
+            )}
          </div>
 
          <div className="flex gap-2 pt-2">
             <Input 
               type="number" 
               min="1" 
-              max="100"
+              max="1000"
               value={amount}
-              onChange={(e) => setAmount(parseInt(e.target.value) || 1)}
+              onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
               className="bg-slate-50 border-slate-200 h-8 text-xs font-mono text-slate-900"
             />
          </div>
@@ -70,7 +93,7 @@ const ShipCard = ({
          <Button 
             className="w-full bg-primary text-white hover:bg-primary/90 font-orbitron text-xs h-8"
             disabled={!canAfford}
-            onClick={() => onBuild(id, amount)}
+            onClick={() => onBuild(item.id, amount)}
          >
            {canAfford ? (
              <>
@@ -86,77 +109,73 @@ const ShipCard = ({
 };
 
 export default function Shipyard() {
-  const { ships, resources, buildShip } = useGame();
+  const { units, resources, buildUnit } = useGame();
+
+  const combatShips = unitData.filter(u => u.class === "fighter" || u.class === "capital");
+  const civilShips = unitData.filter(u => u.class === "civilian");
+  const troops = unitData.filter(u => u.class === "troop");
+  const vehicles = unitData.filter(u => u.class === "vehicle");
+  const supers = unitData.filter(u => u.class === "super");
 
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
           <h2 className="text-3xl font-orbitron font-bold text-slate-900">Orbital Shipyard</h2>
-          <p className="text-muted-foreground font-rajdhani text-lg">Construct fleets for combat, transport, and colonization.</p>
+          <p className="text-muted-foreground font-rajdhani text-lg">Construct fleets, recruit personnel, and build ground vehicles.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-slate-200 pb-2 mb-2">Combat Ships</div>
-           
-           <ShipCard 
-              id="lightFighter"
-              name="Light Fighter"
-              count={ships.lightFighter}
-              description="The first fighting ship available. Agile but weak armor."
-              icon={Swords}
-              resources={resources}
-              onBuild={buildShip}
-           />
-           <ShipCard 
-              id="heavyFighter"
-              name="Heavy Fighter"
-              count={ships.heavyFighter}
-              description="Stronger than light fighters, with better armor and shields."
-              icon={Swords}
-              resources={resources}
-              onBuild={buildShip}
-           />
-           <ShipCard 
-              id="cruiser"
-              name="Cruiser"
-              count={ships.cruiser}
-              description="Fast ship with heavy weaponry. Effective against fighter swarms."
-              icon={Rocket}
-              resources={resources}
-              onBuild={buildShip}
-           />
-           <ShipCard 
-              id="battleship"
-              name="Battleship"
-              count={ships.battleship}
-              description="The backbone of any fleet. Heavy armor and massive firepower."
-              icon={Shield}
-              resources={resources}
-              onBuild={buildShip}
-           />
+        <Tabs defaultValue="combat" className="w-full">
+          <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="combat" className="font-orbitron"><Sword className="w-4 h-4 mr-2" /> Combat Fleet</TabsTrigger>
+            <TabsTrigger value="civil" className="font-orbitron"><Box className="w-4 h-4 mr-2" /> Civil Ships</TabsTrigger>
+            <TabsTrigger value="troops" className="font-orbitron"><User className="w-4 h-4 mr-2" /> Personnel</TabsTrigger>
+            <TabsTrigger value="vehicles" className="font-orbitron"><Truck className="w-4 h-4 mr-2" /> Vehicles</TabsTrigger>
+            <TabsTrigger value="super" className="font-orbitron text-purple-600"><Zap className="w-4 h-4 mr-2" /> Super Capital</TabsTrigger>
+          </TabsList>
 
-           <div className="col-span-full text-sm font-bold text-primary uppercase tracking-widest border-b border-slate-200 pb-2 mb-2 mt-4">Civil Ships</div>
-           
-           <ShipCard 
-              id="smallCargo"
-              name="Small Cargo"
-              count={ships.smallCargo}
-              description="Fast transport ship with limited capacity."
-              icon={Box}
-              resources={resources}
-              onBuild={buildShip}
-           />
-           <ShipCard 
-              id="largeCargo"
-              name="Large Cargo"
-              count={ships.largeCargo}
-              description="Large transport ship with massive capacity but slow speed."
-              icon={Box}
-              resources={resources}
-              onBuild={buildShip}
-           />
-        </div>
+          <div className="mt-6">
+             <TabsContent value="combat" className="mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {combatShips.map(item => (
+                    <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} />
+                 ))}
+               </div>
+             </TabsContent>
+
+             <TabsContent value="civil" className="mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {civilShips.map(item => (
+                    <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} />
+                 ))}
+               </div>
+             </TabsContent>
+
+             <TabsContent value="troops" className="mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {troops.map(item => (
+                    <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} />
+                 ))}
+               </div>
+             </TabsContent>
+
+             <TabsContent value="vehicles" className="mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {vehicles.map(item => (
+                    <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} />
+                 ))}
+               </div>
+             </TabsContent>
+
+             <TabsContent value="super" className="mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {supers.map(item => (
+                    <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} />
+                 ))}
+               </div>
+             </TabsContent>
+          </div>
+        </Tabs>
       </div>
     </GameLayout>
   );
