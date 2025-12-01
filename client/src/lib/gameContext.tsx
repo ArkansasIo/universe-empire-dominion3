@@ -73,6 +73,28 @@ export interface Mission {
   status: "outbound" | "holding" | "return";
 }
 
+export interface GameConfig {
+  universeName: string;
+  gameSpeed: number; // 1x, 2x, 5x
+  resourceRate: number; // 1x, 2x...
+  fleetSpeed: number; // 1x...
+  peaceMode: boolean;
+  serverTimezone: string;
+  version: string;
+  maintenanceMode: boolean;
+}
+
+export interface Message {
+  id: string;
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  timestamp: number;
+  read: boolean;
+  type: "player" | "system" | "alliance" | "combat";
+}
+
 interface GameState {
   resources: Resources;
   buildings: Buildings;
@@ -84,6 +106,8 @@ interface GameState {
   events: GameEvent[];
   queue: QueueItem[];
   activeMissions: Mission[];
+  config: GameConfig;
+  messages: Message[];
   updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
@@ -97,6 +121,10 @@ interface GameState {
   togglePolicy: (policyId: string) => void;
   setTaxRate: (rate: number) => void;
   dispatchFleet: (mission: Omit<Mission, "id" | "status" | "returnTime">) => void;
+  updateConfig: (newConfig: Partial<GameConfig>) => void;
+  sendMessage: (to: string, subject: string, body: string) => void;
+  markMessageRead: (id: string) => void;
+  deleteMessage: (id: string) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -174,6 +202,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     taxRate: 20
   });
 
+  const [config, setConfig] = useState<GameConfig>({
+    universeName: "Nexus-Alpha",
+    gameSpeed: 1,
+    resourceRate: 1,
+    fleetSpeed: 1,
+    peaceMode: false,
+    serverTimezone: "UTC",
+    version: "v0.8.2-beta",
+    maintenanceMode: false
+  });
+
+  const [messages, setMessages] = useState<Message[]>([
+     { id: "1", from: "High Command", to: "Commander", subject: "Welcome to Nexus-Alpha", body: "Greetings Commander. Establish your base and prepare for expansion.", timestamp: Date.now(), read: false, type: "system" },
+     { id: "2", from: "Pirate King", to: "Commander", subject: "Surrender or Die", body: "This sector belongs to the Red Skull gang. Pay tribute or face destruction.", timestamp: Date.now() - 86400000, read: true, type: "player" }
+  ]);
+
   const [events, setEvents] = useState<GameEvent[]>([
     { id: "1", title: "Welcome Commander", description: "Colony established on Homeworld.", type: "success", timestamp: Date.now() }
   ]);
@@ -198,7 +242,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const corruptionFactor = government.stats.corruption / 100; // 0.0 - 1.0
     const govBonus = 1 + (stabilityFactor * 0.2) - (corruptionFactor * 0.5); // Up to +20%, down to -50%
 
-    const totalBonus = logisticsBonus * govBonus;
+    // Add Config Multiplier
+    const configBonus = config.resourceRate;
+
+    const totalBonus = logisticsBonus * govBonus * configBonus;
 
     const metalProd = 30 * buildings.metalMine * Math.pow(1.1, buildings.metalMine) * totalBonus;
     const crystalProd = 20 * buildings.crystalMine * Math.pow(1.1, buildings.crystalMine) * totalBonus;
@@ -223,11 +270,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const interval = setInterval(() => {
       const production = getProduction();
-      
+      const speedMult = config.gameSpeed;
+
       setResources(prev => ({
-        metal: prev.metal + (production.metal * 10),
-        crystal: prev.crystal + (production.crystal * 10),
-        deuterium: prev.deuterium + (production.deuterium * 10),
+        metal: prev.metal + (production.metal * 10 * speedMult),
+        crystal: prev.crystal + (production.crystal * 10 * speedMult),
+        deuterium: prev.deuterium + (production.deuterium * 10 * speedMult),
         energy: production.energy
       }));
 
@@ -241,7 +289,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
            if (item.type === "building") {
              setBuildings(b => ({ ...b, [item.id]: b[item.id as keyof Buildings] + 1 }));
              addEvent("Construction Complete", `${item.name} upgrade finished.`, "success");
-             // Give XP
              setCommander(c => ({ ...c, stats: { ...c.stats, xp: c.stats.xp + 100 } }));
            } else if (item.type === "research") {
              setResearch(r => ({ ...r, [item.id]: (r[item.id] || 0) + 1 }));
@@ -256,7 +303,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return remaining;
       });
 
-      // Process Missions (Simple mock)
+      // Process Missions
       setActiveMissions(prev => {
          const finished = prev.filter(m => m.returnTime <= now);
          const active = prev.filter(m => m.returnTime > now);
@@ -264,7 +311,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
          if (finished.length > 0) {
             finished.forEach(m => {
                addEvent("Fleet Returned", `Fleet returned from ${m.target}.`, "info");
-               // Return units to base (mock)
                setUnits(u => {
                   const newUnits = {...u};
                   Object.entries(m.units).forEach(([id, count]) => {
@@ -277,7 +323,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
          return active;
       });
 
-      // Random Events (Mock)
+      // Random Events
       if (Math.random() > 0.995) {
          const randomEvents = [
             { title: "Merchant Arrival", desc: "A wandering trader has docked at the spaceport.", type: "info" },
@@ -292,7 +338,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [buildings, commander, government]);
+  }, [buildings, commander, government, config]);
 
   const addEvent = (title: string, description: string, type: GameEvent["type"]) => {
     setEvents(prev => [{
@@ -314,10 +360,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         metal: prev.metal - costMetal,
         crystal: prev.crystal - costCrystal
       }));
+      const adjustedTime = time / config.gameSpeed;
       setQueue(prev => [...prev, {
         id: building,
         name: name,
-        endTime: Date.now() + time,
+        endTime: Date.now() + adjustedTime,
         type: "building"
       }]);
     } else {
@@ -326,19 +373,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateResearch = (tech: string, name: string, time: number = 5000) => {
+     const adjustedTime = time / config.gameSpeed;
      setQueue(prev => [...prev, {
         id: tech,
         name: name,
-        endTime: Date.now() + time,
+        endTime: Date.now() + adjustedTime,
         type: "research"
       }]);
   };
 
   const buildUnit = (unitId: string, amount: number, name: string, time: number = 2000) => {
+    const adjustedTime = time / config.gameSpeed;
     setQueue(prev => [...prev, {
       id: unitId,
       name: name,
-      endTime: Date.now() + (time * amount),
+      endTime: Date.now() + (adjustedTime * amount),
       type: "unit",
       amount
     }]);
@@ -444,7 +493,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const dispatchFleet = (missionData: Omit<Mission, "id" | "status" | "returnTime">) => {
-     const flightTime = missionData.arrivalTime; // In ms
+     const flightTime = missionData.arrivalTime / config.fleetSpeed; // Apply fleet speed config
      const now = Date.now();
      
      const mission: Mission = {
@@ -469,6 +518,34 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      addEvent("Fleet Dispatched", `Fleet sent to ${missionData.target} on ${missionData.type} mission.`, "info");
   };
 
+  const updateConfig = (newConfig: Partial<GameConfig>) => {
+     setConfig(prev => ({ ...prev, ...newConfig }));
+     addEvent("System Update", "Server configuration parameters updated.", "warning");
+  };
+
+  const sendMessage = (to: string, subject: string, body: string) => {
+     const newMsg: Message = {
+        id: Math.random().toString(36).substr(2, 9),
+        from: "Commander",
+        to,
+        subject,
+        body,
+        timestamp: Date.now(),
+        read: true,
+        type: "player"
+     };
+     setMessages(prev => [newMsg, ...prev]);
+     addEvent("Message Sent", `Communique dispatched to ${to}.`, "success");
+  };
+
+  const markMessageRead = (id: string) => {
+     setMessages(prev => prev.map(m => m.id === id ? { ...m, read: true } : m));
+  };
+
+  const deleteMessage = (id: string) => {
+     setMessages(prev => prev.filter(m => m.id !== id));
+  };
+
   return (
     <GameContext.Provider value={{ 
        resources, 
@@ -481,6 +558,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        events,
        queue,
        activeMissions,
+       config,
+       messages,
        updateBuilding,
        updateResearch,
        buildUnit,
@@ -493,7 +572,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        setGovernmentType,
        togglePolicy,
        setTaxRate,
-       dispatchFleet
+       dispatchFleet,
+       updateConfig,
+       sendMessage,
+       markMessageRead,
+       deleteMessage
     }}>
       {children}
     </GameContext.Provider>

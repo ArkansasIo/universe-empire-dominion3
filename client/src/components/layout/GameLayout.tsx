@@ -15,7 +15,8 @@ import {
   Box,
   Gem,
   User,
-  Landmark
+  Landmark,
+  Mail
 } from "lucide-react";
 
 const SidebarItem = ({ href, icon: Icon, label, active }: { href: string, icon: any, label: string, active: boolean }) => (
@@ -96,6 +97,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             <SidebarItem href="/shipyard" icon={Rocket} label="Shipyard" active={location === "/shipyard"} />
             <SidebarItem href="/commander" icon={User} label="Commander" active={location === "/commander"} />
             <SidebarItem href="/government" icon={Landmark} label="Government" active={location === "/government"} />
+            <SidebarItem href="/messages" icon={Mail} label="Messages" active={location === "/messages"} />
             
             <div className="px-4 mt-6 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">Navigation</div>
             <SidebarItem href="/fleet" icon={Send} label="Fleet" active={location === "/fleet"} />

@@ -15,6 +15,8 @@ import Fleet from "@/pages/Fleet";
 import Galaxy from "@/pages/Galaxy";
 import Commander from "@/pages/Commander";
 import Government from "@/pages/Government";
+import Settings from "@/pages/Settings";
+import Messages from "@/pages/Messages";
 
 function Router() {
   return (
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/galaxy" component={Galaxy} />
       <Route path="/commander" component={Commander} />
       <Route path="/government" component={Government} />
+      <Route path="/messages" component={Messages} />
+      <Route path="/settings" component={Settings} />
       
       <Route component={NotFound} />
     </Switch>
