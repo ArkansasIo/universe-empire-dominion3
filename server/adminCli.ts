@@ -2,6 +2,15 @@ import readline from 'readline';
 import { db } from './db/index';
 import { sql } from 'drizzle-orm';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
+
+interface AdminCredentials {
+  username: string;
+  passwordHash: string;
+  securityCode: string;
+  createdAt: string;
+  lastLogin: string;
+}
 
 interface GameConfig {
   economyMultiplier: number;
@@ -28,6 +37,9 @@ class ServerAdminCLI {
     pvpEnabled: true,
     eventActive: null
   };
+  private adminCreds: AdminCredentials | null = null;
+  private isLoggedIn = false;
+  private adminCredentialsFile = '.admin-credentials.json';
   private colors = {
     reset: '\x1b[0m',
     bright: '\x1b[1m',
@@ -55,10 +67,42 @@ class ServerAdminCLI {
     console.log(this.colors.bright + this.colors.magenta + '╚════════════════════════════════════════════════╝' + this.colors.reset + '\n');
   }
 
-  private prompt(question: string): Promise<string> {
+  private prompt(question: string, hideInput: boolean = false): Promise<string> {
     return new Promise(resolve => {
-      this.rl.question(question, resolve);
+      if (hideInput && process.stdin.isTTY) {
+        process.stdin.setRawMode?.(true);
+        this.rl.question(question, (answer) => {
+          process.stdin.setRawMode?.(false);
+          console.log();
+          resolve(answer);
+        });
+      } else {
+        this.rl.question(question, resolve);
+      }
     });
+  }
+
+  private hashPassword(password: string): string {
+    return crypto.createHash('sha256').update(password).digest('hex');
+  }
+
+  private generateSecurityCode(): string {
+    return crypto.randomBytes(4).toString('hex').toUpperCase();
+  }
+
+  private loadAdminCredentials() {
+    try {
+      if (fs.existsSync(this.adminCredentialsFile)) {
+        const data = fs.readFileSync(this.adminCredentialsFile, 'utf-8');
+        this.adminCreds = JSON.parse(data);
+      }
+    } catch { }
+  }
+
+  private saveAdminCredentials() {
+    if (this.adminCreds) {
+      fs.writeFileSync(this.adminCredentialsFile, JSON.stringify(this.adminCreds, null, 2));
+    }
   }
 
   private loadGameConfig() {
@@ -77,6 +121,7 @@ class ServerAdminCLI {
   async mainMenu() {
     while (true) {
       this.header('Main Menu');
+      console.log(this.colors.bright + `Logged in as: ${this.colors.cyan}${this.adminCreds?.username}${this.colors.reset}`);
       console.log(this.colors.bright + 'System Status: ' + (this.gameConfig.maintenanceMode ? this.colors.yellow + '🔧 MAINTENANCE' : this.colors.green + '✓ ONLINE') + this.colors.reset);
       console.log(this.colors.bright + '\nSelect an option:' + this.colors.reset);
       console.log('  1) 📊 Database & Logs');
@@ -86,7 +131,8 @@ class ServerAdminCLI {
       console.log('  5) 📈 Server Monitoring');
       console.log('  6) 🔔 Announcements & Events');
       console.log('  7) 🛠️  Maintenance Tools');
-      console.log('  0) 🚪 Exit\n');
+      console.log('  8) 🔑 Account Settings');
+      console.log('  0) 🚪 Logout\n');
 
       const choice = await this.prompt(this.colors.cyan + '➜ ' + this.colors.reset);
 
@@ -98,13 +144,60 @@ class ServerAdminCLI {
         case '5': await this.monitoringMenu(); break;
         case '6': await this.announcementsMenu(); break;
         case '7': await this.maintenanceMenu(); break;
-        case '0':
-          console.log(this.colors.green + '\n✓ Admin panel closed.\n' + this.colors.reset);
-          this.rl.close();
-          process.exit(0);
+        case '8': await this.accountSettings(); break;
+        case '0': await this.logout(); break;
         default:
           console.log(this.colors.red + '✗ Invalid option.' + this.colors.reset);
           await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+      }
+    }
+  }
+
+  async accountSettings() {
+    while (true) {
+      this.header('Account Settings');
+      console.log(this.colors.bright + 'Options:' + this.colors.reset);
+      console.log('  1) Change Password');
+      console.log('  2) View Security Code');
+      console.log('  3) Generate New Security Code');
+      console.log('  4) View Last Login');
+      console.log('  0) Back\n');
+
+      const choice = await this.prompt(this.colors.cyan + '➜ ' + this.colors.reset);
+
+      if (choice === '1') {
+        const current = await this.prompt(this.colors.cyan + '➜ Current Password: ' + this.colors.reset, true);
+        if (this.hashPassword(current) !== this.adminCreds?.passwordHash) {
+          console.log(this.colors.red + '\n✗ Incorrect password' + this.colors.reset);
+          await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+          continue;
+        }
+        const newPass = await this.prompt(this.colors.cyan + '➜ New Password: ' + this.colors.reset, true);
+        const confirm = await this.prompt(this.colors.cyan + '➜ Confirm: ' + this.colors.reset, true);
+        if (newPass === confirm && this.adminCreds) {
+          this.adminCreds.passwordHash = this.hashPassword(newPass);
+          this.saveAdminCredentials();
+          console.log(this.colors.green + '\n✓ Password changed' + this.colors.reset);
+        } else {
+          console.log(this.colors.red + '\n✗ Passwords do not match' + this.colors.reset);
+        }
+        await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+      } else if (choice === '2') {
+        console.log(this.colors.cyan + `\nSecurity Code: ${this.colors.bright}${this.adminCreds?.securityCode}${this.colors.reset}`);
+        await this.prompt(this.colors.dim + '\nPress Enter...' + this.colors.reset);
+      } else if (choice === '3') {
+        const confirm = await this.prompt(this.colors.yellow + '⚠️  Generate new code? (yes/no): ' + this.colors.reset);
+        if (confirm === 'yes' && this.adminCreds) {
+          this.adminCreds.securityCode = this.generateSecurityCode();
+          this.saveAdminCredentials();
+          console.log(this.colors.green + `\n✓ New Code: ${this.colors.bright}${this.adminCreds.securityCode}${this.colors.reset}`);
+        }
+        await this.prompt(this.colors.dim + '\nPress Enter...' + this.colors.reset);
+      } else if (choice === '4') {
+        console.log(this.colors.cyan + `\nLast Login: ${this.adminCreds?.lastLogin || 'Never'}` + this.colors.reset);
+        await this.prompt(this.colors.dim + '\nPress Enter...' + this.colors.reset);
+      } else if (choice === '0') {
+        break;
       }
     }
   }
@@ -617,11 +710,87 @@ class ServerAdminCLI {
     await this.prompt(this.colors.dim + '\nPress Enter...' + this.colors.reset);
   }
 
+  async adminLogin() {
+    while (true) {
+      console.clear();
+      console.log(this.colors.bright + this.colors.magenta + '╔════════════════════════════════════════════════╗' + this.colors.reset);
+      console.log(this.colors.bright + this.colors.magenta + '║' + this.colors.reset + this.colors.bright + '      🔐 ADMIN PANEL LOGIN SYSTEM 🔐            ' + this.colors.magenta + '║' + this.colors.reset);
+      console.log(this.colors.bright + this.colors.magenta + '╚════════════════════════════════════════════════╝' + this.colors.reset + '\n');
+
+      this.loadAdminCredentials();
+
+      if (!this.adminCreds) {
+        console.log(this.colors.yellow + '⚠️  No admin account found. Create one now.\n' + this.colors.reset);
+        console.log(this.colors.bright + 'Setup Admin Account:' + this.colors.reset);
+        const username = await this.prompt(this.colors.cyan + '➜ Admin Username: ' + this.colors.reset);
+        if (username.length < 3) {
+          console.log(this.colors.red + '✗ Username too short (min 3 chars)' + this.colors.reset);
+          await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+          continue;
+        }
+
+        const password = await this.prompt(this.colors.cyan + '➜ Admin Password: ' + this.colors.reset, true);
+        if (password.length < 6) {
+          console.log(this.colors.red + '✗ Password too short (min 6 chars)' + this.colors.reset);
+          await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+          continue;
+        }
+
+        const confirmPass = await this.prompt(this.colors.cyan + '➜ Confirm Password: ' + this.colors.reset, true);
+        if (password !== confirmPass) {
+          console.log(this.colors.red + '✗ Passwords do not match' + this.colors.reset);
+          await this.prompt(this.colors.dim + 'Press Enter...' + this.colors.reset);
+          continue;
+        }
+
+        const securityCode = this.generateSecurityCode();
+        this.adminCreds = {
+          username,
+          passwordHash: this.hashPassword(password),
+          securityCode,
+          createdAt: new Date().toISOString(),
+          lastLogin: ''
+        };
+        this.saveAdminCredentials();
+
+        console.log(this.colors.green + '\n✓ Admin account created!' + this.colors.reset);
+        console.log(this.colors.yellow + `⚠️  Security Code (save this): ${this.colors.bright}${securityCode}${this.colors.reset}`);
+        await this.prompt(this.colors.dim + '\nPress Enter...' + this.colors.reset);
+        continue;
+      }
+
+      console.log(this.colors.bright + 'Login to Admin Panel:' + this.colors.reset);
+      const username = await this.prompt(this.colors.cyan + '➜ Username: ' + this.colors.reset);
+      const password = await this.prompt(this.colors.cyan + '➜ Password: ' + this.colors.reset, true);
+      const secCode = await this.prompt(this.colors.cyan + '➜ Security Code: ' + this.colors.reset);
+
+      if (username === this.adminCreds.username && this.hashPassword(password) === this.adminCreds.passwordHash && secCode === this.adminCreds.securityCode) {
+        this.adminCreds.lastLogin = new Date().toISOString();
+        this.saveAdminCredentials();
+        this.isLoggedIn = true;
+        console.log(this.colors.green + '\n✓ Login successful!' + this.colors.reset);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.mainMenu();
+        return;
+      } else {
+        console.log(this.colors.red + '\n✗ Invalid credentials' + this.colors.reset);
+        await this.prompt(this.colors.dim + 'Press Enter to retry...' + this.colors.reset);
+      }
+    }
+  }
+
+  async logout() {
+    this.isLoggedIn = false;
+    console.log(this.colors.green + '\n✓ Logged out successfully' + this.colors.reset);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    process.exit(0);
+  }
+
   async start() {
     console.clear();
     console.log(this.colors.bright + this.colors.magenta + '\n  🛡️  STELLAR DOMINION SERVER ADMIN PANEL\n' + this.colors.reset);
     await new Promise(resolve => setTimeout(resolve, 800));
-    await this.mainMenu();
+    await this.adminLogin();
   }
 }
 
