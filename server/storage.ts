@@ -38,7 +38,7 @@ import {
   type AdminUser,
   adminUsers
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db/index";
 import { eq, and, or, desc, asc, sql } from "drizzle-orm";
 
 export interface IStorage {

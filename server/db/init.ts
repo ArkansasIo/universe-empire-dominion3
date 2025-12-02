@@ -1,4 +1,4 @@
-import { db, pool } from './index';
+import { db, pool } from '.';
 import { users, adminUsers, playerStates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
