@@ -18,7 +18,9 @@ import {
   empireValues,
   playerItems,
 } from "@shared/schema";
-import { storage } from "./storage";
+import type { DatabaseStorage } from "./storage";
+
+let storage: DatabaseStorage;
 
 const isAuthenticated = (req: Request, res: Response, next: any) => {
   if (!req.session.userId) {

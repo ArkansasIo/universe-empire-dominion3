@@ -2425,3 +2425,4 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(empireValues).orderBy(desc(empireValues.totalValue)).limit(100);
   }
 }
+export const storage = new DatabaseStorage();
