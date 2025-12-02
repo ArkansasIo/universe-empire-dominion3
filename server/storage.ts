@@ -28,6 +28,8 @@ import {
   expeditionEncounters,
   starbases,
   moonBases,
+  playerProfiles,
+  megaStructures,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -67,6 +69,10 @@ import {
   type InsertStarbase,
   type MoonBase,
   type InsertMoonBase,
+  type PlayerProfile,
+  type InsertPlayerProfile,
+  type MegaStructure,
+  type InsertMegaStructure,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -150,6 +156,19 @@ export interface IStorage {
   createMoonBase(moonBase: InsertMoonBase): Promise<MoonBase>;
   updateMoonBase(id: string, updates: Partial<MoonBase>): Promise<MoonBase>;
   deleteMoonBase(id: string): Promise<void>;
+  
+  // Player Profile operations
+  getPlayerProfile(userId: string): Promise<PlayerProfile | undefined>;
+  getPlayerProfileByUid(uid: string): Promise<PlayerProfile | undefined>;
+  createPlayerProfile(profile: InsertPlayerProfile): Promise<PlayerProfile>;
+  updatePlayerProfile(userId: string, updates: Partial<PlayerProfile>): Promise<PlayerProfile>;
+  
+  // Mega Structure operations
+  getPlayerMegaStructures(userId: string): Promise<MegaStructure[]>;
+  getMegaStructureById(id: string): Promise<MegaStructure | undefined>;
+  createMegaStructure(structure: InsertMegaStructure): Promise<MegaStructure>;
+  updateMegaStructure(id: string, updates: Partial<MegaStructure>): Promise<MegaStructure>;
+  deleteMegaStructure(id: string): Promise<void>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -597,6 +616,51 @@ export class DatabaseStorage implements IStorage {
   
   async deleteMoonBase(id: string): Promise<void> {
     await db.delete(moonBases).where(eq(moonBases.id, id));
+  }
+  
+  // Player Profile operations
+  async getPlayerProfile(userId: string): Promise<PlayerProfile | undefined> {
+    const [profile] = await db.select().from(playerProfiles).where(eq(playerProfiles.userId, userId));
+    return profile;
+  }
+  
+  async getPlayerProfileByUid(uid: string): Promise<PlayerProfile | undefined> {
+    const [profile] = await db.select().from(playerProfiles).where(eq(playerProfiles.uid, uid));
+    return profile;
+  }
+  
+  async createPlayerProfile(profile: InsertPlayerProfile): Promise<PlayerProfile> {
+    const [newProfile] = await db.insert(playerProfiles).values(profile).returning();
+    return newProfile;
+  }
+  
+  async updatePlayerProfile(userId: string, updates: Partial<PlayerProfile>): Promise<PlayerProfile> {
+    const [updated] = await db.update(playerProfiles).set(updates).where(eq(playerProfiles.userId, userId)).returning();
+    return updated;
+  }
+  
+  // Mega Structure operations
+  async getPlayerMegaStructures(userId: string): Promise<MegaStructure[]> {
+    return await db.select().from(megaStructures).where(eq(megaStructures.playerId, userId));
+  }
+  
+  async getMegaStructureById(id: string): Promise<MegaStructure | undefined> {
+    const [structure] = await db.select().from(megaStructures).where(eq(megaStructures.id, id));
+    return structure;
+  }
+  
+  async createMegaStructure(structure: InsertMegaStructure): Promise<MegaStructure> {
+    const [newStructure] = await db.insert(megaStructures).values(structure).returning();
+    return newStructure;
+  }
+  
+  async updateMegaStructure(id: string, updates: Partial<MegaStructure>): Promise<MegaStructure> {
+    const [updated] = await db.update(megaStructures).set(updates).where(eq(megaStructures.id, id)).returning();
+    return updated;
+  }
+  
+  async deleteMegaStructure(id: string): Promise<void> {
+    await db.delete(megaStructures).where(eq(megaStructures.id, id));
   }
   
   // Resource field operations

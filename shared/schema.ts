@@ -825,6 +825,208 @@ export type MoonBase = typeof moonBases.$inferSelect;
 export const insertMoonBaseSchema = createInsertSchema(moonBases).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertMoonBase = z.infer<typeof insertMoonBaseSchema>;
 
+// Player Profiles - account info with UID
+export const playerProfiles = pgTable("player_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  uid: varchar("uid").notNull().unique(), // Unique account identifier
+  
+  // Profile info
+  displayName: varchar("display_name").notNull(),
+  bio: text("bio"),
+  profileImageUrl: varchar("profile_image_url"),
+  
+  // Game progression
+  level: integer("level").default(1),
+  totalExperience: integer("total_experience").default(0),
+  prestigeLevel: integer("prestige_level").default(0),
+  
+  // Rankings & Stats
+  galaxyRank: integer("galaxy_rank"),
+  fleetPower: integer("fleet_power").default(0),
+  empirePower: integer("empire_power").default(0),
+  
+  // Attributes
+  attributes: jsonb("attributes").notNull().default({
+    strength: 10,
+    intelligence: 10,
+    endurance: 10,
+    agility: 10,
+    wisdom: 10,
+    charisma: 10
+  }),
+  
+  // Sub-attributes
+  subAttributes: jsonb("sub_attributes").notNull().default({
+    critChance: 5,
+    critDamage: 50,
+    dodge: 10,
+    accuracy: 90,
+    magicResist: 0,
+    lifeSteal: 0
+  }),
+  
+  // Categories & progression
+  categories: jsonb("categories").notNull().default({
+    military: 1,
+    engineering: 1,
+    science: 1,
+    commerce: 1,
+    diplomacy: 1,
+    exploration: 1
+  }),
+  
+  // Badges & achievements
+  badges: jsonb("badges").notNull().default([]),
+  achievements: jsonb("achievements").notNull().default([]),
+  
+  // Status
+  isOnline: boolean("is_online").default(false),
+  lastActivityAt: timestamp("last_activity_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PlayerProfile = typeof playerProfiles.$inferSelect;
+export const insertPlayerProfileSchema = createInsertSchema(playerProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlayerProfile = z.infer<typeof insertPlayerProfileSchema>;
+
+// Mega Structures - massive end-game constructs
+export const megaStructures = pgTable("mega_structures", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  profileId: varchar("profile_id").references(() => playerProfiles.id, { onDelete: "cascade" }),
+  
+  // Identity & Classification
+  name: varchar("name").notNull(),
+  structureType: varchar("structure_type").notNull(), // "dyson_sphere", "ring_world", "matrioshka_brain", "megastructure_fleet", "stellar_engine"
+  structureClass: varchar("structure_class").notNull(), // "omega", "alpha", "beta", "gamma", "delta"
+  kind: varchar("kind").notNull(), // "weapon", "habitation", "research", "industrial", "defense"
+  category: varchar("category").notNull(), // "megastructure", "orbital", "interstellar"
+  subCategory: varchar("sub_category"), // "partial", "full", "experimental"
+  
+  // Progression & Status
+  level: integer("level").notNull().default(1),
+  completionPercent: integer("completion_percent").default(0),
+  isOperational: boolean("is_operational").default(false),
+  
+  // Location
+  coordinates: varchar("coordinates").notNull(),
+  galaxyId: integer("galaxy_id"),
+  
+  // Core Stats
+  health: integer("health").default(1000000),
+  maxHealth: integer("max_health").default(1000000),
+  power: integer("power").default(100000),
+  efficiency: real("efficiency").default(1.0),
+  
+  // Sub-stats (JSON for flexibility)
+  substats: jsonb("substats").notNull().default({
+    productionRate: 1000,
+    researchMultiplier: 2.0,
+    defenseMultiplier: 1.5,
+    capacityMultiplier: 3.0,
+    efficiencyRating: 95
+  }),
+  
+  // Attributes
+  attributes: jsonb("attributes").notNull().default({
+    durability: 100,
+    reliability: 95,
+    adaptability: 80,
+    scalability: 90,
+    sustainability: 85
+  }),
+  
+  // Sub-attributes
+  subAttributes: jsonb("sub_attributes").notNull().default({
+    maintenanceCost: 10000,
+    powerConsumption: 50000,
+    productionCapacity: 500000,
+    storageCapacity: 1000000,
+    repairRate: 5000
+  }),
+  
+  // Resource Production & Storage
+  resourceProduction: jsonb("resource_production").notNull().default({
+    metal: 50000,
+    crystal: 25000,
+    deuterium: 10000,
+    energy: 100000
+  }),
+  
+  resourceStorage: jsonb("resource_storage").notNull().default({
+    metal: 5000000,
+    crystal: 2500000,
+    deuterium: 1000000,
+    energy: 10000000
+  }),
+  
+  currentResources: jsonb("current_resources").notNull().default({
+    metal: 1000000,
+    crystal: 500000,
+    deuterium: 250000,
+    energy: 5000000
+  }),
+  
+  // Modules & Systems (JSON for flexibility)
+  modules: jsonb("modules").notNull().default([]),
+  systems: jsonb("systems").notNull().default([]),
+  weapons: jsonb("weapons").notNull().default([]),
+  defenses: jsonb("defenses").notNull().default([]),
+  
+  // Details & Information
+  description: text("description"),
+  about: text("about"),
+  details: jsonb("details").notNull().default({
+    constructionTime: 0,
+    estimatedCompletion: null,
+    workforce: 10000,
+    researchTeams: 100
+  }),
+  
+  // Menus & Sub-menus (Navigation/management structure)
+  menus: jsonb("menus").notNull().default({
+    construction: { status: "planning", progress: 0 },
+    production: { enabled: false, rates: {} },
+    research: { projects: [], completed: [] },
+    defense: { shields: true, weapons: true },
+    management: { staffing: 100, efficiency: 95 }
+  }),
+  
+  // Game Mechanics
+  gameMechanics: jsonb("game_mechanics").notNull().default({
+    captureable: false,
+    destroyable: true,
+    transferable: false,
+    scalable: true,
+    networked: false,
+    effects: []
+  }),
+  
+  // Crew & Population
+  population: integer("population").default(100000),
+  scientists: integer("scientists").default(1000),
+  engineers: integer("engineers").default(5000),
+  workers: integer("workers").default(50000),
+  soldiers: integer("soldiers").default(20000),
+  
+  // Combat Stats
+  attack: integer("attack").default(10000),
+  defense: integer("defense").default(5000),
+  damageOutput: real("damage_output").default(15000),
+  
+  // Metadata
+  constructedAt: timestamp("constructed_at"),
+  lastOperationalAt: timestamp("last_operational_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MegaStructure = typeof megaStructures.$inferSelect;
+export const insertMegaStructureSchema = createInsertSchema(megaStructures).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMegaStructure = z.infer<typeof insertMegaStructureSchema>;
+
 // System Settings table for game configuration
 export const systemSettings = pgTable("system_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
