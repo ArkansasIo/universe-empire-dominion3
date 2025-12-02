@@ -55,6 +55,11 @@ import {
   pveCombatLogs,
   items,
   playerItems,
+  bankAccounts,
+  bankTransactions,
+  empireValues,
+  playerCurrency,
+  currencyTransactions,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -2382,9 +2387,6 @@ export class DatabaseStorage implements IStorage {
       await this.setSetting(setting.key, setting.value, setting.description, setting.category);
     }
   }
-}
-
-export const storage = new DatabaseStorage();
 
   // Bank operations
   async getBankAccount(userId: string): Promise<any> {
@@ -2399,113 +2401,27 @@ export const storage = new DatabaseStorage();
   async depositToBankAccount(userId: string, amount: number): Promise<any> {
     const account = await this.getBankAccount(userId);
     const newBalance = (account.accountBalance || 0) + amount;
-    
     await db.insert(bankTransactions).values({
-      userId,
-      accountId: account.id,
-      transactionType: "deposit",
-      amount,
-      balanceBefore: account.accountBalance || 0,
-      balanceAfter: newBalance,
-      description: `Deposit: +${amount}`
+      userId, accountId: account.id, transactionType: "deposit", amount,
+      balanceBefore: account.accountBalance || 0, balanceAfter: newBalance, description: `Deposit: +${amount}`
     });
-
-    const [updated] = await db.update(bankAccounts)
-      .set({ accountBalance: newBalance, updatedAt: new Date() })
-      .where(eq(bankAccounts.id, account.id))
-      .returning();
+    const [updated] = await db.update(bankAccounts).set({ accountBalance: newBalance, updatedAt: new Date() }).where(eq(bankAccounts.id, account.id)).returning();
     return updated;
   }
 
-  async withdrawFromBankAccount(userId: string, amount: number): Promise<any> {
-    const account = await this.getBankAccount(userId);
-    if ((account.accountBalance || 0) < amount) throw new Error("Insufficient funds");
-    
-    const newBalance = (account.accountBalance || 0) - amount;
-    
-    await db.insert(bankTransactions).values({
-      userId,
-      accountId: account.id,
-      transactionType: "withdrawal",
-      amount: -amount,
-      balanceBefore: account.accountBalance || 0,
-      balanceAfter: newBalance,
-      description: `Withdrawal: -${amount}`
-    });
-
-    const [updated] = await db.update(bankAccounts)
-      .set({ accountBalance: newBalance, updatedAt: new Date() })
-      .where(eq(bankAccounts.id, account.id))
-      .returning();
-    return updated;
-  }
-
+  // Empire value
   async calculateEmpireValue(userId: string): Promise<any> {
     const state = await this.getPlayerState(userId);
-    if (!state) throw new Error("Player state not found");
-    
     const currency = await this.getPlayerCurrency(userId);
-    const bank = await this.getBankAccount(userId);
-
-    // Calculate resource value (1 metal = 1, 1 crystal = 1.5, 1 deuterium = 2)
-    const resources = state.resources as any || {};
-    const resourceValue = (resources.metal || 0) * 1 + (resources.crystal || 0) * 1.5 + (resources.deuterium || 0) * 2;
-
-    // Estimate building value (rough: ~500 per building level)
-    const buildings = state.buildings as any || {};
-    let buildingValue = 0;
-    Object.values(buildings).forEach((level: any) => {
-      buildingValue += (level || 0) * 500;
-    });
-
-    // Estimate fleet value (rough: ~1000 per unit)
-    const units = state.units as any || {};
-    let fleetValue = 0;
-    Object.values(units).forEach((count: any) => {
-      fleetValue += (count || 0) * 1000;
-    });
-
-    // Currency value (1 silver = 1, 1 gold = 100, 1 platinum = 10000)
-    const currencyValue = (currency?.silver || 0) * 1 + (currency?.gold || 0) * 100 + (currency?.platinum || 0) * 10000;
-
-    // Total bank value
-    const bankValue = (bank?.accountBalance || 0);
-
-    // Calculate total
-    const totalValue = resourceValue + buildingValue + fleetValue + currencyValue + bankValue;
-
-    let empireValue = await this.getEmpireValue(userId);
-    if (!empireValue) {
-      const [created] = await db.insert(empireValues).values({
-        userId,
-        resourceValue,
-        buildingValue,
-        fleetValue,
-        currencyValue,
-        totalValue
-      }).returning();
-      return created;
-    }
-
-    const [updated] = await db.update(empireValues)
-      .set({
-        resourceValue,
-        buildingValue,
-        fleetValue,
-        currencyValue,
-        totalValue,
-        lastCalculated: new Date()
-      })
-      .where(eq(empireValues.userId, userId))
-      .returning();
+    const resources = (state?.resources as any) || {};
+    const resourceValue = (resources.metal || 0) + (resources.crystal || 0) * 1.5 + (resources.deuterium || 0) * 2;
+    const currencyValue = (currency?.silver || 0) + (currency?.gold || 0) * 100 + (currency?.platinum || 0) * 10000;
+    const totalValue = resourceValue + currencyValue;
+    const [updated] = await db.insert(empireValues).values({ userId, resourceValue, currencyValue, totalValue }).onConflictDoUpdate({ target: empireValues.userId, set: { resourceValue, currencyValue, totalValue } }).returning();
     return updated;
-  }
-
-  async getEmpireValue(userId: string): Promise<any> {
-    const [value] = await db.select().from(empireValues).where(eq(empireValues.userId, userId));
-    return value;
   }
 
   async getEmpireRankings(): Promise<any[]> {
     return db.select().from(empireValues).orderBy(desc(empireValues.totalValue)).limit(100);
   }
+}
