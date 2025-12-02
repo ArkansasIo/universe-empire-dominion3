@@ -61,6 +61,7 @@ Preferred communication style: Simple, everyday language.
 - **Knowledge Library System**: Mastery progression through 10 knowledge types (Military, Engineering, Science, Agriculture, Commerce, Diplomacy, Exploration, Arcane, Medicine, Espionage) with 4 classes each. Each class has 100 levels across 21 tiers (Foundation to Supreme). Includes tech tree unlocks, synergy bonuses, and knowledge point generation system.
 - **Currency System**: Three-tier currency economy (Silver, Gold, Platinum) with conversion rates. 20+ uses including trading, construction acceleration, research speedup, equipment purchase, alliance management, cosmetics, battle pass, premium features, and espionage theft mechanics. Complete transaction logging, wealth tracking, and dynamic market prices.
 - **Empire Progression System**: Comprehensive leveling system (1-999), rank progression (S+ to E), tier system with bonuses, title unlocks, and combat power calculation. Includes prestige system for hard resets with permanent multipliers, technology/research level tracking, milestone achievements, leaderboards, and experience logging.
+- **Universe Structure**: Multi-level galactic hierarchy with Galaxies → Quadrants → Sectors → Systems → Planets. Planets divided into Continents → Countries → Territories, with mineable Resource Fields generating Metal/Crystal/Deuterium. Player Colonies on planets manage populations and resources. Complete mining operations system with extraction units and depletion tracking.
 
 # External Dependencies
 

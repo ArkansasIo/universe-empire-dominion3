@@ -1060,6 +1060,89 @@ export const prestigeRanking = pgTable("prestige_ranking", {
 
 export type PrestigeRanking = typeof prestigeRanking.$inferSelect;
 
+// Universe Structure - Continents, Countries, Territories, Resource Fields, Colonies
+export const continents = pgTable("continents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  planetId: integer("planet_id").notNull(),
+  continentName: varchar("continent_name").notNull(),
+  continentType: varchar("continent_type").notNull(),
+  areaSqkm: real("area_sqkm"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Continent = typeof continents.$inferSelect;
+
+export const countries = pgTable("countries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  continentId: varchar("continent_id").notNull().references(() => continents.id, { onDelete: "cascade" }),
+  countryName: varchar("country_name").notNull(),
+  countryType: varchar("country_type").notNull(),
+  ownerPlayerId: varchar("owner_player_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Country = typeof countries.$inferSelect;
+
+export const territories = pgTable("territories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  countryId: varchar("country_id").notNull().references(() => countries.id, { onDelete: "cascade" }),
+  territoryName: varchar("territory_name").notNull(),
+  territoryType: varchar("territory_type").notNull(),
+  areaSqkm: real("area_sqkm"),
+  controlledByPlayerId: varchar("controlled_by_player_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Territory = typeof territories.$inferSelect;
+
+export const resourceFields = pgTable("resource_fields", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  territoryId: varchar("territory_id").notNull().references(() => territories.id, { onDelete: "cascade" }),
+  fieldName: varchar("field_name").notNull(),
+  fieldType: varchar("field_type").notNull(),
+  fieldSize: varchar("field_size").notNull(),
+  metalPerHour: real("metal_per_hour").default(0),
+  crystalPerHour: real("crystal_per_hour").default(0),
+  deuteriumPerHour: real("deuterium_per_hour").default(0),
+  maxExtractionCapacity: integer("max_extraction_capacity").default(100),
+  depletionPercent: integer("depletion_percent").default(0),
+  isDepleted: boolean("is_depleted").default(false),
+  minedByPlayerId: varchar("mined_by_player_id").references(() => users.id, { onDelete: "set null" }),
+  totalMetalExtracted: real("total_metal_extracted").default(0),
+  totalCrystalExtracted: real("total_crystal_extracted").default(0),
+  totalDeuteriumExtracted: real("total_deuterium_extracted").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ResourceField = typeof resourceFields.$inferSelect;
+
+export const playerColonies = pgTable("player_colonies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  planetId: integer("planet_id").notNull(),
+  colonyName: varchar("colony_name").notNull(),
+  colonyType: varchar("colony_type").notNull(),
+  colonyLevel: integer("colony_level").default(1),
+  population: integer("population").default(1000),
+  builtAt: timestamp("built_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PlayerColony = typeof playerColonies.$inferSelect;
+
+export const miningOperations = pgTable("mining_operations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  fieldId: varchar("field_id").notNull().references(() => resourceFields.id, { onDelete: "cascade" }),
+  extractionUnits: integer("extraction_units").notNull(),
+  startedAt: timestamp("started_at").defaultNow(),
+  totalExtracted: jsonb("total_extracted").default({ metal: 0, crystal: 0, deuterium: 0 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type MiningOperation = typeof miningOperations.$inferSelect;
+
 // Messages (player communications, battle reports, espionage reports)
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
