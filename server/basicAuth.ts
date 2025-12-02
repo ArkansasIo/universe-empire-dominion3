@@ -2,6 +2,7 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
+import { logger } from "./logger";
 import crypto from "crypto";
 
 export function getSession() {
@@ -87,48 +88,45 @@ export async function setupAuth(app: Express) {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
-      console.log("[SERVER-AUTH] Login attempt:", { username, password: "***" });
+      logger.info("AUTH", `Login attempt for user: ${username}`);
 
       if (!username || !password) {
-        console.warn("[SERVER-AUTH] Missing credentials");
+        logger.warn("AUTH", "Missing credentials in login request");
         return res.status(400).json({ message: "Username and password required" });
       }
 
-      console.log("[SERVER-AUTH] Looking up user:", username);
       const user = await storage.getUserByUsername(username);
       
       if (!user) {
-        console.warn("[SERVER-AUTH] User not found:", username);
+        logger.warn("AUTH", `User not found: ${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
       if (!user.passwordHash) {
-        console.warn("[SERVER-AUTH] User has no password hash:", username);
+        logger.warn("AUTH", `User has no password hash: ${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("[SERVER-AUTH] Verifying password for user:", username);
       const passwordValid = verifyPassword(password, user.passwordHash);
-      console.log("[SERVER-AUTH] Password verification result:", passwordValid);
       
       if (!passwordValid) {
-        console.warn("[SERVER-AUTH] Invalid password for user:", username);
+        logger.warn("AUTH", `Invalid password for user: ${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log("[SERVER-AUTH] Login successful for user:", username, "User ID:", user.id);
+      logger.info("AUTH", `Login successful for user: ${username}`, { userId: user.id });
       (req.session as any).userId = user.id;
       
       req.session.save((err) => {
         if (err) {
-          console.error("[SERVER-AUTH] Session save error:", err);
+          logger.error("AUTH", "Session save error", {}, err);
           return res.status(500).json({ message: "Login failed" });
         }
-        console.log("[SERVER-AUTH] Session saved successfully for user:", username);
+        logger.info("AUTH", `Session saved for user: ${username}`);
         res.json({ message: "Login successful", user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName } });
       });
     } catch (error) {
-      console.error("[SERVER-AUTH] Login error:", error);
+      logger.error("AUTH", "Login error", {}, error);
       res.status(500).json({ message: "Login failed" });
     }
   });

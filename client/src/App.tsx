@@ -30,6 +30,7 @@ import About from "@/pages/About";
 import AccountSetup from "@/pages/AccountSetup";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import ServerConsole from "@/pages/ServerConsole";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
+      <Route path="/console" component={ServerConsole} />
       <Route component={NotFound} />
     </Switch>
   );
