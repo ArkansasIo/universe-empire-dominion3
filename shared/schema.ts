@@ -745,6 +745,86 @@ export const playerColonies = pgTable("player_colonies", {
 
 export type PlayerColony = typeof playerColonies.$inferSelect;
 
+// Starbases - orbital stations for resource gathering and fleet operations
+export const starbases = pgTable("starbases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  starbaseType: varchar("starbase_type").notNull(), // "mining", "refining", "shipyard", "research", "trade"
+  name: varchar("name").notNull(),
+  level: integer("level").notNull().default(1),
+  coordinates: varchar("coordinates").notNull(),
+  
+  // Resources
+  metalStorage: integer("metal_storage").default(10000),
+  crystalStorage: integer("crystal_storage").default(10000),
+  deuteriumStorage: integer("deuterium_storage").default(5000),
+  
+  // Production rates (per hour)
+  metalProductionRate: real("metal_production_rate").default(100),
+  crystalProductionRate: real("crystal_production_rate").default(50),
+  deuteriumProductionRate: real("deuterium_production_rate").default(25),
+  
+  // Fleet operations
+  hangarSlots: integer("hangar_slots").default(50),
+  researchSlots: integer("research_slots").default(5),
+  defenseLevel: integer("defense_level").default(1),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  lastResourceUpdate: timestamp("last_resource_update").defaultNow(),
+  builtAt: timestamp("built_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Starbase = typeof starbases.$inferSelect;
+export const insertStarbaseSchema = createInsertSchema(starbases).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStarbase = z.infer<typeof insertStarbaseSchema>;
+
+// Moon Bases - lunar settlements for mining and advanced operations
+export const moonBases = pgTable("moon_bases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  baseType: varchar("base_type").notNull(), // "mining", "research", "military", "industrial"
+  name: varchar("name").notNull(),
+  level: integer("level").notNull().default(1),
+  coordinates: varchar("coordinates").notNull(),
+  moonName: varchar("moon_name").notNull(),
+  
+  // Resources
+  metalReserves: integer("metal_reserves").default(5000),
+  crystalReserves: integer("crystal_reserves").default(3000),
+  deuteriumReserves: integer("deuterium_reserves").default(1000),
+  
+  // Mining operations
+  miningCapacity: integer("mining_capacity").default(1000),
+  activeMiningOps: integer("active_mining_ops").default(0),
+  totalMined: integer("total_mined").default(0),
+  
+  // Scientific research
+  researchPoints: real("research_points").default(0),
+  researchMultiplier: real("research_multiplier").default(1.0),
+  
+  // Population and workforce
+  population: integer("population").default(500),
+  workers: integer("workers").default(100),
+  
+  // Defense
+  shieldLevel: integer("shield_level").default(0),
+  turrets: integer("turrets").default(0),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  discoveredAt: timestamp("discovered_at").defaultNow(),
+  builtAt: timestamp("built_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MoonBase = typeof moonBases.$inferSelect;
+export const insertMoonBaseSchema = createInsertSchema(moonBases).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMoonBase = z.infer<typeof insertMoonBaseSchema>;
+
 // System Settings table for game configuration
 export const systemSettings = pgTable("system_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
