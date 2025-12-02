@@ -86,14 +86,14 @@ export default function Settings() {
                  <Card className="bg-white border-slate-200" data-testid="card-account-profile">
                     <CardHeader>
                        <CardTitle className="flex items-center gap-2 text-slate-900">
-                          <User className="w-5 h-5 text-primary" /> Profile Settings
+                          <UserIcon className="w-5 h-5 text-primary" /> Profile Settings
                        </CardTitle>
                        <CardDescription>Manage your commander identity and public profile.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                             <User className="w-8 h-8 text-primary" />
+                             <UserIcon className="w-8 h-8 text-primary" />
                           </div>
                           <div className="flex-1">
                              <div className="font-orbitron font-bold text-lg text-slate-900">{username || "Commander"}</div>

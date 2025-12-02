@@ -44,7 +44,8 @@ import {
   Satellite,
   Link2,
   ScrollText,
-  Network
+  Network,
+  AlertTriangle
 } from "lucide-react";
 
 const SidebarItem = ({ href, icon: Icon, label, active, className, indent = false }: { href: string, icon: any, label: string, active: boolean, className?: string, indent?: boolean }) => (
