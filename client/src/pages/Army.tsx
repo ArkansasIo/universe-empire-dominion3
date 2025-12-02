@@ -5,11 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Users, Swords, Star, Shield, Activity, Plus } from "lucide-react";
+import { Users, Swords, Star, Shield, Activity, Plus, Zap, Wand2, Heart, Package } from "lucide-react";
+import { generateTroopName, getRandomTitle, MILITARY_RANKS, TROOP_NAMES, WEAPONS, ARMOR, HELMETS, SHIELDS } from "@/lib/militaryData";
+
+interface Equipment {
+  weapon: { name: string; rarity: string; damage: number; weight: number } | null;
+  armor: { name: string; rarity: string; defense: number; weight: number; evade: number } | null;
+  helmet: { name: string; rarity: string; defense: number } | null;
+  shield: { name: string; rarity: string; defense: number } | null;
+}
 
 interface Troop {
   id: string;
   name: string;
+  title?: string;
   troopType: "infantry" | "cavalry" | "mage" | "archer" | "support" | "siege";
   troopClass: string;
   rank: string;
@@ -22,19 +31,22 @@ interface Troop {
   morale: number;
   status: "active" | "wounded" | "resting" | "dead";
   experience: number;
+  equipment: Equipment;
+  inventory: { item: string; quantity: number }[];
 }
 
 const TROOP_TYPES = ["infantry", "cavalry", "mage", "archer", "support", "siege"];
 const TROOP_CLASSES = ["warrior", "knight", "berserker", "paladin", "ranger", "scout", "mage", "healer", "engineer"];
-const RANKS = ["recruit", "soldier", "veteran", "elite", "commander", "general"];
+const RANKS = MILITARY_RANKS;
 
 const MOCK_TROOPS: Troop[] = [
   {
     id: "1",
-    name: "Ironforge The Brave",
+    name: "Aldric Blackthorne",
+    title: "Blade Master",
     troopType: "infantry",
     troopClass: "warrior",
-    rank: "veteran",
+    rank: "Knight",
     level: 5,
     health: 85,
     maxHealth: 100,
@@ -44,13 +56,25 @@ const MOCK_TROOPS: Troop[] = [
     morale: 95,
     status: "active",
     experience: 2340,
+    equipment: {
+      weapon: { name: "Legendary Greatsword", rarity: "rare", damage: 25, weight: 12 },
+      armor: { name: "Full Plate", rarity: "rare", defense: 24, weight: 22, evade: -1 },
+      helmet: { name: "Dragon Scale Helm", rarity: "rare", defense: 6 },
+      shield: { name: "Knight's Shield", rarity: "rare", defense: 9 }
+    },
+    inventory: [
+      { item: "Health Potion", quantity: 5 },
+      { item: "Mana Potion", quantity: 3 },
+      { item: "Iron Ore", quantity: 10 }
+    ]
   },
   {
     id: "2",
-    name: "Swift Arrow",
+    name: "Seraphina Swiftarrow",
+    title: "Sharpshooter",
     troopType: "archer",
     troopClass: "ranger",
-    rank: "soldier",
+    rank: "Sergeant",
     level: 3,
     health: 100,
     maxHealth: 100,
@@ -60,7 +84,18 @@ const MOCK_TROOPS: Troop[] = [
     morale: 85,
     status: "active",
     experience: 1200,
-  },
+    equipment: {
+      weapon: { name: "Elven Longbow", rarity: "rare", damage: 18, weight: 5 },
+      armor: { name: "Elven Garb", rarity: "rare", defense: 12, weight: 4, evade: 7 },
+      helmet: { name: "Steel Helm", rarity: "uncommon", defense: 4 },
+      shield: null
+    },
+    inventory: [
+      { item: "Arrow Bundle", quantity: 50 },
+      { item: "Health Potion", quantity: 3 },
+      { item: "Lockpick", quantity: 2 }
+    ]
+  }
 ];
 
 export default function Army() {
@@ -103,14 +138,16 @@ export default function Army() {
   };
 
   const handleRecruit = async () => {
-    if (!newTroopName.trim()) return;
+    const troopType = TROOP_TYPES[Math.floor(Math.random() * TROOP_TYPES.length)] as any;
+    const troopClass = TROOP_CLASSES[Math.floor(Math.random() * TROOP_CLASSES.length)];
     
     const newTroop: Troop = {
       id: Math.random().toString(),
-      name: newTroopName,
-      troopType: TROOP_TYPES[Math.floor(Math.random() * TROOP_TYPES.length)] as any,
-      troopClass: TROOP_CLASSES[Math.floor(Math.random() * TROOP_CLASSES.length)],
-      rank: "recruit",
+      name: newTroopName || generateTroopName(),
+      title: getRandomTitle(troopType),
+      troopType,
+      troopClass,
+      rank: "Squire",
       level: 1,
       health: 100,
       maxHealth: 100,
@@ -120,6 +157,16 @@ export default function Army() {
       morale: 100,
       status: "active",
       experience: 0,
+      equipment: {
+        weapon: WEAPONS[troopType as keyof typeof WEAPONS]?.[0] || null,
+        armor: ARMOR.light[0] || null,
+        helmet: HELMETS[0] || null,
+        shield: ["infantry", "cavalry", "support", "siege"].includes(troopType) ? SHIELDS[0] : null
+      },
+      inventory: [
+        { item: "Health Potion", quantity: 2 },
+        { item: "Provisions", quantity: 5 }
+      ]
     };
 
     setTroops([...troops, newTroop]);
@@ -233,6 +280,7 @@ export default function Army() {
                           <span className="text-2xl">{getTroopTypeIcon(troop.troopType)}</span>
                           <div className="flex-1">
                             <h3 className="font-bold text-slate-900">{troop.name}</h3>
+                            {troop.title && <p className="text-xs text-primary italic">{troop.title}</p>}
                             <p className="text-xs text-slate-600 capitalize">{troop.troopType} • {troop.troopClass}</p>
                             <div className="flex gap-1 mt-1">
                               <Badge className={`${getRankColor(troop.rank)} text-xs capitalize`}>{troop.rank}</Badge>
@@ -280,19 +328,50 @@ export default function Army() {
                         </div>
                       </div>
 
-                      {/* Experience & Actions */}
+                      {/* Equipment */}
                       <div>
-                        <p className="text-xs font-bold text-slate-600 mb-2">EXPERIENCE</p>
-                        <div className="bg-slate-100 rounded h-3 overflow-hidden mb-2">
-                          <div 
-                            className="bg-blue-500 h-full transition-all"
-                            style={{ width: `${Math.min((troop.experience / 5000) * 100, 100)}%` }}
-                          />
+                        <p className="text-xs font-bold text-slate-600 mb-2">EQUIPMENT</p>
+                        <div className="space-y-1 text-xs">
+                          {troop.equipment.weapon && (
+                            <div className="flex items-center gap-1">
+                              <Swords className="w-3 h-3" />
+                              <span className="text-slate-700">{troop.equipment.weapon.name}</span>
+                            </div>
+                          )}
+                          {troop.equipment.armor && (
+                            <div className="flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              <span className="text-slate-700">{troop.equipment.armor.name}</span>
+                            </div>
+                          )}
+                          {troop.equipment.shield && (
+                            <div className="flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              <span className="text-slate-700">{troop.equipment.shield.name}</span>
+                            </div>
+                          )}
+                          <Badge className="text-xs mt-1">
+                            {troop.equipment.weapon?.damage || 0} DMG • {(troop.equipment.armor?.defense || 0) + (troop.equipment.shield?.defense || 0)} DEF
+                          </Badge>
                         </div>
-                        <p className="text-xs text-slate-600 mb-3">{troop.experience.toLocaleString()} XP</p>
-                        <div className="flex gap-2">
+                      </div>
+
+                      {/* Inventory */}
+                      <div>
+                        <p className="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1">
+                          <Package className="w-3 h-3" /> INVENTORY
+                        </p>
+                        <div className="space-y-1 text-xs max-h-20 overflow-y-auto">
+                          {troop.inventory.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-slate-600">
+                              <span>{item.item}</span>
+                              <span className="font-bold">x{item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2 mt-3">
                           <Button size="sm" variant="outline" className="flex-1 text-xs" data-testid={`button-manage-${troop.id}`}>
-                            Manage
+                            Equip
                           </Button>
                           <Button size="sm" variant="outline" className="flex-1 text-xs" data-testid={`button-deploy-${troop.id}`}>
                             Deploy
