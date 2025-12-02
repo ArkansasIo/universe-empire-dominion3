@@ -13,6 +13,7 @@ export default function Auth() {
   const [isForgot, setIsForgot] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -69,6 +70,17 @@ export default function Auth() {
       return;
     }
 
+    if (!isLogin && !email.trim()) {
+      setError("Email is required");
+      console.warn("[AUTH] Validation failed: Email required");
+      return;
+    }
+    if (!isLogin && !email.includes("@")) {
+      setError("Valid email address required");
+      console.warn("[AUTH] Validation failed: Invalid email");
+      return;
+    }
+
     setSubmitting(true);
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
     console.log(`[AUTH] Attempting ${isLogin ? 'LOGIN' : 'REGISTER'} for user: ${username.trim()}`);
@@ -77,7 +89,11 @@ export default function Auth() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ 
+          username: username.trim(), 
+          password,
+          ...(isLogin ? {} : { email: email.trim(), firstName: firstName.trim() })
+        }),
         credentials: "include"
       });
 
@@ -263,6 +279,38 @@ export default function Auth() {
                       required
                     />
                   </div>
+                )}
+
+                {!isLogin && !isForgot && (
+                  <>
+                    <div>
+                      <Label htmlFor="email" className="text-slate-900 text-sm font-semibold">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email address"
+                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600"
+                        data-testid="input-email"
+                        disabled={submitting}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="firstName" className="text-slate-900 text-sm font-semibold">First Name (Optional)</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="Your first name"
+                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600"
+                        data-testid="input-firstName"
+                        disabled={submitting}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {!isForgot && (

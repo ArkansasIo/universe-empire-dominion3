@@ -60,10 +60,10 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, email, firstName } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password required" });
+      if (!username || !password || !email) {
+        return res.status(400).json({ message: "Username, password, and email required" });
       }
 
       if (username.length < 3) {
@@ -72,6 +72,10 @@ export async function setupAuth(app: Express) {
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      if (!email.includes("@")) {
+        return res.status(400).json({ message: "Valid email address required" });
       }
 
       const existingUser = await storage.getUserByUsername(username);
@@ -83,8 +87,8 @@ export async function setupAuth(app: Express) {
       const user = await storage.createUser({
         username,
         passwordHash,
-        email: `${username}@stellar.local`,
-        firstName: username,
+        email,
+        firstName: firstName || username,
       });
 
       (req.session as any).userId = user.id;
