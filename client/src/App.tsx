@@ -27,6 +27,8 @@ import Admin from "@/pages/Admin";
 import Auth from "@/pages/Auth";
 import Market from "@/pages/Market";
 import About from "@/pages/About";
+import Combat from "@/pages/Combat";
+import BattleLogs from "@/pages/BattleLogs";
 import AccountSetup from "@/pages/AccountSetup";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
@@ -117,6 +119,8 @@ function Router() {
       <Route path="/alliance" component={Alliance} />
       <Route path="/market" component={Market} />
       <Route path="/messages" component={Messages} />
+      <Route path="/combat" component={Combat} />
+      <Route path="/battle-logs" component={BattleLogs} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/console" component={ServerConsole} />

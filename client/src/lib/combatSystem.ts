@@ -1,6 +1,12 @@
 import { CommanderState } from './commanderTypes';
 import { unitData, UnitItem } from './unitData';
 
+// Create unit lookup object for O(1) access
+const unitLookup: { [key: string]: UnitItem } = {};
+unitData.forEach(unit => {
+  unitLookup[unit.id] = unit;
+});
+
 export type CombatType = "raid" | "attack" | "spy" | "sabotage";
 
 export interface CombatUnit {
@@ -67,11 +73,11 @@ export function calculateFleetStats(fleet: { [unitId: string]: number }, command
   let totalHp = 0;
   
   Object.entries(fleet).forEach(([unitId, count]) => {
-    const unit = unitData[unitId as keyof typeof unitData];
+    const unit = unitLookup[unitId];
     if (unit) {
-      totalOffense += (unit.attack || 0) * count * commanderBonus.offenseMultiplier;
-      totalDefense += (unit.shield || 0) * count * commanderBonus.defenseMultiplier;
-      totalHp += (unit.hull || 100) * count * commanderBonus.hpMultiplier;
+      totalOffense += (unit.stats?.attack || 0) * count * commanderBonus.offenseMultiplier;
+      totalDefense += (unit.stats?.shield || 0) * count * commanderBonus.defenseMultiplier;
+      totalHp += (unit.stats?.structure || 100) * count * commanderBonus.hpMultiplier;
     }
   });
   
@@ -162,8 +168,8 @@ export function simulatePvPCombat(
   let loot = { metal: 0, crystal: 0, deuterium: 0 };
   if (winner === "attacker") {
     const cargoCapacity = Object.entries(attackerFleet).reduce((sum, [unitId, count]) => {
-      const unit = unitData[unitId as keyof typeof unitData];
-      return sum + ((unit?.cargo || 0) * (count - (attackerLosses[unitId] || 0)));
+      const unit = unitLookup[unitId];
+      return sum + ((unit?.stats?.cargo || 0) * (count - (attackerLosses[unitId] || 0)));
     }, 0);
     
     // Assume defender planet has resources

@@ -13,6 +13,8 @@ import {
   equipmentDurability,
   fleetDurability,
   buildingDurability,
+  battles,
+  battleLogs,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -35,6 +37,10 @@ import {
   type EquipmentDurability,
   type FleetDurability,
   type BuildingDurability,
+  type Battle,
+  type InsertBattle,
+  type BattleLog,
+  type InsertBattleLog,
   type AdminUser,
   adminUsers
 } from "@shared/schema";
