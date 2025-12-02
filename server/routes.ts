@@ -13,7 +13,6 @@ import {
   queueItems,
   playerColonies,
   resourceFields,
-  miningOperations,
   equipmentDurability,
   fleetDurability,
   buildingDurability,

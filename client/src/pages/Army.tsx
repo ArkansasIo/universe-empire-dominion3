@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Users, Swords, Star, Shield, Activity, Plus, Zap, Wand2, Heart, Package } from "lucide-react";
 import { generateTroopName, getRandomTitle, MILITARY_RANKS, TROOP_NAMES, WEAPONS, ARMOR, HELMETS, SHIELDS } from "@/lib/militaryData";
+import { getTroopStats, getClassBuffs, getTypeBuffs, DEBUFFS } from "@/lib/militaryAttributes";
 
 interface Equipment {
   weapon: { name: string; rarity: string; damage: number; weight: number } | null;
@@ -33,6 +34,9 @@ interface Troop {
   experience: number;
   equipment: Equipment;
   inventory: { item: string; quantity: number }[];
+  attributes?: { strength: number; endurance: number; dexterity: number; intelligence: number; wisdom: number; charisma: number };
+  buffs?: string[];
+  debuffs?: string[];
 }
 
 const TROOP_TYPES = ["infantry", "cavalry", "mage", "archer", "support", "siege"];
@@ -66,7 +70,10 @@ const MOCK_TROOPS: Troop[] = [
       { item: "Health Potion", quantity: 5 },
       { item: "Mana Potion", quantity: 3 },
       { item: "Iron Ore", quantity: 10 }
-    ]
+    ],
+    attributes: getTroopStats("warrior"),
+    buffs: ["Battle Cry", "Shield Wall"],
+    debuffs: []
   },
   {
     id: "2",
@@ -94,7 +101,10 @@ const MOCK_TROOPS: Troop[] = [
       { item: "Arrow Bundle", quantity: 50 },
       { item: "Health Potion", quantity: 3 },
       { item: "Lockpick", quantity: 2 }
-    ]
+    ],
+    attributes: getTroopStats("ranger"),
+    buffs: ["Focus Fire", "Eagle Eye"],
+    debuffs: ["Slow"]
   }
 ];
 
@@ -328,32 +338,47 @@ export default function Army() {
                         </div>
                       </div>
 
-                      {/* Equipment */}
+                      {/* Attributes & Effects */}
                       <div>
-                        <p className="text-xs font-bold text-slate-600 mb-2">EQUIPMENT</p>
+                        <p className="text-xs font-bold text-slate-600 mb-2">ATTRIBUTES</p>
                         <div className="space-y-1 text-xs">
-                          {troop.equipment.weapon && (
-                            <div className="flex items-center gap-1">
-                              <Swords className="w-3 h-3" />
-                              <span className="text-slate-700">{troop.equipment.weapon.name}</span>
-                            </div>
+                          {troop.attributes && (
+                            <>
+                              <div className="flex justify-between text-slate-600">
+                                <span>💪 STR:</span>
+                                <span className="font-bold">{troop.attributes.strength}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-600">
+                                <span>🛡️ END:</span>
+                                <span className="font-bold">{troop.attributes.endurance}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-600">
+                                <span>⚡ DEX:</span>
+                                <span className="font-bold">{troop.attributes.dexterity}</span>
+                              </div>
+                            </>
                           )}
-                          {troop.equipment.armor && (
-                            <div className="flex items-center gap-1">
-                              <Shield className="w-3 h-3" />
-                              <span className="text-slate-700">{troop.equipment.armor.name}</span>
-                            </div>
-                          )}
-                          {troop.equipment.shield && (
-                            <div className="flex items-center gap-1">
-                              <Shield className="w-3 h-3" />
-                              <span className="text-slate-700">{troop.equipment.shield.name}</span>
-                            </div>
-                          )}
-                          <Badge className="text-xs mt-1">
-                            {troop.equipment.weapon?.damage || 0} DMG • {(troop.equipment.armor?.defense || 0) + (troop.equipment.shield?.defense || 0)} DEF
-                          </Badge>
                         </div>
+                        {(troop.buffs?.length || 0) > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-200">
+                            <p className="text-xs font-bold text-green-600 mb-1">✅ BUFFS</p>
+                            <div className="flex flex-wrap gap-1">
+                              {troop.buffs?.map((buff, i) => (
+                                <Badge key={i} className="bg-green-100 text-green-800 text-xs">{buff}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(troop.debuffs?.length || 0) > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-200">
+                            <p className="text-xs font-bold text-red-600 mb-1">⚠️ DEBUFFS</p>
+                            <div className="flex flex-wrap gap-1">
+                              {troop.debuffs?.map((debuff, i) => (
+                                <Badge key={i} className="bg-red-100 text-red-800 text-xs">{debuff}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Inventory */}
