@@ -26,12 +26,12 @@ Preferred communication style: Simple, everyday language.
 
 **Framework**: Express.js with TypeScript running on Node.js
 - **Database**: Drizzle ORM with Neon PostgreSQL (serverless)
-- **Authentication**: Replit Auth via OpenID Connect with Passport.js
+- **Authentication**: Username/password authentication with SHA-256 hashing
 - **Session Management**: Express-session with PostgreSQL session store (connect-pg-simple)
 - **Build System**: ESBuild for server bundling, Vite for client bundling
 
 **API Pattern**: RESTful API endpoints under `/api` namespace
-- `/api/auth/*` - Authentication endpoints
+- `/api/auth/*` - Authentication endpoints (login, register, logout)
 - `/api/game/*` - Game state CRUD operations
 - `/api/missions/*` - Fleet mission management
 - `/api/messages/*` - Player messaging system
@@ -64,25 +64,69 @@ Preferred communication style: Simple, everyday language.
 
 **Rationale**: Game state queries are read-heavy with frequent updates to multiple related fields (resources, buildings, units). JSONB allows atomic updates of the entire state object and simplifies the API layer.
 
+## Configuration System
+
+**Game Configuration** (`shared/config/gameConfig.ts`):
+- Resource production rates and building costs
+- Unit/ship costs and combat stats
+- Technology progression system
+- Combat mechanics (damage calculation, evasion, etc.)
+- Kardashev scale progression requirements
+- Market economy settings
+- Alliance settings
+- Government type multipliers
+- Race-specific bonuses
+
+**System Configuration** (`shared/config/systemConfig.ts`):
+- Server settings (port, environment, timeouts)
+- Database configuration and connection pooling
+- Authentication settings (password requirements, session timeout)
+- Logging configuration
+- Caching and rate limiting
+- Email provider settings
+- Feature flags for gradual rollout
+- Monitoring and analytics settings
+- Backup and maintenance schedules
+- Universe generation parameters
+- Game loop tick intervals
+
+## Database Schema Files
+
+**SQL Schema Files** (in `sql/schema/`):
+- `universe.sql` - Celestial objects (galaxies, stars, planets, moons, asteroids, anomalies)
+- `game.sql` - Game balance (resources, tech tree, combat, achievements)
+- `system.sql` - Server configuration (settings, admin logs, feature flags)
+
+**SQL Seed Files** (in `sql/seeds/`):
+- `universe-seed.sql` - Initial universe configuration and unit costs
+- `game-seed.sql` - Technology tree, achievements, game settings
+
+These files are referenced for documentation and can be manually executed, but schema is primarily managed through Drizzle ORM.
+
 ## Authentication and Authorization
 
-**Provider**: Replit Auth (OpenID Connect)
-- **Strategy**: OAuth2/OIDC flow with automatic user provisioning
+**Provider**: Username/Password Authentication
+- **Strategy**: Local authentication with SHA-256 password hashing
 - **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple
-- **Token Management**: Access and refresh tokens stored in session
+- **Token Management**: Session cookies (HTTP-only, secure flag conditional)
 
 **Flow**:
-1. User clicks "Sign in with Replit"
-2. Redirects to Replit OIDC provider
-3. Callback receives authorization code
-4. Exchange code for tokens
-5. Create/update user record in database
-6. Establish server-side session
-7. Redirect to application
+1. User enters username and password on login page
+2. Password is hashed and compared against stored hash
+3. On successful match, session ID is created and stored in database
+4. Session cookie is set (secure flag disabled in dev, enabled in production)
+5. Client includes cookie in subsequent requests
+6. Session is refreshed on each request (resave: true)
 
-**Authorization Pattern**: Session-based with middleware checking `req.user` existence. Protected routes use `isAuthenticated` middleware.
+**Session Configuration**: 
+- `resave: true` - Sessions refresh on every request, keeping active sessions alive
+- `saveUninitialized: true` - Sessions are stored immediately
+- Cookie `secure` flag is conditional based on environment (false in dev HTTP, true in prod HTTPS)
+- `sameSite: 'lax'` for CSRF protection
 
-**First-Time Setup**: New users are redirected to account setup flow to choose race, class, and government type before accessing the game.
+**Authorization Pattern**: Session-based with middleware checking `req.session.userId` existence. Protected routes use `isAuthenticated` middleware.
+
+**First-Time Setup**: New users see empire setup screen to choose race, class, and government type before accessing the game.
 
 **Design Decision**: Server-side sessions rather than JWT for simplicity and security. Sessions can be invalidated server-side and don't expose claims to the client.
 
@@ -90,26 +134,105 @@ Preferred communication style: Simple, everyday language.
 
 **Third-Party Services**:
 - **Neon Database**: Serverless PostgreSQL hosting
-- **Replit Auth**: OAuth authentication provider
-- **Replit Infrastructure**: Deployment platform with automatic HTTPS and domain provisioning
+- **Replit Infrastructure**: Deployment platform with automatic HTTPS
 
 **NPM Packages** (Key Dependencies):
 - **@neondatabase/serverless**: PostgreSQL driver with WebSocket support
 - **drizzle-orm**: Type-safe ORM
 - **express**: Web server framework
-- **passport**: Authentication middleware
-- **openid-client**: OIDC client library
+- **express-session**: Session management middleware
+- **connect-pg-simple**: PostgreSQL session store
 - **@tanstack/react-query**: Server state management
 - **wouter**: Client-side routing
 - **zod**: Runtime type validation
 - **@radix-ui/***: Headless UI primitives for accessibility
+- **framer-motion**: Animation library
+- **recharts**: Chart/graph library
 
 **Vite Plugins**:
 - `@replit/vite-plugin-cartographer`: Code navigation
 - `@replit/vite-plugin-dev-banner`: Development environment indicator
 - `@replit/vite-plugin-runtime-error-modal`: Enhanced error display
-- Custom `metaImagesPlugin`: Updates OpenGraph meta tags for Replit deployment domains
 
-**Design Decision**: Bundle allowlisted server dependencies (database drivers, heavy libraries) to reduce cold start times by minimizing filesystem operations during module resolution.
+**Design Decision**: Bundle allowlisted server dependencies to reduce cold start times by minimizing filesystem operations during module resolution.
 
 **Build Process**: Two-stage build with Vite for client (outputs to `dist/public`) and ESBuild for server (outputs to `dist/index.cjs`). The server is bundled as a single CommonJS file for faster startup.
+
+# Game Systems
+
+## Combat Engine
+Advanced multi-layer damage system with:
+- Shield, armor, and hull damage layers
+- Evasion mechanics (base 5-20% depending on ship)
+- Accuracy calculations (90-100% base)
+- Weapon effectiveness matrix against different armor types
+- Target prioritization (highest threat first)
+- Detailed battle logs and reporting
+
+## Kardashev Scale
+18-level empire progression system tracking:
+- Metal, crystal, deuterium, and research accumulation
+- Level-based empire bonuses
+- Unlockable technologies and buildings at each level
+- Requirements scale exponentially
+
+## Turn-Based MMORPG Mechanics
+- Tick-based game loop (1-second ticks)
+- Queue processor for construction and research
+- Mission lifecycle management
+- Per-tick resource production calculations
+- Deterministic universe seed system
+
+## Universe Generation
+Procedurally generated deterministic universe:
+- 10 planet classes based on characteristics
+- 7 asteroid types with composition
+- 9 star types (O, B, A, F, G, K, M, N, H)
+- Coordinate-based hashing ensures reproducibility
+- Supports full galaxy exploration
+
+## Technology System
+7 rarity tiers (common to transcendent) with:
+- 9 tech classes (weapons, defense, economy, exploration, etc.)
+- Synergies between technologies
+- 8+ sample technologies with complete stat definitions
+- Tech progression trees
+
+# Recent Changes
+
+- Fixed login authentication: Session cookie secure flag is now conditional (false in dev HTTP, true in prod HTTPS)
+- Added setupComplete field to validation schema to allow empire setup completion
+- Created back buttons on Auth and AccountSetup pages for navigation
+- Fixed session persistence: Changed resave and saveUninitialized to true to keep sessions active
+- Created comprehensive game configuration system (shared/config/)
+- Added SQL database schema files (universe.sql, game.sql, system.sql)
+- Created seed data files with game balance and configuration
+
+# File Structure
+
+```
+project/
+├── client/
+│   ├── src/
+│   │   ├── pages/          # Game pages (Overview, Resources, etc.)
+│   │   ├── lib/            # Game logic (context, combat, universe, etc.)
+│   │   ├── components/     # Reusable UI components
+│   │   └── index.html      # OpenGraph meta tags
+│   └── vite.config.ts      # Vite configuration
+├── server/
+│   ├── index.ts            # Express server entry
+│   ├── routes.ts           # API endpoints
+│   ├── storage.ts          # Database operations
+│   └── basicAuth.ts        # Authentication middleware
+├── shared/
+│   ├── schema.ts           # Drizzle ORM schema
+│   └── config/             # Game and system configuration
+│       ├── gameConfig.ts   # Game balance settings
+│       └── systemConfig.ts # Server settings
+├── sql/
+│   ├── schema/             # Database schema SQL files
+│   ├── seeds/              # Seed data SQL files
+│   └── README.md           # SQL documentation
+├── migrations/             # Drizzle migrations
+└── package.json
+```
