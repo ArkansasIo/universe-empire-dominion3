@@ -23,18 +23,25 @@ import Interstellar from "@/pages/Interstellar";
 import Admin from "@/pages/Admin";
 import Auth from "@/pages/Auth";
 import Market from "@/pages/Market";
+import About from "@/pages/About";
 import { useGame } from "@/lib/gameContext";
 
 function Router() {
   const { isLoggedIn } = useGame();
 
   if (!isLoggedIn) {
-    return <Auth />;
+    return (
+      <Switch>
+        <Route path="/about" component={About} />
+        <Route component={Auth} />
+      </Switch>
+    );
   }
 
   return (
     <Switch>
       <Route path="/" component={Overview} />
+      <Route path="/about" component={About} />
       <Route path="/resources" component={Resources} />
       <Route path="/facilities" component={Facilities} />
       <Route path="/research" component={Research} />
@@ -50,7 +57,6 @@ function Router() {
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
-      
       <Route component={NotFound} />
     </Switch>
   );

@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Rocket, Shield, Lock, User } from "lucide-react";
+import { Rocket, Shield, Lock, User, Info } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Auth() {
   const { login } = useGame();
@@ -137,8 +138,15 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center text-xs text-slate-500 pb-6">
-           Version {useGame().config?.version || "0.1.0"} // Server: {useGame().config?.universeName || "Nexus"}
+        <CardFooter className="flex flex-col items-center gap-3 pb-6">
+           <Link href="/about">
+             <Button variant="ghost" className="text-slate-600 hover:text-slate-900" data-testid="button-about">
+               <Info className="w-4 h-4 mr-2" /> About Stellar Dominion
+             </Button>
+           </Link>
+           <span className="text-xs text-slate-500">
+             Version {useGame().config?.version || "0.1.0"} // Server: {useGame().config?.universeName || "Nexus"}
+           </span>
         </CardFooter>
       </Card>
     </div>
