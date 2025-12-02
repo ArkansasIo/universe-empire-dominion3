@@ -22,7 +22,7 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-export function log(message: string, source = "express") {
+export function log(message: string, source = "express", level: "info" | "success" | "error" | "warn" = "info") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -30,7 +30,14 @@ export function log(message: string, source = "express") {
     hour12: true,
   });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
+  const icons = {
+    info: "ℹ️",
+    success: "✅",
+    error: "❌",
+    warn: "⚠️"
+  };
+
+  console.log(`${formattedTime} [${source}] ${icons[level]} ${message}`);
 }
 
 app.use((req, res, next) => {
@@ -47,12 +54,44 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      // Determine status category
+      let statusLabel = "";
+      let level: "info" | "success" | "error" | "warn" = "info";
+      
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        statusLabel = `[${res.statusCode}]`;
+        level = res.statusCode === 304 ? "info" : "success";
+      } else if (res.statusCode >= 300 && res.statusCode < 400) {
+        statusLabel = `[${res.statusCode}]`;
+        level = "info";
+      } else if (res.statusCode >= 400 && res.statusCode < 500) {
+        statusLabel = `[${res.statusCode}]`;
+        level = "warn";
+      } else if (res.statusCode >= 500) {
+        statusLabel = `[${res.statusCode}]`;
+        level = "error";
       }
 
-      log(logLine);
+      // Determine speed category
+      let speed = "";
+      if (duration < 50) speed = "⚡";
+      else if (duration < 150) speed = "🚀";
+      else if (duration < 500) speed = "📊";
+      else speed = "🐌";
+
+      // Build log message
+      const method = req.method.padEnd(6);
+      const endpoint = path.padEnd(35);
+      let logLine = `${method} ${endpoint} ${statusLabel} ${speed} ${duration}ms`;
+      
+      // Add response data size info for successful responses
+      if (capturedJsonResponse && res.statusCode !== 304) {
+        const dataSize = JSON.stringify(capturedJsonResponse).length;
+        const sizeKb = (dataSize / 1024).toFixed(1);
+        logLine += ` [${sizeKb}KB]`;
+      }
+
+      log(logLine, "api", level);
     }
   });
 
