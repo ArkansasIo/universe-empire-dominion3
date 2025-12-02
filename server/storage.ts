@@ -7,6 +7,12 @@ import {
   allianceMembers,
   marketOrders,
   queueItems,
+  playerColonies,
+  resourceFields,
+  miningOperations,
+  equipmentDurability,
+  fleetDurability,
+  buildingDurability,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -22,7 +28,13 @@ import {
   type MarketOrder,
   type InsertMarketOrder,
   type QueueItem,
-  type InsertQueueItem
+  type InsertQueueItem,
+  type PlayerColony,
+  type ResourceField,
+  type MiningOperation,
+  type EquipmentDurability,
+  type FleetDurability,
+  type BuildingDurability
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql } from "drizzle-orm";
@@ -86,6 +98,22 @@ export interface IStorage {
   
   // Leaderboard
   getLeaderboard(limit?: number): Promise<Array<{ user: User, state: PlayerState, points: number }>>;
+  
+  // Colony operations
+  getPlayerColonies(userId: string): Promise<PlayerColony[]>;
+  createPlayerColony(colony: any): Promise<PlayerColony>;
+  
+  // Resource field operations
+  getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
+  
+  // Mining operations
+  getActiveMiningOperations(userId: string): Promise<MiningOperation[]>;
+  createMiningOperation(op: any): Promise<MiningOperation>;
+  
+  // Durability operations
+  getEquipmentDurability(userId: string, equipmentId: string): Promise<EquipmentDurability | undefined>;
+  getFleetDurability(userId: string, fleetId: string): Promise<FleetDurability | undefined>;
+  getBuildingDurability(userId: string, buildingId: string): Promise<BuildingDurability | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -401,6 +429,59 @@ export class DatabaseStorage implements IStorage {
         (row.player_states.resources as any).deuterium * 3
       )
     }));
+  }
+  
+  // Colony operations
+  async getPlayerColonies(userId: string): Promise<PlayerColony[]> {
+    return await db.select().from(playerColonies).where(eq(playerColonies.playerId, userId));
+  }
+  
+  async createPlayerColony(colony: any): Promise<PlayerColony> {
+    const [newColony] = await db.insert(playerColonies).values(colony).returning();
+    return newColony;
+  }
+  
+  // Resource field operations
+  async getFieldsByTerritory(territoryId: string): Promise<ResourceField[]> {
+    return await db.select().from(resourceFields).where(eq(resourceFields.territoryId, territoryId));
+  }
+  
+  // Mining operations
+  async getActiveMiningOperations(userId: string): Promise<MiningOperation[]> {
+    return await db
+      .select()
+      .from(miningOperations)
+      .where(and(eq(miningOperations.playerId, userId), eq(miningOperations.isActive, true)));
+  }
+  
+  async createMiningOperation(op: any): Promise<MiningOperation> {
+    const [newOp] = await db.insert(miningOperations).values(op).returning();
+    return newOp;
+  }
+  
+  // Durability operations
+  async getEquipmentDurability(userId: string, equipmentId: string): Promise<EquipmentDurability | undefined> {
+    const [durability] = await db
+      .select()
+      .from(equipmentDurability)
+      .where(and(eq(equipmentDurability.playerId, userId), eq(equipmentDurability.equipmentId, equipmentId)));
+    return durability;
+  }
+  
+  async getFleetDurability(userId: string, fleetId: string): Promise<FleetDurability | undefined> {
+    const [durability] = await db
+      .select()
+      .from(fleetDurability)
+      .where(and(eq(fleetDurability.playerId, userId), eq(fleetDurability.fleetId, fleetId)));
+    return durability;
+  }
+  
+  async getBuildingDurability(userId: string, buildingId: string): Promise<BuildingDurability | undefined> {
+    const [durability] = await db
+      .select()
+      .from(buildingDurability)
+      .where(and(eq(buildingDurability.playerId, userId), eq(buildingDurability.buildingId, buildingId)));
+    return durability;
   }
 }
 

@@ -548,5 +548,117 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ==== COLONIES & UNIVERSE ====
+  
+  app.get("/api/colonies", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const colonies = await storage.getPlayerColonies(userId);
+      res.json(colonies);
+    } catch (error) {
+      console.error("Error fetching colonies:", error);
+      res.status(500).json({ message: "Failed to fetch colonies" });
+    }
+  });
+  
+  app.post("/api/colonies", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { planetId, colonyName, colonyType } = req.body;
+      
+      if (!planetId || !colonyName || !colonyType) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const colony = await storage.createPlayerColony({
+        playerId: userId,
+        planetId,
+        colonyName,
+        colonyType,
+        colonyLevel: 1,
+        population: 1000
+      });
+      
+      res.json(colony);
+    } catch (error) {
+      console.error("Error creating colony:", error);
+      res.status(500).json({ message: "Failed to create colony" });
+    }
+  });
+  
+  // ==== MINING OPERATIONS ====
+  
+  app.get("/api/mining/operations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const operations = await storage.getActiveMiningOperations(userId);
+      res.json(operations);
+    } catch (error) {
+      console.error("Error fetching mining operations:", error);
+      res.status(500).json({ message: "Failed to fetch mining operations" });
+    }
+  });
+  
+  app.post("/api/mining/operations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { fieldId, extractionUnits } = req.body;
+      
+      if (!fieldId || !extractionUnits) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const operation = await storage.createMiningOperation({
+        playerId: userId,
+        fieldId,
+        extractionUnits,
+        isActive: true
+      });
+      
+      res.json(operation);
+    } catch (error) {
+      console.error("Error creating mining operation:", error);
+      res.status(500).json({ message: "Failed to create mining operation" });
+    }
+  });
+  
+  // ==== DURABILITY ====
+  
+  app.get("/api/durability/equipment/:equipmentId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { equipmentId } = req.params;
+      const durability = await storage.getEquipmentDurability(userId, equipmentId);
+      res.json(durability || { message: "Equipment not found" });
+    } catch (error) {
+      console.error("Error fetching equipment durability:", error);
+      res.status(500).json({ message: "Failed to fetch equipment durability" });
+    }
+  });
+  
+  app.get("/api/durability/fleet/:fleetId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { fleetId } = req.params;
+      const durability = await storage.getFleetDurability(userId, fleetId);
+      res.json(durability || { message: "Fleet not found" });
+    } catch (error) {
+      console.error("Error fetching fleet durability:", error);
+      res.status(500).json({ message: "Failed to fetch fleet durability" });
+    }
+  });
+  
+  app.get("/api/durability/building/:buildingId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { buildingId } = req.params;
+      const durability = await storage.getBuildingDurability(userId, buildingId);
+      res.json(durability || { message: "Building not found" });
+    } catch (error) {
+      console.error("Error fetching building durability:", error);
+      res.status(500).json({ message: "Failed to fetch building durability" });
+    }
+  });
+
   return httpServer;
 }
