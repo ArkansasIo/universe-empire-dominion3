@@ -26,6 +26,8 @@ import {
   expeditions,
   expeditionTeams,
   expeditionEncounters,
+  starbases,
+  moonBases,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -61,6 +63,10 @@ import {
   type BattleLog,
   type InsertBattleLog,
   type AdminUser,
+  type Starbase,
+  type InsertStarbase,
+  type MoonBase,
+  type InsertMoonBase,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -130,6 +136,20 @@ export interface IStorage {
   // Colony operations
   getPlayerColonies(userId: string): Promise<PlayerColony[]>;
   createPlayerColony(colony: any): Promise<PlayerColony>;
+  
+  // Starbase operations
+  getPlayerStarbases(userId: string): Promise<Starbase[]>;
+  getStarbaseById(id: string): Promise<Starbase | undefined>;
+  createStarbase(starbase: InsertStarbase): Promise<Starbase>;
+  updateStarbase(id: string, updates: Partial<Starbase>): Promise<Starbase>;
+  deleteStarbase(id: string): Promise<void>;
+  
+  // Moon Base operations
+  getPlayerMoonBases(userId: string): Promise<MoonBase[]>;
+  getMoonBaseById(id: string): Promise<MoonBase | undefined>;
+  createMoonBase(moonBase: InsertMoonBase): Promise<MoonBase>;
+  updateMoonBase(id: string, updates: Partial<MoonBase>): Promise<MoonBase>;
+  deleteMoonBase(id: string): Promise<void>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -529,6 +549,54 @@ export class DatabaseStorage implements IStorage {
   async createPlayerColony(colony: any): Promise<PlayerColony> {
     const [newColony] = await db.insert(playerColonies).values(colony).returning();
     return newColony;
+  }
+  
+  // Starbase operations
+  async getPlayerStarbases(userId: string): Promise<Starbase[]> {
+    return await db.select().from(starbases).where(eq(starbases.playerId, userId));
+  }
+  
+  async getStarbaseById(id: string): Promise<Starbase | undefined> {
+    const [starbase] = await db.select().from(starbases).where(eq(starbases.id, id));
+    return starbase;
+  }
+  
+  async createStarbase(starbase: InsertStarbase): Promise<Starbase> {
+    const [newStarbase] = await db.insert(starbases).values(starbase).returning();
+    return newStarbase;
+  }
+  
+  async updateStarbase(id: string, updates: Partial<Starbase>): Promise<Starbase> {
+    const [updated] = await db.update(starbases).set(updates).where(eq(starbases.id, id)).returning();
+    return updated;
+  }
+  
+  async deleteStarbase(id: string): Promise<void> {
+    await db.delete(starbases).where(eq(starbases.id, id));
+  }
+  
+  // Moon Base operations
+  async getPlayerMoonBases(userId: string): Promise<MoonBase[]> {
+    return await db.select().from(moonBases).where(eq(moonBases.playerId, userId));
+  }
+  
+  async getMoonBaseById(id: string): Promise<MoonBase | undefined> {
+    const [moonBase] = await db.select().from(moonBases).where(eq(moonBases.id, id));
+    return moonBase;
+  }
+  
+  async createMoonBase(moonBase: InsertMoonBase): Promise<MoonBase> {
+    const [newMoonBase] = await db.insert(moonBases).values(moonBase).returning();
+    return newMoonBase;
+  }
+  
+  async updateMoonBase(id: string, updates: Partial<MoonBase>): Promise<MoonBase> {
+    const [updated] = await db.update(moonBases).set(updates).where(eq(moonBases.id, id)).returning();
+    return updated;
+  }
+  
+  async deleteMoonBase(id: string): Promise<void> {
+    await db.delete(moonBases).where(eq(moonBases.id, id));
   }
   
   // Resource field operations
