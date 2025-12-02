@@ -16,6 +16,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 41789
+externalPort = 3001
+
+[[ports]]
 localPort = 43709
 externalPort = 3000
 
@@ -45,20 +49,20 @@ waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Server configuration"
-mode = "sequential"
+mode = "parallel"
 author = 19430532
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mom run db:push"
+args = "npm run db:push"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mom run build"
+args = "npm run build"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mom run check"
+args = "npm run check"
 
 [agent]
 mockupState = "FULLSTACK"
