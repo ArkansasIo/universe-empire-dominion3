@@ -76,8 +76,12 @@ const ItemCard = ({ item, onEquip, onTemper }: { item: Item, onEquip?: (item: It
 export default function Commander() {
   const { commander, equipItem, unequipItem, craftItem, temperItem, setCommanderIdentity } = useGame();
 
-  const [selectedRace, setSelectedRace] = useState<RaceId>(commander.race);
-  const [selectedClass, setSelectedClass] = useState<ClassId>(commander.class);
+  if (!commander?.stats || !commander?.equipment || !commander?.inventory) {
+    return <GameLayout><div className="text-center py-12">Loading commander data...</div></GameLayout>;
+  }
+
+  const [selectedRace, setSelectedRace] = useState<RaceId>(commander.race || "human");
+  const [selectedClass, setSelectedClass] = useState<ClassId>(commander.class || "warrior");
   const [selectedSubClass, setSelectedSubClass] = useState<SubClassId | "none">(commander.subClass || "none");
 
   return (
@@ -109,20 +113,20 @@ export default function Commander() {
                          <div className="w-24 h-24 mx-auto bg-slate-100 rounded-full border-4 border-white shadow-lg flex items-center justify-center mb-2 overflow-hidden relative">
                             <User className="w-12 h-12 text-slate-400" />
                             <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] uppercase py-0.5">
-                               {RACES[commander.race].name}
+                               {RACES[commander?.race || "human"]?.name || "Unknown"}
                             </div>
                          </div>
                          <h3 className="text-xl font-orbitron text-slate-900">Commander</h3>
                          <div className="flex justify-center gap-2 mt-1">
-                            <Badge variant="outline" className="border-primary text-primary">{CLASSES[commander.class].name}</Badge>
-                            {commander.subClass && <Badge variant="secondary">{SUBCLASSES[commander.subClass].name}</Badge>}
+                            <Badge variant="outline" className="border-primary text-primary">{CLASSES[commander?.class || "warrior"]?.name || "Unknown"}</Badge>
+                            {commander?.subClass && <Badge variant="secondary">{SUBCLASSES[commander?.subClass]?.name || "Unknown"}</Badge>}
                          </div>
                          <div className="mt-4 px-4">
                             <div className="flex justify-between text-xs text-slate-500 mb-1">
                                <span>XP</span>
-                               <span>{commander.stats.xp} / 1000</span>
+                               <span>{commander?.stats?.xp || 0} / 1000</span>
                             </div>
-                            <Progress value={(commander.stats.xp / 1000) * 100} className="h-2" />
+                            <Progress value={(((commander?.stats?.xp || 0) / 1000) * 100)} className="h-2" />
                          </div>
                       </div>
 
@@ -131,27 +135,27 @@ export default function Commander() {
                       <div className="space-y-3">
                          <div className="flex justify-between items-center">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Sword className="w-4 h-4 text-red-500" /> Warfare</span>
-                            <span className="font-mono text-lg text-slate-900">{commander.stats.warfare}</span>
+                            <span className="font-mono text-lg text-slate-900">{commander?.stats?.warfare || 1}</span>
                          </div>
                          <div className="flex justify-between items-center">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Box className="w-4 h-4 text-yellow-500" /> Logistics</span>
-                            <span className="font-mono text-lg text-slate-900">{commander.stats.logistics}</span>
+                            <span className="font-mono text-lg text-slate-900">{commander?.stats?.logistics || 1}</span>
                          </div>
                          <div className="flex justify-between items-center">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><FlaskConical className="w-4 h-4 text-blue-500" /> Science</span>
-                            <span className="font-mono text-lg text-slate-900">{commander.stats.science}</span>
+                            <span className="font-mono text-lg text-slate-900">{commander?.stats?.science || 1}</span>
                          </div>
                          <div className="flex justify-between items-center">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Hammer className="w-4 h-4 text-slate-500" /> Engineering</span>
-                            <span className="font-mono text-lg text-slate-900">{commander.stats.engineering}</span>
+                            <span className="font-mono text-lg text-slate-900">{commander?.stats?.engineering || 1}</span>
                          </div>
                       </div>
 
                       <div className="bg-slate-50 p-3 rounded border border-slate-100 text-xs space-y-2">
                          <div className="font-bold text-slate-900 uppercase">Active Bonuses</div>
-                         {RACES[commander.race].bonuses.map((b, i) => <div key={`r-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-primary rounded-full" /> {b}</div>)}
-                         {CLASSES[commander.class].bonuses.map((b, i) => <div key={`c-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-blue-500 rounded-full" /> {b}</div>)}
-                         {commander.subClass && SUBCLASSES[commander.subClass].bonuses.map((b, i) => <div key={`sc-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-purple-500 rounded-full" /> {b}</div>)}
+                         {RACES[commander?.race || "human"]?.bonuses?.map((b, i) => <div key={`r-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-primary rounded-full" /> {b}</div>)}
+                         {CLASSES[commander?.class || "warrior"]?.bonuses?.map((b, i) => <div key={`c-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-blue-500 rounded-full" /> {b}</div>)}
+                         {commander?.subClass && SUBCLASSES[commander?.subClass]?.bonuses?.map((b, i) => <div key={`sc-${i}`} className="text-slate-600 flex items-center gap-1"><div className="w-1 h-1 bg-purple-500 rounded-full" /> {b}</div>)}
                       </div>
                    </CardContent>
                 </Card>
@@ -160,11 +164,11 @@ export default function Commander() {
                 <div className="col-span-2 space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Weapon Slot */}
-                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander.equipment.weapon ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
+                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.weapon ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Main Weapon</span>
-                         {commander.equipment.weapon ? (
+                         {commander?.equipment?.weapon ? (
                             <div className="w-full">
-                               <ItemCard item={commander.equipment.weapon} />
+                               <ItemCard item={commander?.equipment?.weapon} />
                                <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("weapon")}>Unequip</Button>
                             </div>
                          ) : (
@@ -173,11 +177,11 @@ export default function Commander() {
                       </Card>
 
                       {/* Armor Slot */}
-                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander.equipment.armor ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
+                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.armor ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Body Armor</span>
-                         {commander.equipment.armor ? (
+                         {commander?.equipment?.armor ? (
                             <div className="w-full">
-                               <ItemCard item={commander.equipment.armor} />
+                               <ItemCard item={commander?.equipment?.armor} />
                                <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("armor")}>Unequip</Button>
                             </div>
                          ) : (
@@ -186,11 +190,11 @@ export default function Commander() {
                       </Card>
 
                       {/* Module Slot */}
-                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander.equipment.module ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
+                      <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.module ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Tech Module</span>
-                         {commander.equipment.module ? (
+                         {commander?.equipment?.module ? (
                             <div className="w-full">
-                               <ItemCard item={commander.equipment.module} />
+                               <ItemCard item={commander?.equipment?.module} />
                                <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("module")}>Unequip</Button>
                             </div>
                          ) : (
@@ -267,7 +271,7 @@ export default function Commander() {
                          <Select 
                            value={selectedSubClass} 
                            onValueChange={(v: SubClassId | "none") => setSelectedSubClass(v)}
-                           disabled={commander.stats.level < 10 && false} // Mock disabled
+                           disabled={(commander?.stats?.level || 0) < 10 && false} // Mock disabled
                          >
                             <SelectTrigger>
                                <SelectValue placeholder="Requires Level 10" />
@@ -311,10 +315,10 @@ export default function Commander() {
              <Card className="bg-white border-slate-200 min-h-[400px]">
                 <CardContent className="p-6">
                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {commander.inventory.map((item, i) => (
+                      {(commander?.inventory || []).map((item, i) => (
                          <ItemCard key={i} item={item} onEquip={equipItem} onTemper={temperItem} />
                       ))}
-                      {Array.from({ length: Math.max(0, 20 - commander.inventory.length) }).map((_, i) => (
+                      {Array.from({ length: Math.max(0, 20 - (commander?.inventory?.length || 0)) }).map((_, i) => (
                          <div key={`empty-${i}`} className="aspect-square bg-slate-50 border border-slate-100 rounded flex items-center justify-center">
                             <div className="w-2 h-2 rounded-full bg-slate-200"></div>
                          </div>
