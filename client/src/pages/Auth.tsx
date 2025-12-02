@@ -47,15 +47,25 @@ export default function Auth() {
           </Button>
         </CardContent>
         
-        <CardFooter className="flex flex-col items-center gap-3 pb-6">
+        <CardFooter className="flex flex-col items-center gap-4 pb-6">
            <Link href="/about">
              <Button variant="ghost" className="text-slate-600 hover:text-slate-900" data-testid="button-about">
                <Info className="w-4 h-4 mr-2" /> About Stellar Dominion
              </Button>
            </Link>
-           <span className="text-xs text-slate-500">
-             Version 0.1.0 // Universe: Nexus-Alpha
-           </span>
+           <div className="flex items-center gap-4 text-xs text-slate-500">
+             <Link href="/terms" className="hover:text-slate-700 hover:underline" data-testid="link-terms">
+               Terms of Service
+             </Link>
+             <span>•</span>
+             <Link href="/privacy" className="hover:text-slate-700 hover:underline" data-testid="link-privacy">
+               Privacy Policy
+             </Link>
+           </div>
+           <div className="text-xs text-slate-500 space-y-1 text-center">
+             <span className="block">Version 0.1.0 // Universe: Nexus-Alpha</span>
+             <span className="block text-slate-400">Developed by Tanang20</span>
+           </div>
         </CardFooter>
       </Card>
     </div>

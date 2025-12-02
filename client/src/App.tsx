@@ -25,6 +25,8 @@ import Auth from "@/pages/Auth";
 import Market from "@/pages/Market";
 import About from "@/pages/About";
 import AccountSetup from "@/pages/AccountSetup";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 import { useGame } from "@/lib/gameContext";
 
 function Router() {
@@ -34,6 +36,8 @@ function Router() {
     return (
       <Switch>
         <Route path="/about" component={About} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
         <Route component={Auth} />
       </Switch>
     );
@@ -43,6 +47,8 @@ function Router() {
     return (
       <Switch>
         <Route path="/about" component={About} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
         <Route component={AccountSetup} />
       </Switch>
     );
@@ -52,6 +58,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Overview} />
       <Route path="/about" component={About} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/resources" component={Resources} />
       <Route path="/facilities" component={Facilities} />
       <Route path="/research" component={Research} />
