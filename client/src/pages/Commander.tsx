@@ -7,9 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   User, Sword, Shield, Cpu, Hammer, Anvil, Sparkles, 
-  Box, Gem, Database, Flame, Star, Fingerprint, Dna, FlaskConical
+  Box, Gem, Database, Flame, Star, Fingerprint, Dna, FlaskConical,
+  Trophy, Target, Rocket, Medal, Award, Crown, Zap, Heart, History
 } from "lucide-react";
 import { Item, blueprints, RACES, CLASSES, SUBCLASSES, RaceId, ClassId, SubClassId } from "@/lib/commanderTypes";
 import { cn } from "@/lib/utils";
@@ -22,7 +24,7 @@ const ItemCard = ({ item, onEquip, onTemper }: { item: Item, onEquip?: (item: It
       item.rarity === "epic" ? "border-purple-400 bg-purple-50/30" :
       item.rarity === "rare" ? "border-blue-400 bg-blue-50/30" :
       "border-slate-200"
-   )}>
+   )} data-testid={`card-item-${item.id}`}>
       <div className="flex items-start justify-between">
          <div className="flex items-center gap-2">
             <div className={cn(
@@ -64,14 +66,34 @@ const ItemCard = ({ item, onEquip, onTemper }: { item: Item, onEquip?: (item: It
 
       <div className="flex gap-1 mt-auto pt-2">
          {onEquip && (item.type === "weapon" || item.type === "armor" || item.type === "module") && (
-            <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => onEquip(item)}>Equip</Button>
+            <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => onEquip(item)} data-testid={`button-equip-${item.id}`}>Equip</Button>
          )}
          {onTemper && (item.type === "weapon" || item.type === "armor" || item.type === "module") && (
-            <Button size="sm" variant="secondary" className="w-full h-7 text-xs" onClick={() => onTemper(item.id)}>Temper</Button>
+            <Button size="sm" variant="secondary" className="w-full h-7 text-xs" onClick={() => onTemper(item.id)} data-testid={`button-temper-${item.id}`}>Temper</Button>
          )}
       </div>
    </div>
 );
+
+const achievements = [
+  { id: "first_blood", name: "First Blood", desc: "Win your first battle", icon: Sword, unlocked: true, date: "2024-01-15" },
+  { id: "fleet_commander", name: "Fleet Commander", desc: "Build 100 ships", icon: Rocket, unlocked: true, date: "2024-01-20" },
+  { id: "researcher", name: "Mad Scientist", desc: "Complete 10 research projects", icon: FlaskConical, unlocked: true, date: "2024-02-01" },
+  { id: "defender", name: "Iron Wall", desc: "Successfully defend 5 attacks", icon: Shield, unlocked: false },
+  { id: "conqueror", name: "Galactic Conqueror", desc: "Conquer 10 planets", icon: Crown, unlocked: false },
+  { id: "trader", name: "Trade Baron", desc: "Complete 50 market transactions", icon: Gem, unlocked: false },
+  { id: "alliance_hero", name: "Alliance Hero", desc: "Contribute 1M points to alliance", icon: Medal, unlocked: false },
+  { id: "titan_slayer", name: "Titan Slayer", desc: "Destroy an enemy Titan", icon: Target, unlocked: false }
+];
+
+const skills = [
+  { id: "combat_training", name: "Combat Training", maxLevel: 10, currentLevel: 3, desc: "+5% attack per level" },
+  { id: "defensive_tactics", name: "Defensive Tactics", maxLevel: 10, currentLevel: 2, desc: "+5% shield per level" },
+  { id: "resource_management", name: "Resource Management", maxLevel: 10, currentLevel: 5, desc: "+2% production per level" },
+  { id: "speed_commander", name: "Speed Commander", maxLevel: 5, currentLevel: 1, desc: "+10% fleet speed per level" },
+  { id: "research_genius", name: "Research Genius", maxLevel: 10, currentLevel: 4, desc: "-3% research time per level" },
+  { id: "construction_expert", name: "Construction Expert", maxLevel: 10, currentLevel: 2, desc: "-3% build time per level" }
+];
 
 export default function Commander() {
   const { commander, equipItem, unequipItem, craftItem, temperItem, setCommanderIdentity } = useGame();
@@ -84,26 +106,87 @@ export default function Commander() {
   const [selectedClass, setSelectedClass] = useState<ClassId>(commander.class || "warrior");
   const [selectedSubClass, setSelectedSubClass] = useState<SubClassId | "none">(commander.subClass || "none");
 
+  const totalSkillPoints = skills.reduce((acc, s) => acc + s.currentLevel, 0);
+  const unlockedAchievements = achievements.filter(a => a.unlocked).length;
+
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
           <h2 className="text-3xl font-orbitron font-bold text-slate-900">High Command</h2>
-          <p className="text-muted-foreground font-rajdhani text-lg">Manage your commander's profile, equipment, and identity.</p>
+          <p className="text-muted-foreground font-rajdhani text-lg">Manage your commander's profile, equipment, skills, and achievements.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200" data-testid="card-stats-level">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-purple-600 uppercase">Commander Level</div>
+                  <div className="text-xl font-orbitron font-bold text-purple-900">{commander?.stats?.level || 1}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200" data-testid="card-stats-xp">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-yellow-600 uppercase">Experience</div>
+                  <div className="text-xl font-orbitron font-bold text-yellow-900">{commander?.stats?.xp || 0}/1000</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200" data-testid="card-stats-skills">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-green-600 uppercase">Skill Points</div>
+                  <div className="text-xl font-orbitron font-bold text-green-900">{totalSkillPoints}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200" data-testid="card-stats-achievements">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-orange-600 uppercase">Achievements</div>
+                  <div className="text-xl font-orbitron font-bold text-orange-900">{unlockedAchievements}/{achievements.length}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start">
-            <TabsTrigger value="profile" className="font-orbitron"><User className="w-4 h-4 mr-2" /> Profile & Equipment</TabsTrigger>
-            <TabsTrigger value="identity" className="font-orbitron"><Dna className="w-4 h-4 mr-2" /> Identity & Class</TabsTrigger>
-            <TabsTrigger value="inventory" className="font-orbitron"><Box className="w-4 h-4 mr-2" /> Inventory</TabsTrigger>
-            <TabsTrigger value="smithy" className="font-orbitron"><Anvil className="w-4 h-4 mr-2" /> Smithy</TabsTrigger>
+          <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="profile" className="font-orbitron" data-testid="tab-profile"><User className="w-4 h-4 mr-2" /> Profile</TabsTrigger>
+            <TabsTrigger value="skills" className="font-orbitron" data-testid="tab-skills"><Target className="w-4 h-4 mr-2" /> Skills</TabsTrigger>
+            <TabsTrigger value="achievements" className="font-orbitron" data-testid="tab-achievements"><Trophy className="w-4 h-4 mr-2" /> Achievements</TabsTrigger>
+            <TabsTrigger value="identity" className="font-orbitron" data-testid="tab-identity"><Dna className="w-4 h-4 mr-2" /> Identity</TabsTrigger>
+            <TabsTrigger value="inventory" className="font-orbitron" data-testid="tab-inventory"><Box className="w-4 h-4 mr-2" /> Inventory</TabsTrigger>
+            <TabsTrigger value="smithy" className="font-orbitron" data-testid="tab-smithy"><Anvil className="w-4 h-4 mr-2" /> Smithy</TabsTrigger>
           </TabsList>
 
-          {/* PROFILE TAB */}
           <TabsContent value="profile" className="mt-6">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Stats Column */}
                 <Card className="bg-white border-slate-200">
                    <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-slate-900"><Fingerprint className="w-5 h-5 text-primary" /> Commander Stats</CardTitle>
@@ -123,7 +206,7 @@ export default function Commander() {
                          </div>
                          <div className="mt-4 px-4">
                             <div className="flex justify-between text-xs text-slate-500 mb-1">
-                               <span>XP</span>
+                               <span>XP Progress</span>
                                <span>{commander?.stats?.xp || 0} / 1000</span>
                             </div>
                             <Progress value={(((commander?.stats?.xp || 0) / 1000) * 100)} className="h-2" />
@@ -133,19 +216,19 @@ export default function Commander() {
                       <Separator />
 
                       <div className="space-y-3">
-                         <div className="flex justify-between items-center">
+                         <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Sword className="w-4 h-4 text-red-500" /> Warfare</span>
                             <span className="font-mono text-lg text-slate-900">{commander?.stats?.warfare || 1}</span>
                          </div>
-                         <div className="flex justify-between items-center">
+                         <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Box className="w-4 h-4 text-yellow-500" /> Logistics</span>
                             <span className="font-mono text-lg text-slate-900">{commander?.stats?.logistics || 1}</span>
                          </div>
-                         <div className="flex justify-between items-center">
+                         <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><FlaskConical className="w-4 h-4 text-blue-500" /> Science</span>
                             <span className="font-mono text-lg text-slate-900">{commander?.stats?.science || 1}</span>
                          </div>
-                         <div className="flex justify-between items-center">
+                         <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
                             <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Hammer className="w-4 h-4 text-slate-500" /> Engineering</span>
                             <span className="font-mono text-lg text-slate-900">{commander?.stats?.engineering || 1}</span>
                          </div>
@@ -160,42 +243,38 @@ export default function Commander() {
                    </CardContent>
                 </Card>
 
-                {/* Equipment Column */}
                 <div className="col-span-2 space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Weapon Slot */}
                       <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.weapon ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Main Weapon</span>
                          {commander?.equipment?.weapon ? (
                             <div className="w-full">
                                <ItemCard item={commander?.equipment?.weapon} />
-                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("weapon")}>Unequip</Button>
+                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("weapon")} data-testid="button-unequip-weapon">Unequip</Button>
                             </div>
                          ) : (
                             <Sword className="w-12 h-12 text-slate-300" />
                          )}
                       </Card>
 
-                      {/* Armor Slot */}
                       <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.armor ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Body Armor</span>
                          {commander?.equipment?.armor ? (
                             <div className="w-full">
                                <ItemCard item={commander?.equipment?.armor} />
-                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("armor")}>Unequip</Button>
+                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("armor")} data-testid="button-unequip-armor">Unequip</Button>
                             </div>
                          ) : (
                             <Shield className="w-12 h-12 text-slate-300" />
                          )}
                       </Card>
 
-                      {/* Module Slot */}
                       <Card className={cn("border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all", commander?.equipment?.module ? "bg-white border-solid border-slate-200" : "bg-slate-50 border-slate-300")}>
                          <span className="text-xs uppercase font-bold text-slate-400 mb-2">Tech Module</span>
                          {commander?.equipment?.module ? (
                             <div className="w-full">
                                <ItemCard item={commander?.equipment?.module} />
-                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("module")}>Unequip</Button>
+                               <Button variant="ghost" size="sm" className="w-full mt-2 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => unequipItem("module")} data-testid="button-unequip-module">Unequip</Button>
                             </div>
                          ) : (
                             <Cpu className="w-12 h-12 text-slate-300" />
@@ -206,7 +285,73 @@ export default function Commander() {
              </div>
           </TabsContent>
 
-          {/* IDENTITY TAB (New) */}
+          <TabsContent value="skills" className="mt-6">
+             <Card className="bg-white border-slate-200" data-testid="card-skills">
+                <CardHeader>
+                   <CardTitle className="flex items-center gap-2 text-slate-900">
+                      <Target className="w-5 h-5 text-green-600" /> Commander Skills
+                   </CardTitle>
+                   <CardDescription>Spend skill points to improve your commander's abilities. Gain skill points by leveling up.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {skills.map(skill => (
+                         <div key={skill.id} className="bg-slate-50 p-4 rounded border border-slate-200">
+                            <div className="flex items-center justify-between mb-2">
+                               <div>
+                                  <div className="font-bold text-slate-900">{skill.name}</div>
+                                  <div className="text-xs text-muted-foreground">{skill.desc}</div>
+                               </div>
+                               <Badge variant="outline" className="font-mono">{skill.currentLevel}/{skill.maxLevel}</Badge>
+                            </div>
+                            <Progress value={(skill.currentLevel / skill.maxLevel) * 100} className="h-2 mb-2" />
+                            <Button size="sm" variant="outline" className="w-full" disabled={skill.currentLevel >= skill.maxLevel}>
+                               Upgrade (1 SP)
+                            </Button>
+                         </div>
+                      ))}
+                   </div>
+                   
+                   <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center justify-between">
+                         <div>
+                            <div className="font-bold text-green-900">Available Skill Points</div>
+                            <div className="text-sm text-green-700">Earned from leveling up and achievements</div>
+                         </div>
+                         <div className="text-3xl font-mono font-bold text-green-600">5</div>
+                      </div>
+                   </div>
+                </CardContent>
+             </Card>
+          </TabsContent>
+
+          <TabsContent value="achievements" className="mt-6">
+             <Card className="bg-white border-slate-200" data-testid="card-achievements">
+                <CardHeader>
+                   <CardTitle className="flex items-center gap-2 text-slate-900">
+                      <Trophy className="w-5 h-5 text-orange-600" /> Achievements
+                   </CardTitle>
+                   <CardDescription>Complete challenges to earn rewards and bragging rights.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {achievements.map(ach => (
+                         <div key={ach.id} className={cn("p-4 rounded border text-center transition-all", ach.unlocked ? "bg-orange-50 border-orange-200" : "bg-slate-50 border-slate-200 opacity-50")}>
+                            <div className={cn("w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2", ach.unlocked ? "bg-orange-100 text-orange-600" : "bg-slate-200 text-slate-400")}>
+                               <ach.icon className="w-6 h-6" />
+                            </div>
+                            <div className={cn("font-bold text-sm", ach.unlocked ? "text-orange-900" : "text-slate-500")}>{ach.name}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{ach.desc}</div>
+                            {ach.unlocked && ach.date && (
+                               <Badge variant="outline" className="mt-2 text-[10px]">Unlocked {ach.date}</Badge>
+                            )}
+                         </div>
+                      ))}
+                   </div>
+                </CardContent>
+             </Card>
+          </TabsContent>
+
           <TabsContent value="identity" className="mt-6">
              <Card className="bg-white border-slate-200">
                 <CardHeader>
@@ -215,7 +360,6 @@ export default function Commander() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                    
-                   {/* Race Selection */}
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
                          <label className="text-sm font-bold text-slate-900">Origin Species</label>
@@ -239,12 +383,11 @@ export default function Commander() {
                          </div>
                       </div>
 
-                      {/* Class Selection */}
                       <div className="space-y-2">
                          <label className="text-sm font-bold text-slate-900">Career Path</label>
                          <Select value={selectedClass} onValueChange={(v: ClassId) => {
                             setSelectedClass(v);
-                            setSelectedSubClass("none"); // Reset sub
+                            setSelectedSubClass("none");
                          }}>
                             <SelectTrigger>
                                <SelectValue />
@@ -265,13 +408,11 @@ export default function Commander() {
                          </div>
                       </div>
 
-                      {/* SubClass Selection */}
                       <div className="space-y-2">
                          <label className="text-sm font-bold text-slate-900">Specialization</label>
                          <Select 
                            value={selectedSubClass} 
                            onValueChange={(v: SubClassId | "none") => setSelectedSubClass(v)}
-                           disabled={(commander?.stats?.level || 0) < 10 && false} // Mock disabled
                          >
                             <SelectTrigger>
                                <SelectValue placeholder="Requires Level 10" />
@@ -301,7 +442,7 @@ export default function Commander() {
                    </div>
 
                    <div className="flex justify-end">
-                      <Button size="lg" onClick={() => setCommanderIdentity(selectedRace, selectedClass, selectedSubClass === "none" ? null : selectedSubClass)}>
+                      <Button size="lg" onClick={() => setCommanderIdentity(selectedRace, selectedClass, selectedSubClass === "none" ? null : selectedSubClass)} data-testid="button-confirm-identity">
                          Confirm Identity Sequence
                       </Button>
                    </div>
@@ -310,9 +451,14 @@ export default function Commander() {
              </Card>
           </TabsContent>
 
-          {/* INVENTORY TAB */}
           <TabsContent value="inventory" className="mt-6">
              <Card className="bg-white border-slate-200 min-h-[400px]">
+                <CardHeader>
+                   <CardTitle className="flex items-center gap-2 text-slate-900">
+                      <Box className="w-5 h-5 text-slate-600" /> Inventory
+                   </CardTitle>
+                   <CardDescription>Manage your items and equipment. Capacity: {commander?.inventory?.length || 0}/20</CardDescription>
+                </CardHeader>
                 <CardContent className="p-6">
                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                       {(commander?.inventory || []).map((item, i) => (
@@ -328,13 +474,12 @@ export default function Commander() {
              </Card>
           </TabsContent>
 
-          {/* SMITHY TAB */}
           <TabsContent value="smithy" className="mt-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Blueprint Crafting */}
                 <Card className="bg-white border-slate-200">
                    <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-slate-900"><Hammer className="w-5 h-5 text-primary" /> Blueprint Crafting</CardTitle>
+                      <CardDescription>Craft new items from blueprints using resources.</CardDescription>
                    </CardHeader>
                    <CardContent className="space-y-4">
                       {blueprints.map(bp => (
@@ -356,19 +501,19 @@ export default function Commander() {
                                   type: bp.type as any,
                                   rarity: "common",
                                   level: 1,
-                                  stats: { warfare: 5 } // Simplified stats
+                                  stats: { warfare: 5 }
                                };
                                craftItem(item, bp.cost);
-                            }}>Craft</Button>
+                            }} data-testid={`button-craft-${bp.id}`}>Craft</Button>
                          </div>
                       ))}
                    </CardContent>
                 </Card>
                 
-                {/* Tempering / Masterwork */}
                 <Card className="bg-white border-slate-200">
                    <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-slate-900"><Flame className="w-5 h-5 text-orange-500" /> Tempering Station</CardTitle>
+                      <CardDescription>Enhance your equipment's power through tempering.</CardDescription>
                    </CardHeader>
                    <CardContent>
                       <div className="text-center py-8 text-slate-500">

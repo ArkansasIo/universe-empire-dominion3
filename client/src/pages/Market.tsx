@@ -1,12 +1,18 @@
 import GameLayout from "@/components/layout/GameLayout";
 import { useGame } from "@/lib/gameContext";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { MARKET_ITEMS, VENDORS, MarketItem, Vendor } from "@/lib/marketData";
-import { ShoppingBag, AlertTriangle, Zap, User, Shield, Box, Gem, Database, ArrowRight, ArrowLeft, RefreshCw } from "lucide-react";
+import { 
+  ShoppingBag, AlertTriangle, Zap, User, Shield, Box, Gem, Database, 
+  ArrowRight, ArrowLeft, RefreshCw, TrendingUp, TrendingDown, History,
+  ArrowUpDown, Clock, Coins, BarChart3
+} from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +35,7 @@ const ItemCard = ({
   const isContraband = item.rarity === "contraband";
   const isLegendary = item.rarity === "legendary";
 
-  // Dynamic pricing logic (mock)
-  const priceMult = mode === "buy" ? 1 : 0.5; // Sell for 50%
+  const priceMult = mode === "buy" ? 1 : 0.5;
   const costMetal = Math.floor(item.basePrice.metal * priceMult);
   const costCrystal = Math.floor(item.basePrice.crystal * priceMult);
   const costDeut = Math.floor(item.basePrice.deuterium * priceMult);
@@ -40,7 +45,7 @@ const ItemCard = ({
       "group overflow-hidden transition-all hover:shadow-md border-slate-200",
       isContraband ? "bg-slate-900 border-purple-900/50 text-slate-100" : "bg-white",
       isLegendary ? "border-amber-400/50 shadow-amber-100" : ""
-    )}>
+    )} data-testid={`card-item-${item.id}`}>
       <div className="h-24 relative border-b border-border/10 bg-slate-50/50 flex items-center justify-center">
          <Icon className={cn("w-12 h-12 transition-transform group-hover:scale-110", isContraband ? "text-purple-400" : "text-slate-400")} />
          <div className="absolute top-2 right-2">
@@ -93,6 +98,7 @@ const ItemCard = ({
                className={cn("w-full h-8 text-xs font-orbitron", isContraband ? "bg-purple-700 hover:bg-purple-600" : "bg-primary hover:bg-primary/90")}
                disabled={!canAfford}
                onClick={onBuy}
+               data-testid={`button-buy-${item.id}`}
             >
                {canAfford ? "PURCHASE" : "INSUFFICIENT FUNDS"}
             </Button>
@@ -102,6 +108,7 @@ const ItemCard = ({
                className={cn("w-full h-8 text-xs font-orbitron", isContraband ? "border-purple-700 text-purple-400 hover:bg-purple-900/50" : "")}
                disabled={inventoryCount <= 0}
                onClick={onSell}
+               data-testid={`button-sell-${item.id}`}
             >
                SELL ITEM
             </Button>
@@ -122,6 +129,7 @@ const VendorProfile = ({ vendor, active, onClick }: { vendor: Vendor, active: bo
       vendor.type === "black_market" && active ? "bg-slate-900 border-purple-500 text-white" : "",
       vendor.type === "black_market" && !active ? "bg-slate-900/90 border-transparent hover:border-purple-500/50 text-slate-300" : ""
     )}
+    data-testid={`vendor-${vendor.id}`}
   >
      <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shadow-sm text-white", vendor.avatarColor)}>
         {vendor.type === "official" && <User className="w-6 h-6" />}
@@ -136,17 +144,32 @@ const VendorProfile = ({ vendor, active, onClick }: { vendor: Vendor, active: bo
   </div>
 );
 
+const mockTradeHistory = [
+  { id: 1, type: "buy", item: "Alloy Plates", amount: 10, cost: { metal: 5000 }, date: "2 hours ago" },
+  { id: 2, type: "sell", item: "Crystal Shards", amount: 50, cost: { crystal: 2500 }, date: "5 hours ago" },
+  { id: 3, type: "buy", item: "Fusion Cells", amount: 5, cost: { deuterium: 1000 }, date: "1 day ago" }
+];
+
+const mockPriceChanges = [
+  { item: "Alloy Plates", change: 5.2, direction: "up" },
+  { item: "Crystal Shards", change: -2.1, direction: "down" },
+  { item: "Fusion Cells", change: 0, direction: "stable" },
+  { item: "Neural Matrix", change: 12.5, direction: "up" }
+];
+
 export default function Market() {
   const { resources, inventory, buyItem, sellItem } = useGame();
   const [selectedVendorId, setSelectedVendorId] = useState(VENDORS[0].id);
   const [mode, setMode] = useState<"buy" | "sell">("buy");
+  const [exchangeAmount, setExchangeAmount] = useState("1000");
+  const [exchangeFrom, setExchangeFrom] = useState("metal");
+  const [exchangeTo, setExchangeTo] = useState("crystal");
 
   const selectedVendor = VENDORS.find(v => v.id === selectedVendorId) || VENDORS[0];
   
-  // Filter items based on vendor inventory or player inventory (for selling)
   const displayItems = mode === "buy" 
     ? MARKET_ITEMS.filter(item => selectedVendor.inventory.includes(item.id))
-    : MARKET_ITEMS.filter(item => (inventory[item.id] || 0) > 0); // When selling, show owned items
+    : MARKET_ITEMS.filter(item => (inventory[item.id] || 0) > 0);
 
   return (
     <GameLayout>
@@ -162,6 +185,7 @@ export default function Market() {
                 variant={mode === "buy" ? "default" : "ghost"} 
                 onClick={() => setMode("buy")}
                 className="w-32 font-orbitron"
+                data-testid="button-mode-buy"
               >
                 <ShoppingBag className="w-4 h-4 mr-2" /> BUY
               </Button>
@@ -170,96 +194,354 @@ export default function Market() {
                 variant={mode === "sell" ? "default" : "ghost"} 
                 onClick={() => setMode("sell")}
                 className="w-32 font-orbitron"
+                data-testid="button-mode-sell"
               >
                 <RefreshCw className="w-4 h-4 mr-2" /> SELL
               </Button>
            </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-           {/* Vendor List */}
-           <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Available Vendors</h3>
-              {VENDORS.map(vendor => (
-                 <VendorProfile 
-                    key={vendor.id} 
-                    vendor={vendor} 
-                    active={selectedVendorId === vendor.id} 
-                    onClick={() => setSelectedVendorId(vendor.id)} 
-                 />
-              ))}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200" data-testid="card-stats-metal">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-500/10 flex items-center justify-center">
+                  <Box className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-600 uppercase">Metal</div>
+                  <div className="text-xl font-orbitron font-bold text-slate-900">{Math.floor(resources.metal).toLocaleString()}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              <Card className="bg-slate-50 border-slate-200 mt-6">
-                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Wallet</CardTitle>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200" data-testid="card-stats-crystal">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Gem className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-blue-600 uppercase">Crystal</div>
+                  <div className="text-xl font-orbitron font-bold text-blue-900">{Math.floor(resources.crystal).toLocaleString()}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200" data-testid="card-stats-deuterium">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-green-600 uppercase">Deuterium</div>
+                  <div className="text-xl font-orbitron font-bold text-green-900">{Math.floor(resources.deuterium).toLocaleString()}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200" data-testid="card-stats-trades">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <History className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-purple-600 uppercase">Today's Trades</div>
+                  <div className="text-xl font-orbitron font-bold text-purple-900">{mockTradeHistory.length}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="market" className="w-full">
+           <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start">
+              <TabsTrigger value="market" className="font-orbitron" data-testid="tab-market"><ShoppingBag className="w-4 h-4 mr-2" /> Marketplace</TabsTrigger>
+              <TabsTrigger value="exchange" className="font-orbitron" data-testid="tab-exchange"><ArrowUpDown className="w-4 h-4 mr-2" /> Resource Exchange</TabsTrigger>
+              <TabsTrigger value="history" className="font-orbitron" data-testid="tab-history"><History className="w-4 h-4 mr-2" /> Trade History</TabsTrigger>
+              <TabsTrigger value="prices" className="font-orbitron" data-testid="tab-prices"><BarChart3 className="w-4 h-4 mr-2" /> Price Trends</TabsTrigger>
+           </TabsList>
+
+           <TabsContent value="market" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                 <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Available Vendors</h3>
+                    {VENDORS.map(vendor => (
+                       <VendorProfile 
+                          key={vendor.id} 
+                          vendor={vendor} 
+                          active={selectedVendorId === vendor.id} 
+                          onClick={() => setSelectedVendorId(vendor.id)} 
+                       />
+                    ))}
+
+                    <Card className="bg-slate-50 border-slate-200 mt-6">
+                       <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Your Wallet</CardTitle>
+                       </CardHeader>
+                       <CardContent className="text-xs space-y-2">
+                          <div className="flex justify-between">
+                             <span className="text-slate-500 flex items-center gap-1"><Box className="w-3 h-3" /> Metal</span>
+                             <span className="font-mono">{Math.floor(resources.metal).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                             <span className="text-blue-500 flex items-center gap-1"><Gem className="w-3 h-3" /> Crystal</span>
+                             <span className="font-mono">{Math.floor(resources.crystal).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                             <span className="text-green-500 flex items-center gap-1"><Database className="w-3 h-3" /> Deuterium</span>
+                             <span className="font-mono">{Math.floor(resources.deuterium).toLocaleString()}</span>
+                          </div>
+                       </CardContent>
+                    </Card>
+                 </div>
+
+                 <div className="lg:col-span-3">
+                    <Card className={cn("border-none shadow-none bg-transparent")}>
+                       <div className="flex items-center gap-4 mb-6 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                          <div className={cn("w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md", selectedVendor.avatarColor)}>
+                             {selectedVendor.type === "official" && <User className="w-8 h-8" />}
+                             {selectedVendor.type === "scientist" && <Zap className="w-8 h-8" />}
+                             {selectedVendor.type === "black_market" && <AlertTriangle className="w-8 h-8" />}
+                          </div>
+                          <div>
+                             <h3 className="text-xl font-orbitron font-bold">{selectedVendor.name}</h3>
+                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <Badge variant="secondary" className="text-[10px] h-5">{selectedVendor.specialty}</Badge>
+                                <span className="font-rajdhani uppercase tracking-widest text-xs">{selectedVendor.title}</span>
+                             </div>
+                             <p className="text-sm text-slate-600 italic">"{selectedVendor.description}"</p>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {displayItems.length === 0 && (
+                             <div className="col-span-full text-center py-12 text-muted-foreground">
+                                <Box className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                <p>No items available in this category.</p>
+                             </div>
+                          )}
+                          
+                          {displayItems.map(item => {
+                             const cost = item.basePrice;
+                             const canAfford = 
+                                resources.metal >= cost.metal && 
+                                resources.crystal >= cost.crystal && 
+                                resources.deuterium >= cost.deuterium;
+
+                             return (
+                                <ItemCard 
+                                   key={item.id} 
+                                   item={item} 
+                                   mode={mode} 
+                                   inventoryCount={inventory[item.id] || 0}
+                                   canAfford={canAfford}
+                                   onBuy={() => buyItem(item.id, item.basePrice)}
+                                   onSell={() => sellItem(item.id, item.basePrice)}
+                                />
+                             );
+                          })}
+                       </div>
+                    </Card>
+                 </div>
+              </div>
+           </TabsContent>
+
+           <TabsContent value="exchange" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 <Card className="bg-white border-slate-200" data-testid="card-exchange">
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2 text-slate-900">
+                          <ArrowUpDown className="w-5 h-5 text-blue-600" /> Resource Exchange
+                       </CardTitle>
+                       <CardDescription>Convert resources at market rates. A 10% fee applies to all exchanges.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                             <label className="text-sm font-bold text-slate-700">From</label>
+                             <select 
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded"
+                                value={exchangeFrom}
+                                onChange={e => setExchangeFrom(e.target.value)}
+                             >
+                                <option value="metal">Metal</option>
+                                <option value="crystal">Crystal</option>
+                                <option value="deuterium">Deuterium</option>
+                             </select>
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-sm font-bold text-slate-700">To</label>
+                             <select 
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded"
+                                value={exchangeTo}
+                                onChange={e => setExchangeTo(e.target.value)}
+                             >
+                                <option value="metal">Metal</option>
+                                <option value="crystal">Crystal</option>
+                                <option value="deuterium">Deuterium</option>
+                             </select>
+                          </div>
+                       </div>
+                       
+                       <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700">Amount</label>
+                          <Input 
+                             type="number"
+                             value={exchangeAmount}
+                             onChange={e => setExchangeAmount(e.target.value)}
+                             className="bg-slate-50 font-mono"
+                             data-testid="input-exchange-amount"
+                          />
+                       </div>
+
+                       <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                          <div className="flex justify-between text-sm mb-2">
+                             <span className="text-slate-500">Exchange Rate</span>
+                             <span className="font-mono">1 : 1.5</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-2">
+                             <span className="text-slate-500">Fee (10%)</span>
+                             <span className="font-mono text-red-600">-{Math.floor(parseInt(exchangeAmount) * 0.1).toLocaleString()}</span>
+                          </div>
+                          <Separator className="my-2" />
+                          <div className="flex justify-between text-sm font-bold">
+                             <span className="text-slate-700">You Receive</span>
+                             <span className="font-mono text-green-600">{Math.floor(parseInt(exchangeAmount) * 0.9 * 1.5).toLocaleString()}</span>
+                          </div>
+                       </div>
+
+                       <Button className="w-full" data-testid="button-exchange">
+                          <ArrowUpDown className="w-4 h-4 mr-2" /> Exchange Resources
+                       </Button>
+                    </CardContent>
+                 </Card>
+
+                 <Card className="bg-white border-slate-200" data-testid="card-exchange-rates">
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2 text-slate-900">
+                          <BarChart3 className="w-5 h-5 text-green-600" /> Current Exchange Rates
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100">
+                             <div className="flex items-center gap-2">
+                                <Box className="w-4 h-4 text-slate-600" />
+                                <span className="text-sm font-medium">Metal → Crystal</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 0.67</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100">
+                             <div className="flex items-center gap-2">
+                                <Box className="w-4 h-4 text-slate-600" />
+                                <span className="text-sm font-medium">Metal → Deuterium</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 0.33</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-100">
+                             <div className="flex items-center gap-2">
+                                <Gem className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm font-medium">Crystal → Metal</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 1.5</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-100">
+                             <div className="flex items-center gap-2">
+                                <Gem className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm font-medium">Crystal → Deuterium</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 0.5</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded border border-green-100">
+                             <div className="flex items-center gap-2">
+                                <Database className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-medium">Deuterium → Metal</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 3</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded border border-green-100">
+                             <div className="flex items-center gap-2">
+                                <Database className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-medium">Deuterium → Crystal</span>
+                             </div>
+                             <span className="font-mono text-slate-900">1 : 2</span>
+                          </div>
+                       </div>
+                    </CardContent>
+                 </Card>
+              </div>
+           </TabsContent>
+
+           <TabsContent value="history" className="mt-6">
+              <Card className="bg-white border-slate-200" data-testid="card-trade-history">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <History className="w-5 h-5 text-purple-600" /> Trade History
+                    </CardTitle>
+                    <CardDescription>Your recent market transactions.</CardDescription>
                  </CardHeader>
-                 <CardContent className="text-xs space-y-2">
-                    <div className="flex justify-between">
-                       <span className="text-slate-500">Metal</span>
-                       <span className="font-mono">{Math.floor(resources.metal).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                       <span className="text-blue-500">Crystal</span>
-                       <span className="font-mono">{Math.floor(resources.crystal).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                       <span className="text-green-500">Deuterium</span>
-                       <span className="font-mono">{Math.floor(resources.deuterium).toLocaleString()}</span>
+                 <CardContent>
+                    {mockTradeHistory.length === 0 ? (
+                       <div className="text-center py-12 text-slate-400">
+                          <History className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                          <p>No trade history yet. Start buying or selling items!</p>
+                       </div>
+                    ) : (
+                       <div className="space-y-3">
+                          {mockTradeHistory.map(trade => (
+                             <div key={trade.id} className={cn("flex items-center justify-between p-4 rounded border", trade.type === "buy" ? "bg-green-50 border-green-200" : "bg-blue-50 border-blue-200")}>
+                                <div className="flex items-center gap-4">
+                                   <div className={cn("w-10 h-10 rounded flex items-center justify-center", trade.type === "buy" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")}>
+                                      {trade.type === "buy" ? <ShoppingBag className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
+                                   </div>
+                                   <div>
+                                      <div className="font-bold text-sm text-slate-900">{trade.item}</div>
+                                      <div className="text-xs text-slate-500">Quantity: {trade.amount}</div>
+                                   </div>
+                                </div>
+                                <div className="text-right">
+                                   <div className="font-mono text-sm font-bold">{Object.values(trade.cost)[0].toLocaleString()} {Object.keys(trade.cost)[0]}</div>
+                                   <div className="text-xs text-slate-400">{trade.date}</div>
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                    )}
+                 </CardContent>
+              </Card>
+           </TabsContent>
+
+           <TabsContent value="prices" className="mt-6">
+              <Card className="bg-white border-slate-200" data-testid="card-price-trends">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <BarChart3 className="w-5 h-5 text-green-600" /> Market Price Trends
+                    </CardTitle>
+                    <CardDescription>24-hour price changes for popular items.</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {mockPriceChanges.map(item => (
+                          <div key={item.item} className="flex items-center justify-between p-4 bg-slate-50 rounded border border-slate-200">
+                             <span className="font-medium text-slate-900">{item.item}</span>
+                             <div className={cn("flex items-center gap-1 font-mono", item.direction === "up" ? "text-green-600" : item.direction === "down" ? "text-red-600" : "text-slate-500")}>
+                                {item.direction === "up" && <TrendingUp className="w-4 h-4" />}
+                                {item.direction === "down" && <TrendingDown className="w-4 h-4" />}
+                                {item.change > 0 ? "+" : ""}{item.change}%
+                             </div>
+                          </div>
+                       ))}
                     </div>
                  </CardContent>
               </Card>
-           </div>
-
-           {/* Main Trading Area */}
-           <div className="lg:col-span-3">
-              <Card className={cn("border-none shadow-none bg-transparent")}>
-                 <div className="flex items-center gap-4 mb-6 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-                    <div className={cn("w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md", selectedVendor.avatarColor)}>
-                       {selectedVendor.type === "official" && <User className="w-8 h-8" />}
-                       {selectedVendor.type === "scientist" && <Zap className="w-8 h-8" />}
-                       {selectedVendor.type === "black_market" && <AlertTriangle className="w-8 h-8" />}
-                    </div>
-                    <div>
-                       <h3 className="text-xl font-orbitron font-bold">{selectedVendor.name}</h3>
-                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <Badge variant="secondary" className="text-[10px] h-5">{selectedVendor.specialty}</Badge>
-                          <span className="font-rajdhani uppercase tracking-widest text-xs">{selectedVendor.title}</span>
-                       </div>
-                       <p className="text-sm text-slate-600 italic">"{selectedVendor.description}"</p>
-                    </div>
-                 </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {displayItems.length === 0 && (
-                       <div className="col-span-full text-center py-12 text-muted-foreground">
-                          <Box className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                          <p>No items available in this category.</p>
-                       </div>
-                    )}
-                    
-                    {displayItems.map(item => {
-                       const cost = item.basePrice;
-                       const canAfford = 
-                          resources.metal >= cost.metal && 
-                          resources.crystal >= cost.crystal && 
-                          resources.deuterium >= cost.deuterium;
-
-                       return (
-                          <ItemCard 
-                             key={item.id} 
-                             item={item} 
-                             mode={mode} 
-                             inventoryCount={inventory[item.id] || 0}
-                             canAfford={canAfford}
-                             onBuy={() => buyItem(item.id, item.basePrice)}
-                             onSell={() => sellItem(item.id, item.basePrice)}
-                          />
-                       );
-                    })}
-                 </div>
-              </Card>
-           </div>
-        </div>
+           </TabsContent>
+        </Tabs>
       </div>
     </GameLayout>
   );
