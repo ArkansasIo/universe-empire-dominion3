@@ -160,16 +160,21 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // First try session
   let userId = (req.session as any)?.userId;
   if (userId) {
+    logger.info("AUTH", `Session auth successful for userId: ${userId}`);
     return next();
   }
   
   // Fallback to basic auth from Authorization header
   const authHeader = req.get('authorization');
+  logger.info("AUTH", `Auth check - header present: ${!!authHeader}`);
+  
   if (authHeader && authHeader.startsWith('Basic ')) {
     try {
       const encoded = authHeader.slice(6);
       const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
       const [username, password] = decoded.split(':');
+      
+      logger.info("AUTH", `Basic auth attempt for user: ${username}`);
       
       if (username && password) {
         const user = await storage.getUserByUsername(username);
@@ -177,14 +182,20 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
           const passwordValid = verifyPassword(password, user.passwordHash);
           if (passwordValid) {
             (req.session as any).userId = user.id;
+            logger.info("AUTH", `Basic auth successful for user: ${username}`);
             return next();
+          } else {
+            logger.warn("AUTH", `Basic auth password invalid for user: ${username}`);
           }
+        } else {
+          logger.warn("AUTH", `Basic auth user not found or no password hash: ${username}`);
         }
       }
     } catch (err) {
-      logger.warn("AUTH", "Basic auth header parse error", {}, err);
+      logger.warn("AUTH", `Basic auth header parse error: ${String(err)}`);
     }
   }
   
+  logger.warn("AUTH", `Authentication failed for ${req.path}`);
   res.status(401).json({ message: "Unauthorized" });
 };
