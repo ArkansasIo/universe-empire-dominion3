@@ -240,7 +240,7 @@ export function registerRoutes(app: Express) {
       const progress = await db
         .select()
         .from(playerResearchProgress)
-        .where(eq(playerResearchProgress.playerId, userId));
+        .where(eq(playerResearchProgress.userId, userId));
 
       const progressMap = Object.fromEntries(
         progress.map((p: any) => [p.technologyId, { status: p.status, progress: p.progress, startedAt: p.startedAt, completedAt: p.completedAt }])
