@@ -196,11 +196,11 @@ export async function setupAuth(app: Express) {
           logger.info("AUTH", `Session auth successful for userId: ${userId}`);
           return res.status(200).json({ 
             id: user.id, 
-            username: user.username,
+            username: user.username || "",
             email: user.email,
-            isAdmin: user.isAdmin,
-            adminRole: user.adminRole,
-            firstName: user.firstName
+            firstName: user.firstName,
+            isAdmin: false,
+            adminRole: null
           });
         }
       }
@@ -215,16 +215,16 @@ export async function setupAuth(app: Express) {
           
           if (username && password) {
             const user = await storage.getUserByUsername(username);
-            if (user && verifyPassword(password, user.passwordHash)) {
+            if (user && user.passwordHash && verifyPassword(password, user.passwordHash)) {
               (req.session as any).userId = user.id;
               logger.info("AUTH", `Basic auth successful for user: ${username}`);
               return res.status(200).json({ 
                 id: user.id, 
-                username: user.username,
+                username: user.username || "",
                 email: user.email,
-                isAdmin: user.isAdmin,
-                adminRole: user.adminRole,
-                firstName: user.firstName
+                firstName: user.firstName,
+                isAdmin: false,
+                adminRole: null
               });
             }
           }
