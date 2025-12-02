@@ -125,12 +125,8 @@ function LoadingSplash() {
 function RouterContent() {
   const { isLoggedIn, needsSetup, isLoading } = useGame();
 
-  // If credentials are stored in localStorage, show splash while authenticating
-  const hasStoredCredentials = typeof window !== 'undefined' && 
-    localStorage.getItem('stellar_username') && 
-    localStorage.getItem('stellar_password');
-
-  if (isLoading || (!isLoggedIn && hasStoredCredentials)) {
+  // Show loading splash only while queries are in progress
+  if (isLoading) {
     return <LoadingSplash />;
   }
 
