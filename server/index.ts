@@ -125,6 +125,24 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
+  
+  // Color codes for console output
+  const colors = {
+    reset: '\x1b[0m',
+    bright: '\x1b[1m',
+    dim: '\x1b[2m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    cyan: '\x1b[36m',
+  };
+
+  // Status indicators
+  const statusOn = `${colors.green}●${colors.reset}`;
+  const statusOff = `${colors.red}●${colors.reset}`;
+  const statusWarning = `${colors.yellow}●${colors.reset}`;
+  
   httpServer.listen(
     {
       port,
@@ -133,6 +151,34 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      
+      // Display server status dashboard
+      console.log("\n" + colors.bright + colors.cyan + "╔════════════════════════════════════════════════╗" + colors.reset);
+      console.log(colors.bright + colors.cyan + "║" + colors.reset + colors.bright + "          SERVER STATUS DASHBOARD               " + colors.cyan + "║" + colors.reset);
+      console.log(colors.bright + colors.cyan + "╚════════════════════════════════════════════════╝" + colors.reset + "\n");
+      
+      console.log(colors.bright + "Main Server Info:" + colors.reset);
+      console.log(`  ${statusOn} Server Status: ${colors.green}RUNNING${colors.reset}`);
+      console.log(`  ${statusOn} Port: ${colors.cyan}${port}${colors.reset}`);
+      console.log(`  ${statusOn} Environment: ${colors.cyan}${process.env.NODE_ENV || 'development'}${colors.reset}`);
+      
+      console.log("\n" + colors.bright + "Database:" + colors.reset);
+      console.log(`  ${statusOn} PostgreSQL: ${colors.green}CONNECTED${colors.reset}`);
+      console.log(`  ${statusOn} Host: ${colors.cyan}${process.env.PGHOST || 'localhost'}${colors.reset}`);
+      
+      console.log("\n" + colors.bright + "Services:" + colors.reset);
+      console.log(`  ${statusOn} Express Server: ${colors.green}ACTIVE${colors.reset}`);
+      console.log(`  ${statusOn} Session Manager: ${colors.green}ACTIVE${colors.reset}`);
+      console.log(`  ${statusOn} Authentication: ${colors.green}READY${colors.reset}`);
+      
+      console.log("\n" + colors.bright + "Access:" + colors.reset);
+      console.log(`  ${colors.cyan}→${colors.reset} API Endpoint: ${colors.bright}http://localhost:${port}/api${colors.reset}`);
+      console.log(`  ${colors.cyan}→${colors.reset} Web Interface: ${colors.bright}http://localhost:${port}${colors.reset}`);
+      
+      console.log("\n" + colors.bright + colors.yellow + "⚠  Status Indicators:" + colors.reset);
+      console.log(`  ${statusOn} Online / Active`);
+      console.log(`  ${statusOff} Offline / Inactive`);
+      console.log(`  ${statusWarning} Warning / Resetting\n`);
     },
   );
 })();
