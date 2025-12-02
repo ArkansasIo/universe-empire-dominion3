@@ -82,6 +82,11 @@ export const GAME_CONFIG = {
     maxActiveMissions: 100,
   },
 
+  // Colonies mechanics
+  colonies: {
+    maxColoniesPerPlayer: 1000, // Maximum colonies across entire galaxy per player
+  },
+
   // Game speed settings
   gameSpeed: {
     economySpeed: 1,
