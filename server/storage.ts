@@ -35,6 +35,10 @@ import {
   storyMissions,
   achievements,
   elementBuffs,
+  npcFactions,
+  npcVendors,
+  relics,
+  relicInventory,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -88,6 +92,14 @@ import {
   type InsertAchievement,
   type ElementBuff,
   type InsertElementBuff,
+  type NPCFaction,
+  type InsertNPCFaction,
+  type NPCVendor,
+  type InsertNPCVendor,
+  type Relic,
+  type InsertRelic,
+  type RelicInventory,
+  type InsertRelicInventory,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -211,6 +223,24 @@ export interface IStorage {
   // Element Buff operations
   getActiveBuffs(userId: string, missionId?: string): Promise<ElementBuff[]>;
   createElementBuff(buff: InsertElementBuff): Promise<ElementBuff>;
+  
+  // NPC Faction operations
+  getPlayerFactions(userId: string): Promise<NPCFaction[]>;
+  getPlayerFactionStanding(userId: string, factionId: string): Promise<NPCFaction | undefined>;
+  createFactionStanding(standing: InsertNPCFaction): Promise<NPCFaction>;
+  updateReputation(userId: string, factionId: string, delta: number): Promise<NPCFaction>;
+  
+  // NPC Vendor operations
+  getAllVendors(): Promise<NPCVendor[]>;
+  getVendorsByFaction(factionId: string): Promise<NPCVendor[]>;
+  getVendorInventory(vendorId: string): Promise<any[]>;
+  
+  // Relic operations
+  getAllRelics(): Promise<Relic[]>;
+  getPlayerRelics(userId: string): Promise<Relic[]>;
+  getPlayerRelicInventory(userId: string): Promise<RelicInventory[]>;
+  acquireRelic(userId: string, relicId: string): Promise<RelicInventory>;
+  equipRelic(userId: string, relicId: string, slot: string): Promise<RelicInventory>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -819,6 +849,87 @@ export class DatabaseStorage implements IStorage {
   async createElementBuff(buff: InsertElementBuff): Promise<ElementBuff> {
     const [newBuff] = await db.insert(elementBuffs).values(buff).returning();
     return newBuff;
+  }
+  
+  // NPC Faction operations
+  async getPlayerFactions(userId: string): Promise<NPCFaction[]> {
+    return await db.select().from(npcFactions).where(eq(npcFactions.playerId, userId));
+  }
+  
+  async getPlayerFactionStanding(userId: string, factionId: string): Promise<NPCFaction | undefined> {
+    const [standing] = await db.select().from(npcFactions)
+      .where(and(eq(npcFactions.playerId, userId), eq(npcFactions.factionId, factionId)));
+    return standing;
+  }
+  
+  async createFactionStanding(standing: InsertNPCFaction): Promise<NPCFaction> {
+    const [newStanding] = await db.insert(npcFactions).values(standing).returning();
+    return newStanding;
+  }
+  
+  async updateReputation(userId: string, factionId: string, delta: number): Promise<NPCFaction> {
+    const current = await this.getPlayerFactionStanding(userId, factionId);
+    if (!current) {
+      throw new Error("Faction standing not found");
+    }
+    
+    const newRep = Math.max(-1000, Math.min(1000, current.reputation + delta));
+    let standing = "neutral";
+    if (newRep < -500) standing = "hostile";
+    else if (newRep < -100) standing = "unfriendly";
+    else if (newRep < 100) standing = "neutral";
+    else if (newRep < 300) standing = "friendly";
+    else if (newRep < 600) standing = "honored";
+    else standing = "exalted";
+    
+    const [updated] = await db.update(npcFactions)
+      .set({ reputation: newRep, standing, lastInteraction: new Date() })
+      .where(and(eq(npcFactions.playerId, userId), eq(npcFactions.factionId, factionId)))
+      .returning();
+    return updated;
+  }
+  
+  // NPC Vendor operations
+  async getAllVendors(): Promise<NPCVendor[]> {
+    return await db.select().from(npcVendors);
+  }
+  
+  async getVendorsByFaction(factionId: string): Promise<NPCVendor[]> {
+    return await db.select().from(npcVendors).where(eq(npcVendors.factionId, factionId));
+  }
+  
+  async getVendorInventory(vendorId: string): Promise<any[]> {
+    const [vendor] = await db.select().from(npcVendors).where(eq(npcVendors.vendorId, vendorId));
+    return vendor?.inventory || [];
+  }
+  
+  // Relic operations
+  async getAllRelics(): Promise<Relic[]> {
+    return await db.select().from(relics);
+  }
+  
+  async getPlayerRelics(userId: string): Promise<Relic[]> {
+    return await db.select().from(relics).where(and(eq(relics.playerId, userId), eq(relics.isOwned, true)));
+  }
+  
+  async getPlayerRelicInventory(userId: string): Promise<RelicInventory[]> {
+    return await db.select().from(relicInventory).where(eq(relicInventory.playerId, userId));
+  }
+  
+  async acquireRelic(userId: string, relicId: string): Promise<RelicInventory> {
+    const [item] = await db.insert(relicInventory).values({
+      playerId: userId,
+      relicId: relicId,
+    }).returning();
+    return item;
+  }
+  
+  async equipRelic(userId: string, relicId: string, slot: string): Promise<RelicInventory> {
+    const [equipped] = await db.update(relicInventory)
+      .set({ isEquipped: true, slot })
+      .where(and(eq(relicInventory.playerId, userId), eq(relicInventory.relicId, relicId)))
+      .returning();
+    return equipped;
   }
   
   // Resource field operations

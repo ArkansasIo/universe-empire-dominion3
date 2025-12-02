@@ -1221,3 +1221,106 @@ export const elementBuffs = pgTable("element_buffs", {
 export type ElementBuff = typeof elementBuffs.$inferSelect;
 export const insertElementBuffSchema = createInsertSchema(elementBuffs).omit({ id: true, createdAt: true });
 export type InsertElementBuff = z.infer<typeof insertElementBuffSchema>;
+
+// NPC Factions - Player reputation with factions
+export const npcFactions = pgTable("npc_factions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Faction info
+  factionId: varchar("faction_id").notNull(),
+  factionName: varchar("faction_name").notNull(),
+  
+  // Reputation tracking
+  reputation: integer("reputation").default(0), // -1000 to 1000
+  standing: varchar("standing").default("neutral"), // "hostile", "unfriendly", "neutral", "friendly", "honored", "exalted"
+  
+  // Status
+  isUnlocked: boolean("is_unlocked").default(false),
+  lastInteraction: timestamp("last_interaction"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type NPCFaction = typeof npcFactions.$inferSelect;
+export const insertNPCFactionSchema = createInsertSchema(npcFactions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertNPCFaction = z.infer<typeof insertNPCFactionSchema>;
+
+// NPC Vendors - Merchant NPCs selling items
+export const npcVendors = pgTable("npc_vendors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Vendor info
+  vendorId: varchar("vendor_id").notNull(),
+  vendorName: varchar("vendor_name").notNull(),
+  factionId: varchar("faction_id").notNull(),
+  location: varchar("location").notNull(),
+  specialty: varchar("specialty"),
+  
+  // Requirements
+  minReputation: integer("min_reputation").default(0),
+  restockTime: integer("restock_time").default(86400), // seconds (24 hours)
+  lastRestock: timestamp("last_restock").defaultNow(),
+  
+  // Inventory
+  inventory: jsonb("inventory").notNull().default([]), // Array of item IDs
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type NPCVendor = typeof npcVendors.$inferSelect;
+export const insertNPCVendorSchema = createInsertSchema(npcVendors).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertNPCVendor = z.infer<typeof insertNPCVendorSchema>;
+
+// Relics - Powerful artifacts with special abilities
+export const relics = pgTable("relics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").references(() => users.id, { onDelete: "cascade" }),
+  
+  // Relic classification
+  relicId: varchar("relic_id").notNull(),
+  name: varchar("name").notNull(),
+  rarity: varchar("rarity").notNull(), // common, rare, epic, legendary, mythic
+  
+  // Details
+  description: text("description"),
+  type: varchar("type").notNull(), // navigation, knowledge, power, magic, blueprint, weapon, technology
+  bonuses: jsonb("bonuses").notNull().default({}),
+  
+  // Source and trading
+  source: varchar("source"), // Which faction/vendor sells it
+  price: integer("price").default(0),
+  
+  // Possession
+  isOwned: boolean("is_owned").default(false),
+  acquiredAt: timestamp("acquired_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Relic = typeof relics.$inferSelect;
+export const insertRelicSchema = createInsertSchema(relics).omit({ id: true, createdAt: true });
+export type InsertRelic = z.infer<typeof insertRelicSchema>;
+
+// Relic Inventory - Player relic collection
+export const relicInventory = pgTable("relic_inventory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  relicId: varchar("relic_id").notNull().references(() => relics.id, { onDelete: "cascade" }),
+  
+  // Status
+  isEquipped: boolean("is_equipped").default(false),
+  slot: varchar("slot"), // equipment slot
+  
+  // Durability and condition
+  condition: integer("condition").default(100), // 0-100%
+  uses: integer("uses").default(0),
+  
+  acquiredAt: timestamp("acquired_at").defaultNow(),
+});
+
+export type RelicInventory = typeof relicInventory.$inferSelect;
+export const insertRelicInventorySchema = createInsertSchema(relicInventory).omit({ id: true, acquiredAt: true });
+export type InsertRelicInventory = z.infer<typeof insertRelicInventorySchema>;
