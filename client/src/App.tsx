@@ -61,78 +61,71 @@ import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-hidden relative">
       <style>{`
-        @keyframes slowPing {
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
-          }
+        @keyframes orbit {
+          from { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
         }
-        @keyframes slowPulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.6;
-          }
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3); }
+          50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 80px rgba(59, 130, 246, 0.5); }
         }
-        @keyframes slowBounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-12px);
-          }
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-        @keyframes slowFade {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 1;
-          }
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-slow-ping {
-          animation: slowPing 3s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        .animate-slow-pulse {
-          animation: slowPulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        .animate-slow-bounce {
-          animation: slowBounce 2s infinite;
-        }
-        .animate-slow-fade-in {
-          animation: slowFade 2s ease-in-out;
-        }
+        .orbit { animation: orbit 8s linear infinite; }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+        .fade-in { animation: fade-in 0.8s ease-out; }
+        .slide-up { animation: slide-up 0.8s ease-out; }
       `}</style>
-      
-      <div className="relative">
-        <div className="absolute inset-0 animate-slow-ping">
-          <div className="w-32 h-32 rounded-full bg-primary/20" />
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }} />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center">
+        <div className="relative w-32 h-32 mb-8">
+          <div className="absolute inset-0 border-2 border-transparent border-t-blue-500 border-r-cyan-500 rounded-full animate-spin" style={{ animationDuration: '3s' }} />
+          <div className="absolute inset-2 border border-transparent border-t-blue-400 rounded-full animate-spin" style={{ animationDuration: '5s', animationDirection: 'reverse' }} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/50" style={{ animation: 'pulse-glow 2s ease-in-out infinite' }}>
+              <Rocket className="w-12 h-12 text-white" />
+            </div>
+          </div>
         </div>
-        <div className="relative w-32 h-32 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-2xl shadow-primary/50 animate-slow-pulse">
-          <Rocket className="w-16 h-16 text-white animate-slow-bounce" />
+
+        <div className="text-center mt-8 slide-up">
+          <h1 className="font-orbitron text-5xl font-bold text-white tracking-widest mb-3">
+            STELLAR <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">DOMINION</span>
+          </h1>
+          <p className="text-slate-300 font-rajdhani text-sm tracking-widest uppercase mb-8 fade-in">
+            Connecting to Nexus Command System
+          </p>
+
+          <div className="flex justify-center gap-3 mb-8">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
+          </div>
+
+          <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden mb-6">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 animate-pulse" style={{ width: '70%' }} />
+          </div>
+
+          <p className="text-slate-400 font-rajdhani text-xs">Initializing game systems...</p>
         </div>
       </div>
-      
-      <div className="mt-12 text-center animate-slow-fade-in">
-        <h1 className="font-orbitron text-4xl font-bold text-white tracking-widest mb-2">
-          STELLAR <span className="text-primary">DOMINION</span>
-        </h1>
-        <p className="text-slate-400 font-rajdhani text-lg tracking-wider uppercase">
-          Initializing Command Systems
-        </p>
-      </div>
-      
-      <div className="mt-8 flex items-center gap-2">
-        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '400ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '800ms' }} />
-      </div>
-      
-      <div className="absolute bottom-8 text-slate-500 text-xs font-mono animate-slow-fade-in" style={{ animationDelay: '0.5s' }}>
-        v0.8.2-beta // Nexus-Alpha Server
+
+      <div className="absolute bottom-6 text-slate-500 text-xs font-mono z-10">
+        <span className="text-blue-400">v1.0.0</span> • Production Ready
       </div>
     </div>
   );
