@@ -753,14 +753,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 6. Turn generation (3-5 turns per minute = 1 turn every 12-20 seconds)
-      const now = Date.now();
-      const timeSinceLastTurn = now - lastTurnUpdateRef.current;
+      const nowTurns = Date.now();
+      const timeSinceLastTurn = nowTurns - lastTurnUpdateRef.current;
       const turnInterval = Math.random() * 8000 + 12000; // 12-20 seconds for 3-5 turns per minute
       
       if (timeSinceLastTurn >= turnInterval) {
         setTotalTurns(prev => prev + 1);
         setCurrentTurns(prev => prev + 1);
-        lastTurnUpdateRef.current = now;
+        lastTurnUpdateRef.current = nowTurns;
         addEvent("Turn Generated", "A new turn has arrived!", "info");
       }
 
@@ -1160,7 +1160,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        travelTo,
        inventory,
        buyItem,
-       sellItem
+       sellItem,
+       totalTurns,
+       currentTurns,
+       spendTurns
     }}>
       {children}
     </GameContext.Provider>
