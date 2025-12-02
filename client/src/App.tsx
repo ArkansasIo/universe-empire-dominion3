@@ -44,16 +44,61 @@ import { useGame } from "@/lib/gameContext";
 function LoadingSplash() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center overflow-hidden">
+      <style>{`
+        @keyframes slowPing {
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+        @keyframes slowPulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.6;
+          }
+        }
+        @keyframes slowBounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-12px);
+          }
+        }
+        @keyframes slowFade {
+          0% {
+            opacity: 0;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+        .animate-slow-ping {
+          animation: slowPing 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .animate-slow-pulse {
+          animation: slowPulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .animate-slow-bounce {
+          animation: slowBounce 2s infinite;
+        }
+        .animate-slow-fade-in {
+          animation: slowFade 2s ease-in-out;
+        }
+      `}</style>
+      
       <div className="relative">
-        <div className="absolute inset-0 animate-ping">
+        <div className="absolute inset-0 animate-slow-ping">
           <div className="w-32 h-32 rounded-full bg-primary/20" />
         </div>
-        <div className="relative w-32 h-32 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-2xl shadow-primary/50 animate-pulse">
-          <Rocket className="w-16 h-16 text-white animate-bounce" />
+        <div className="relative w-32 h-32 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-2xl shadow-primary/50 animate-slow-pulse">
+          <Rocket className="w-16 h-16 text-white animate-slow-bounce" />
         </div>
       </div>
       
-      <div className="mt-12 text-center">
+      <div className="mt-12 text-center animate-slow-fade-in">
         <h1 className="font-orbitron text-4xl font-bold text-white tracking-widest mb-2">
           STELLAR <span className="text-primary">DOMINION</span>
         </h1>
@@ -63,12 +108,12 @@ function LoadingSplash() {
       </div>
       
       <div className="mt-8 flex items-center gap-2">
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '400ms' }} />
+        <div className="w-2 h-2 bg-primary rounded-full animate-slow-bounce" style={{ animationDelay: '800ms' }} />
       </div>
       
-      <div className="absolute bottom-8 text-slate-500 text-xs font-mono">
+      <div className="absolute bottom-8 text-slate-500 text-xs font-mono animate-slow-fade-in" style={{ animationDelay: '0.5s' }}>
         v0.8.2-beta // Nexus-Alpha Server
       </div>
     </div>
