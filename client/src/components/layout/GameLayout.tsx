@@ -18,16 +18,19 @@ import {
   Landmark,
   Mail,
   Shield,
-  Hexagon
+  Hexagon,
+  ShieldAlert,
+  LogOut
 } from "lucide-react";
 
-const SidebarItem = ({ href, icon: Icon, label, active }: { href: string, icon: any, label: string, active: boolean }) => (
+const SidebarItem = ({ href, icon: Icon, label, active, className }: { href: string, icon: any, label: string, active: boolean, className?: string }) => (
   <Link href={href}>
     <div className={cn(
       "flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-l-2",
       active 
         ? "bg-primary/10 border-primary text-primary font-bold" 
-        : "border-transparent hover:bg-slate-200 hover:text-primary hover:border-primary/50 text-muted-foreground"
+        : "border-transparent hover:bg-slate-200 hover:text-primary hover:border-primary/50 text-muted-foreground",
+      className
     )}>
       <Icon className="w-5 h-5" />
       <span className="font-rajdhani font-semibold tracking-wider uppercase text-sm">{label}</span>
@@ -51,7 +54,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { resources, planetName, coordinates, isAdmin } = useGame();
+  const { resources, planetName, coordinates, isAdmin, logout, username } = useGame();
 
   return (
     <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
@@ -64,7 +67,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
            </div>
            <div>
              <h1 className="font-orbitron font-bold text-xl tracking-wider text-slate-900">STELLAR <span className="text-primary text-sm font-normal">DOMINION</span></h1>
-             <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">Server: Nexus-Alpha // User: Commander</p>
+             <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">Server: Nexus-Alpha // User: {username || "Commander"}</p>
            </div>
         </div>
 
@@ -120,6 +123,15 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                </>
             )}
           </nav>
+
+          <div className="p-4 border-t border-slate-200">
+             <button 
+               onClick={logout}
+               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded transition-colors text-sm font-bold uppercase tracking-wider"
+             >
+               <LogOut className="w-4 h-4" /> Logout
+             </button>
+          </div>
         </aside>
 
         {/* Main Content */}

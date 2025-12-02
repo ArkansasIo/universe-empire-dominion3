@@ -120,6 +120,10 @@ interface GameState {
   cronJobs: CronJob[];
   coordinates: string;
   isAdmin: boolean;
+  isLoggedIn: boolean;
+  username: string;
+  login: (username: string) => void;
+  logout: () => void;
   toggleAdmin: () => void;
   updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
@@ -255,6 +259,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [planetName, setPlanetName] = useState("Homeworld");
   const [coordinates, setCoordinates] = useState("1:102:8");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
 
   // Calculate production
   const getProduction = () => {
@@ -750,6 +756,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setCronJobs(prev => prev.map(j => j.id === id ? { ...j, enabled: !j.enabled } : j));
   };
 
+  const login = (user: string) => {
+    setIsLoggedIn(true);
+    setUsername(user);
+    setCommander(prev => ({ ...prev, name: user }));
+    addEvent("System Access", `Welcome back, Commander ${user}.`, "success");
+  };
+
+  const logout = () => {
+    setIsLoggedIn(false);
+    setUsername("");
+    addEvent("System Access", "Session terminated.", "info");
+  };
+
   const toggleAdmin = () => {
     setIsAdmin(prev => !prev);
     if (!isAdmin) {
@@ -797,6 +816,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        artifacts,
        cronJobs,
        isAdmin,
+       isLoggedIn,
+       username,
+       login,
+       logout,
        toggleAdmin,
        updateBuilding,
        updateResearch,

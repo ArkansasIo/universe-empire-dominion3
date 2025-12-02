@@ -21,8 +21,16 @@ import Alliance from "@/pages/Alliance";
 import Artifacts from "@/pages/Artifacts";
 import Interstellar from "@/pages/Interstellar";
 import Admin from "@/pages/Admin";
+import Auth from "@/pages/Auth";
+import { useGame } from "@/lib/gameContext";
 
 function Router() {
+  const { isLoggedIn } = useGame();
+
+  if (!isLoggedIn) {
+    return <Auth />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Overview} />
