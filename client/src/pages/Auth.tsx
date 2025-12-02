@@ -42,25 +42,30 @@ export default function Auth() {
     // Validate inputs
     if (!username.trim()) {
       setError("Username is required");
+      console.warn("[AUTH] Validation failed: Username required");
       return;
     }
     if (username.trim().length < 3) {
       setError("Username must be at least 3 characters");
+      console.warn("[AUTH] Validation failed: Username too short");
       return;
     }
     if (!password) {
       setError("Password is required");
+      console.warn("[AUTH] Validation failed: Password required");
       return;
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      console.warn("[AUTH] Validation failed: Password too short");
       return;
     }
 
     setSubmitting(true);
+    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+    console.log(`[AUTH] Attempting ${isLogin ? 'LOGIN' : 'REGISTER'} for user: ${username.trim()}`);
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,20 +73,30 @@ export default function Auth() {
         credentials: "include"
       });
 
+      console.log(`[AUTH] Response status: ${res.status} ${res.statusText}`);
+
       if (!res.ok) {
         const data = await res.json();
-        setError(data.message || "Authentication failed");
+        const errorMsg = data.message || "Authentication failed";
+        console.error(`[AUTH] ${isLogin ? 'LOGIN' : 'REGISTER'} failed:`, { status: res.status, message: errorMsg });
+        setError(errorMsg);
         setSubmitting(false);
         return;
       }
 
+      const responseData = await res.json();
+      console.log(`[AUTH] ${isLogin ? 'LOGIN' : 'REGISTER'} successful:`, responseData);
+      
       // Save credentials on successful login
       saveCredentials(username.trim(), password);
+      console.log("[AUTH] Credentials saved, redirecting to game...");
       
       // Reload page to trigger game context update
       window.location.href = "/";
     } catch (err) {
-      setError("Network error. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error("[AUTH] Network/exception error:", errorMsg, err);
+      setError("Network error. Please try again. Check console for details.");
       setSubmitting(false);
     }
   };
