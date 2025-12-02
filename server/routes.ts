@@ -888,3 +888,81 @@ export function registerRoutes(app: Express) {
     }
   });
 }
+
+  // ==== BANK SYSTEM ROUTES ====
+
+  app.get("/api/bank/account", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const account = await storage.getBankAccount(userId);
+      res.json(account);
+    } catch (error: any) {
+      console.error("Error fetching bank account:", error);
+      res.status(500).json({ message: "Failed to fetch bank account" });
+    }
+  });
+
+  app.post("/api/bank/deposit", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { amount } = req.body;
+      if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+      
+      const updated = await storage.depositToBankAccount(userId, amount);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error depositing to bank:", error);
+      res.status(500).json({ message: "Failed to deposit to bank" });
+    }
+  });
+
+  app.post("/api/bank/withdraw", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { amount } = req.body;
+      if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+      
+      const updated = await storage.withdrawFromBankAccount(userId, amount);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error withdrawing from bank:", error);
+      res.status(500).json({ message: error.message || "Failed to withdraw from bank" });
+    }
+  });
+
+  app.get("/api/bank/transactions", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const transactions = await db.select().from(bankTransactions)
+        .where(eq(bankTransactions.userId, userId))
+        .orderBy(desc(bankTransactions.createdAt))
+        .limit(50);
+      res.json(transactions);
+    } catch (error: any) {
+      console.error("Error fetching bank transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  // ==== EMPIRE VALUE ROUTES ====
+
+  app.get("/api/empire/value", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const value = await storage.calculateEmpireValue(userId);
+      res.json(value);
+    } catch (error: any) {
+      console.error("Error calculating empire value:", error);
+      res.status(500).json({ message: "Failed to calculate empire value" });
+    }
+  });
+
+  app.get("/api/empire/rankings", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const rankings = await storage.getEmpireRankings();
+      res.json(rankings);
+    } catch (error: any) {
+      console.error("Error fetching rankings:", error);
+      res.status(500).json({ message: "Failed to fetch rankings" });
+    }
+  });

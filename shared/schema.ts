@@ -1854,3 +1854,82 @@ export const currencyTransactions = pgTable("currency_transactions", {
 export type CurrencyTransaction = typeof currencyTransactions.$inferSelect;
 export const insertCurrencyTransactionSchema = createInsertSchema(currencyTransactions).omit({ id: true, createdAt: true });
 export type InsertCurrencyTransaction = z.infer<typeof currencyTransactionSchema>;
+
+// Bank System - Player Banking
+export const bankAccounts = pgTable("bank_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Account info
+  accountType: varchar("account_type").notNull().default("standard"), // "standard", "savings", "vault"
+  accountBalance: bigint("account_balance", { mode: "number" }).notNull().default(0),
+  
+  // Interest tracking
+  interestRate: real("interest_rate").notNull().default(0.05), // 5% default
+  lastInterestPayment: timestamp("last_interest_payment").defaultNow(),
+  totalInterestEarned: bigint("total_interest_earned", { mode: "number" }).notNull().default(0),
+  
+  // Account limits
+  maxWithdrawal: bigint("max_withdrawal", { mode: "number" }).notNull().default(1000000),
+  maxDeposit: bigint("max_deposit", { mode: "number" }).notNull().default(10000000),
+  
+  // Status
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
+
+// Bank Transactions (deposits, withdrawals, interest)
+export const bankTransactions = pgTable("bank_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id").notNull().references(() => bankAccounts.id, { onDelete: "cascade" }),
+  
+  transactionType: varchar("transaction_type").notNull(), // "deposit", "withdrawal", "interest", "fee", "transfer"
+  amount: bigint("amount", { mode: "number" }).notNull(),
+  description: varchar("description"),
+  
+  balanceBefore: bigint("balance_before", { mode: "number" }).notNull(),
+  balanceAfter: bigint("balance_after", { mode: "number" }).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export const insertBankTransactionSchema = createInsertSchema(bankTransactions).omit({ id: true, createdAt: true });
+export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
+
+// Empire Value Tracking
+export const empireValues = pgTable("empire_values", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Resource values
+  resourceValue: bigint("resource_value", { mode: "number" }).notNull().default(0), // metal + crystal + deuterium
+  
+  // Building values
+  buildingValue: bigint("building_value", { mode: "number" }).notNull().default(0),
+  
+  // Fleet values
+  fleetValue: bigint("fleet_value", { mode: "number" }).notNull().default(0),
+  
+  // Currency values
+  currencyValue: bigint("currency_value", { mode: "number" }).notNull().default(0), // silver + gold + platinum
+  
+  // Total empire value
+  totalValue: bigint("total_value", { mode: "number" }).notNull().default(0),
+  
+  // Ranking
+  empireRank: integer("empire_rank").default(0),
+  
+  // Updated timestamp
+  lastCalculated: timestamp("last_calculated").defaultNow(),
+});
+
+export type EmpireValue = typeof empireValues.$inferSelect;
+export const insertEmpireValueSchema = createInsertSchema(empireValues).omit({ id: true, lastCalculated: true });
+export type InsertEmpireValue = z.infer<typeof insertEmpireValueSchema>;
