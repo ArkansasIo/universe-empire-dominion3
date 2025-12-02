@@ -41,7 +41,7 @@ function isAuthenticated(req: Request, res: Response, next: Function) {
   next();
 }
 
-export function registerRoutes(app: Express) {
+export async function registerRoutes(app: Express) {
   // ==== PLAYER STATE ROUTES ====
 
   app.get("/api/player/state", isAuthenticated, async (req: Request, res: any) => {
@@ -361,7 +361,4 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch encounters" });
     }
   });
-
-  // Return the app for use in server setup
-  return app;
 }
