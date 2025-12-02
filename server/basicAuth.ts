@@ -17,15 +17,17 @@ export function getSession() {
   const isDevelopment = process.env.NODE_ENV === "development";
   
   return session({
+    name: 'connect.sid',
     secret: process.env.SESSION_SECRET || "dev-secret-key",
     store: sessionStore,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: !isDevelopment, // Only secure in production (HTTPS)
+      secure: false, // Allow in development
       sameSite: "lax",
       maxAge: sessionTtl,
+      path: '/'
     },
   });
 }
@@ -40,6 +42,20 @@ function verifyPassword(password: string, hash: string): boolean {
 
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
+  
+  // Add CORS headers to allow credentials
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.get('origin') || 'http://localhost:5000');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+  
   app.use(getSession());
 
   app.post("/api/auth/register", async (req, res) => {
