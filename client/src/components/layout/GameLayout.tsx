@@ -51,7 +51,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { resources, planetName, coordinates } = useGame();
+  const { resources, planetName, coordinates, isAdmin } = useGame();
 
   return (
     <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
@@ -110,6 +110,15 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             
             <div className="px-4 mt-6 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>
             <SidebarItem href="/settings" icon={Settings} label="Settings" active={location === "/settings"} />
+            
+            {isAdmin && (
+               <>
+                  <div className="px-4 mt-6 mb-2 text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
+                     <ShieldAlert className="w-3 h-3" /> Administration
+                  </div>
+                  <SidebarItem href="/admin" icon={ShieldAlert} label="Control Panel" active={location === "/admin"} className="text-red-600 hover:bg-red-50 hover:text-red-700" />
+               </>
+            )}
           </nav>
         </aside>
 

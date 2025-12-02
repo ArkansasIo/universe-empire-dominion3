@@ -11,14 +11,26 @@ import { Settings as SettingsIcon, Server, Shield, Monitor, Database, Power, Sav
 import { Badge } from "@/components/ui/badge";
 
 export default function Settings() {
-  const { config, updateConfig, cronJobs, toggleCronJob, runCronJob } = useGame();
+  const { config, updateConfig, cronJobs, toggleCronJob, runCronJob, isAdmin, toggleAdmin } = useGame();
 
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-          <h2 className="text-3xl font-orbitron font-bold text-slate-900">System Configuration</h2>
-          <p className="text-muted-foreground font-rajdhani text-lg">Manage server parameters, game rules, and account settings.</p>
+        <div className="flex justify-between items-center">
+           <div>
+             <h2 className="text-3xl font-orbitron font-bold text-slate-900">System Configuration</h2>
+             <p className="text-muted-foreground font-rajdhani text-lg">Manage server parameters, game rules, and account settings.</p>
+           </div>
+           <div className="flex items-center gap-2">
+              {isAdmin && <Badge variant="destructive" className="animate-pulse">ADMIN MODE ACTIVE</Badge>}
+              <Button 
+                 variant={isAdmin ? "destructive" : "outline"} 
+                 size="sm"
+                 onClick={toggleAdmin}
+              >
+                 {isAdmin ? "Disable Admin Mode" : "Enable Admin Mode"}
+              </Button>
+           </div>
         </div>
 
         <Tabs defaultValue="game" className="w-full">

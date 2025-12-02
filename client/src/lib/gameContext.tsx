@@ -119,6 +119,8 @@ interface GameState {
   artifacts: Artifact[];
   cronJobs: CronJob[];
   coordinates: string;
+  isAdmin: boolean;
+  toggleAdmin: () => void;
   updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
@@ -252,6 +254,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const [planetName, setPlanetName] = useState("Homeworld");
   const [coordinates, setCoordinates] = useState("1:102:8");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Calculate production
   const getProduction = () => {
@@ -747,6 +750,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setCronJobs(prev => prev.map(j => j.id === id ? { ...j, enabled: !j.enabled } : j));
   };
 
+  const toggleAdmin = () => {
+    setIsAdmin(prev => !prev);
+    if (!isAdmin) {
+       addEvent("System Access", "Administrator privileges granted.", "warning");
+    } else {
+       addEvent("System Access", "Administrator privileges revoked.", "info");
+    }
+  };
+
   const runCronJob = (id: string) => {
     const job = cronJobs.find(j => j.id === id);
     if (job) {
@@ -784,6 +796,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        alliance,
        artifacts,
        cronJobs,
+       isAdmin,
+       toggleAdmin,
        updateBuilding,
        updateResearch,
        buildUnit,

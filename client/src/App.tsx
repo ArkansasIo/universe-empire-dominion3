@@ -20,6 +20,7 @@ import Messages from "@/pages/Messages";
 import Alliance from "@/pages/Alliance";
 import Artifacts from "@/pages/Artifacts";
 import Interstellar from "@/pages/Interstellar";
+import Admin from "@/pages/Admin";
 
 function Router() {
   return (
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/alliance" component={Alliance} />
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />
+      <Route path="/admin" component={Admin} />
       
       <Route component={NotFound} />
     </Switch>
