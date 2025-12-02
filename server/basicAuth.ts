@@ -13,14 +13,16 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  const isDevelopment = process.env.NODE_ENV === "development";
+  
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || "dev-secret-key",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: !isDevelopment, // Only secure in production (HTTPS)
       sameSite: "lax",
       maxAge: sessionTtl,
     },
