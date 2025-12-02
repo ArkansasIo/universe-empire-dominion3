@@ -15,6 +15,13 @@ import {
   buildingDurability,
   battles,
   battleLogs,
+  researchAreas,
+  researchSubcategories,
+  researchTechnologies,
+  playerResearchProgress,
+  expeditions,
+  expeditionTeams,
+  expeditionEncounters,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -45,7 +52,7 @@ import {
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
-import { eq, and, or, desc, asc, sql } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -132,6 +139,15 @@ export interface IStorage {
   getResearchTechnologies(subcategoryIds: string[]): Promise<any[]>;
   getPlayerResearchProgress(userId: string): Promise<any[]>;
   upsertPlayerResearch(userId: string, technologyId: string, status: string, progress: number): Promise<any>;
+  
+  // Expedition operations
+  getExpeditions(userId: string): Promise<any[]>;
+  createExpedition(userId: string, name: string, type: string, targetCoords: string, fleetComposition: any, troopComposition: any): Promise<any>;
+  updateExpedition(expeditionId: string, updates: any): Promise<any>;
+  getExpeditionTeams(expeditionId: string): Promise<any[]>;
+  addTeamMember(expeditionId: string, unitId: string, role: string): Promise<any>;
+  getExpeditionEncounters(expeditionId: string): Promise<any[]>;
+  addEncounter(expeditionId: string, encounterType: string, description: string, rewards: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -537,6 +553,61 @@ export class DatabaseStorage implements IStorage {
         target: [playerResearchProgress.playerId, playerResearchProgress.technologyId],
         set: { status, progress, updatedAt: new Date() }
       })
+      .returning();
+    return result;
+  }
+
+  // Expedition operations
+  async getExpeditions(userId: string): Promise<any[]> {
+    return await db.select().from(expeditions).where(eq(expeditions.leaderId, userId)).orderBy(desc(expeditions.createdAt));
+  }
+
+  async createExpedition(userId: string, name: string, type: string, targetCoords: string, fleetComposition: any, troopComposition: any): Promise<any> {
+    const [result] = await db
+      .insert(expeditions)
+      .values({
+        leaderId: userId,
+        name,
+        type,
+        targetCoordinates: targetCoords,
+        status: "preparing",
+        fleetComposition,
+        troopComposition,
+        startedAt: new Date()
+      })
+      .returning();
+    return result;
+  }
+
+  async updateExpedition(expeditionId: string, updates: any): Promise<any> {
+    const [result] = await db
+      .update(expeditions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(expeditions.id, expeditionId))
+      .returning();
+    return result;
+  }
+
+  async getExpeditionTeams(expeditionId: string): Promise<any[]> {
+    return await db.select().from(expeditionTeams).where(eq(expeditionTeams.expeditionId, expeditionId));
+  }
+
+  async addTeamMember(expeditionId: string, unitId: string, role: string): Promise<any> {
+    const [result] = await db
+      .insert(expeditionTeams)
+      .values({ expeditionId, unitId, role })
+      .returning();
+    return result;
+  }
+
+  async getExpeditionEncounters(expeditionId: string): Promise<any[]> {
+    return await db.select().from(expeditionEncounters).where(eq(expeditionEncounters.expeditionId, expeditionId));
+  }
+
+  async addEncounter(expeditionId: string, encounterType: string, description: string, rewards: any): Promise<any> {
+    const [result] = await db
+      .insert(expeditionEncounters)
+      .values({ expeditionId, encounterType, description, rewards })
       .returning();
     return result;
   }

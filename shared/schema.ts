@@ -826,6 +826,53 @@ export type PlayerResearchProgress = typeof playerResearchProgress.$inferSelect;
 export const insertPlayerResearchProgressSchema = createInsertSchema(playerResearchProgress).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPlayerResearchProgress = z.infer<typeof insertPlayerResearchProgressSchema>;
 
+// Expedition System - Explore worlds and interstellar objects with fleets and troops
+export const expeditions = pgTable("expeditions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  leaderId: varchar("leader_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  type: varchar("type").notNull(), // exploration, conquest, scientific, trade, military
+  targetCoordinates: varchar("target_coordinates").notNull(),
+  status: varchar("status").default("preparing"), // preparing, in_progress, completed, failed
+  fleetComposition: jsonb("fleet_composition").default({}), // {corvettes: 5, destroyers: 2, ...}
+  troopComposition: jsonb("troop_composition").default({}), // {soldiers: 100, scouts: 20, ...}
+  discoveries: jsonb("discoveries").default([]),
+  casualties: jsonb("casualties").default({}),
+  resources: jsonb("resources").default({}),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Expedition = typeof expeditions.$inferSelect;
+
+export const expeditionTeams = pgTable("expedition_teams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  expeditionId: varchar("expedition_id").notNull().references(() => expeditions.id, { onDelete: "cascade" }),
+  unitId: varchar("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+  role: varchar("role").notNull(), // commander, soldier, scout, scientist, medic
+  status: varchar("status").default("active"), // active, injured, killed
+  health: integer("health").default(100),
+  experience: integer("experience").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ExpeditionTeam = typeof expeditionTeams.$inferSelect;
+
+export const expeditionEncounters = pgTable("expedition_encounters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  expeditionId: varchar("expedition_id").notNull().references(() => expeditions.id, { onDelete: "cascade" }),
+  encounterType: varchar("encounter_type").notNull(), // hostile, peaceful, discovery, environmental, artifact
+  description: text("description"),
+  rewards: jsonb("rewards").default({}), // {resources: {metal: 100}, artifacts: 1, ...}
+  losses: jsonb("losses").default({}), // {troops: 5, ships: 1, ...}
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ExpeditionEncounter = typeof expeditionEncounters.$inferSelect;
+
 // User Accounts System (Regular Player Account Management)
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
