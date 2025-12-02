@@ -149,7 +149,7 @@ interface GameState {
   logout: () => void;
   isLoading: boolean;
   toggleAdmin: () => void;
-  updateBuilding: (building: keyof Buildings | string, name: string, time: number) => void;
+  updateBuilding: (building: keyof Buildings, name: string, time?: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
   addEvent: (title: string, description: string, type: GameEvent["type"]) => void;
