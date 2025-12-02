@@ -9,7 +9,6 @@ import {
   queueItems,
   playerColonies,
   resourceFields,
-  miningOperations,
   equipmentDurability,
   fleetDurability,
   buildingDurability,
@@ -40,7 +39,6 @@ import {
   type InsertQueueItem,
   type PlayerColony,
   type ResourceField,
-  type MiningOperation,
   type EquipmentDurability,
   type FleetDurability,
   type BuildingDurability,
@@ -122,8 +120,8 @@ export interface IStorage {
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
   
   // Mining operations
-  getActiveMiningOperations(userId: string): Promise<MiningOperation[]>;
-  createMiningOperation(op: any): Promise<MiningOperation>;
+  getActiveMiningOperations(userId: string): Promise<any[]>;
+  createMiningOperation(op: any): Promise<any>;
   
   // Durability operations
   getEquipmentDurability(userId: string, equipmentId: string): Promise<EquipmentDurability | undefined>;
