@@ -41,6 +41,11 @@ import TechnologyTree from "@/pages/TechnologyTree";
 import Expeditions from "@/pages/Expeditions";
 import Army from "@/pages/Army";
 import MegaStructures from "@/pages/MegaStructures";
+import Achievements from "@/pages/Achievements";
+import Factions from "@/pages/Factions";
+import EmpireProgression from "@/pages/EmpireProgression";
+import WarpNetwork from "@/pages/WarpNetwork";
+import Stations from "@/pages/Stations";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -182,6 +187,11 @@ function RouterContent() {
       <Route path="/expeditions" component={Expeditions} />
       <Route path="/blueprints" component={Blueprints} />
       <Route path="/megastructures" component={MegaStructures} />
+      <Route path="/achievements" component={Achievements} />
+      <Route path="/factions" component={Factions} />
+      <Route path="/empire-progression" component={EmpireProgression} />
+      <Route path="/warp-network" component={WarpNetwork} />
+      <Route path="/stations" component={Stations} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/console" component={ServerConsole} />

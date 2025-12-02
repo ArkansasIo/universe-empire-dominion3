@@ -38,7 +38,13 @@ import {
   GraduationCap,
   Compass,
   Home,
-  FileText
+  FileText,
+  Trophy,
+  Crown,
+  Satellite,
+  Link2,
+  ScrollText,
+  Network
 } from "lucide-react";
 
 const SidebarItem = ({ href, icon: Icon, label, active, className, indent = false }: { href: string, icon: any, label: string, active: boolean, className?: string, indent?: boolean }) => (
@@ -214,7 +220,9 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/resources", icon: Pickaxe, label: "Resources" },
                 { href: "/facilities", icon: Factory, label: "Facilities" },
                 { href: "/megastructures", icon: CircleDot, label: "Megastructures" },
+                { href: "/stations", icon: Satellite, label: "Stations" },
                 { href: "/colonies", icon: Home, label: "Colonies" },
+                { href: "/empire-progression", icon: Crown, label: "Kardashev Scale" },
               ]}
             />
             
@@ -242,6 +250,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/army", icon: Users, label: "Army" },
                 { href: "/expeditions", icon: Compass, label: "Expeditions" },
                 { href: "/combat", icon: Swords, label: "Combat" },
+                { href: "/battle-logs", icon: ScrollText, label: "Battle Logs" },
               ]}
             />
             
@@ -255,6 +264,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/galaxy", icon: Globe, label: "Galaxy Map" },
                 { href: "/universe", icon: Orbit, label: "Universe" },
                 { href: "/exploration", icon: Compass, label: "Exploration" },
+                { href: "/warp-network", icon: Network, label: "Warp Network" },
               ]}
             />
             
@@ -266,6 +276,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               items={[
                 { href: "/commander", icon: User, label: "Commander" },
                 { href: "/government", icon: Landmark, label: "Government" },
+                { href: "/factions", icon: Users, label: "Factions" },
                 { href: "/alliance", icon: Shield, label: "Alliance" },
                 { href: "/messages", icon: Mail, label: "Messages" },
               ]}
@@ -278,6 +289,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               location={location}
               items={[
                 { href: "/market", icon: ShoppingBag, label: "Market" },
+                { href: "/achievements", icon: Trophy, label: "Achievements" },
               ]}
             />
             
