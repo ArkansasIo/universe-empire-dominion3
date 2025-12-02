@@ -53,6 +53,8 @@ import {
   raidGroups,
   raidFinder,
   pveCombatLogs,
+  items,
+  playerItems,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -142,6 +144,10 @@ import {
   type InsertRaidFinder,
   type PveCombatLog,
   type InsertPveCombatLog,
+  type Item,
+  type InsertItem,
+  type PlayerItem,
+  type InsertPlayerItem,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -366,6 +372,17 @@ export interface IStorage {
   createCombatLog(log: InsertPveCombatLog): Promise<PveCombatLog>;
   getPlayerCombatLogs(playerId: string): Promise<PveCombatLog[]>;
   getEventCombatLogs(eventId: string): Promise<PveCombatLog[]>;
+  
+  // Items operations (1000 items)
+  getAllItems(): Promise<Item[]>;
+  getItemById(itemId: string): Promise<Item | undefined>;
+  getItemsByType(itemType: string): Promise<Item[]>;
+  getItemsByClass(itemClass: string): Promise<Item[]>;
+  getItemsByRank(minRank: number, maxRank: number): Promise<Item[]>;
+  getPlayerInventory(playerId: string): Promise<PlayerItem[]>;
+  addItemToInventory(playerId: string, itemId: string, quantity: number): Promise<PlayerItem>;
+  removeItemFromInventory(playerId: string, itemId: string, quantity: number): Promise<void>;
+  equipItem(playerId: string, playerItemId: string, slot: string): Promise<PlayerItem>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -1418,6 +1435,78 @@ export class DatabaseStorage implements IStorage {
   
   async getEventCombatLogs(eventId: string): Promise<PveCombatLog[]> {
     return await db.select().from(pveCombatLogs).where(eq(pveCombatLogs.eventId, eventId));
+  }
+  
+  // Items operations (1000 items)
+  async getAllItems(): Promise<Item[]> {
+    return await db.select().from(items);
+  }
+  
+  async getItemById(itemId: string): Promise<Item | undefined> {
+    const [item] = await db.select().from(items).where(eq(items.id, itemId));
+    return item;
+  }
+  
+  async getItemsByType(itemType: string): Promise<Item[]> {
+    return await db.select().from(items).where(eq(items.itemType, itemType));
+  }
+  
+  async getItemsByClass(itemClass: string): Promise<Item[]> {
+    return await db.select().from(items).where(eq(items.itemClass, itemClass));
+  }
+  
+  async getItemsByRank(minRank: number, maxRank: number): Promise<Item[]> {
+    return await db.select().from(items).where(
+      and(
+        sql`${items.rank} >= ${minRank}`,
+        sql`${items.rank} <= ${maxRank}`
+      )
+    );
+  }
+  
+  async getPlayerInventory(playerId: string): Promise<PlayerItem[]> {
+    return await db.select().from(playerItems).where(eq(playerItems.playerId, playerId));
+  }
+  
+  async addItemToInventory(playerId: string, itemId: string, quantity: number): Promise<PlayerItem> {
+    const existing = await db.select().from(playerItems).where(
+      and(eq(playerItems.playerId, playerId), eq(playerItems.itemId, itemId))
+    ).then(r => r[0]);
+    
+    if (existing) {
+      const [updated] = await db.update(playerItems)
+        .set({ quantity: existing.quantity + quantity })
+        .where(eq(playerItems.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [newItem] = await db.insert(playerItems).values({ playerId, itemId, quantity }).returning();
+    return newItem;
+  }
+  
+  async removeItemFromInventory(playerId: string, itemId: string, quantity: number): Promise<void> {
+    const item = await db.select().from(playerItems).where(
+      and(eq(playerItems.playerId, playerId), eq(playerItems.itemId, itemId))
+    ).then(r => r[0]);
+    
+    if (!item) throw new Error("Item not found in inventory");
+    
+    if (item.quantity <= quantity) {
+      await db.delete(playerItems).where(eq(playerItems.id, item.id));
+    } else {
+      await db.update(playerItems)
+        .set({ quantity: item.quantity - quantity })
+        .where(eq(playerItems.id, item.id));
+    }
+  }
+  
+  async equipItem(playerId: string, playerItemId: string, slot: string): Promise<PlayerItem> {
+    const [updated] = await db.update(playerItems)
+      .set({ isEquipped: true, slot })
+      .where(eq(playerItems.id, playerItemId))
+      .returning();
+    return updated;
   }
   
   // Resource field operations

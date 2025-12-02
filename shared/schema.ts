@@ -1730,3 +1730,68 @@ export const pveCombatLogs = pgTable("pve_combat_logs", {
 export type PveCombatLog = typeof pveCombatLogs.$inferSelect;
 export const insertPveCombatLogSchema = createInsertSchema(pveCombatLogs).omit({ id: true, startedAt: true });
 export type InsertPveCombatLog = z.infer<typeof insertPveCombatLogSchema>;
+
+// Items System - 1000 different types, classes, ranks
+export const items = pgTable("items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Basic info
+  name: varchar("name").notNull(),
+  description: text("description"),
+  itemType: varchar("item_type").notNull(), // "weapon", "armor", "accessory", "consumable", "quest", "crafting", "blueprint", "relic", "artifact", "equipment", "material", "key", "currency", "cosmetic"
+  itemClass: varchar("item_class").notNull(), // "common", "rare", "epic", "legendary", "mythic", "transcendent", "ancient"
+  rank: integer("rank").notNull().default(1), // 1-100
+  
+  // Stats & bonuses
+  rarity: varchar("rarity").notNull(), // Redundant with class but for clarity
+  stats: jsonb("stats").notNull().default({}), // Attack, Defense, Speed, HP, etc.
+  bonuses: jsonb("bonuses").notNull().default({}), // Skill bonuses, resistances, etc.
+  
+  // Requirements
+  requiredLevel: integer("required_level").default(1),
+  requiredClass: varchar("required_class"), // "warrior", "mage", "rogue", "paladin", "ranger"
+  requiredRank: integer("required_rank").default(1),
+  
+  // Economy
+  sellPrice: integer("sell_price").default(0),
+  craftPrice: integer("craft_price").default(0),
+  marketPrice: integer("market_price").default(0),
+  
+  // Crafting & acquisition
+  craftingRecipe: jsonb("crafting_recipe"), // { item_id: quantity, ... }
+  sources: jsonb("sources").notNull().default([]), // "quest", "craft", "boss_drop", "vendor", "mission"
+  
+  // Special properties
+  isUnique: boolean("is_unique").default(false),
+  isBound: boolean("is_bound").default(false),
+  isStackable: boolean("is_stackable").default(true),
+  maxStack: integer("max_stack").default(999),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Item = typeof items.$inferSelect;
+export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true });
+export type InsertItem = z.infer<typeof insertItemSchema>;
+
+// Player Item Inventory
+export const playerItems = pgTable("player_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  itemId: varchar("item_id").notNull().references(() => items.id),
+  
+  quantity: integer("quantity").default(1),
+  isEquipped: boolean("is_equipped").default(false),
+  slot: varchar("slot"), // "head", "chest", "legs", "feet", "mainhand", "offhand", "ring1", "ring2"
+  
+  // Custom properties per instance
+  durability: integer("durability").default(100),
+  enchantments: jsonb("enchantments").notNull().default([]),
+  customStats: jsonb("custom_stats"), // Enhanced/modified stats
+  
+  acquiredAt: timestamp("acquired_at").defaultNow(),
+});
+
+export type PlayerItem = typeof playerItems.$inferSelect;
+export const insertPlayerItemSchema = createInsertSchema(playerItems).omit({ id: true, acquiredAt: true });
+export type InsertPlayerItem = z.infer<typeof insertPlayerItemSchema>;
