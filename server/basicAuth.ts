@@ -1,33 +1,18 @@
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import crypto from "crypto";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
   
-  // Construct connection string from Replit env vars if DATABASE_URL not available
-  let connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    const pghost = process.env.PGHOST;
-    const pgport = process.env.PGPORT;
-    const pguser = process.env.PGUSER;
-    const pgpassword = process.env.PGPASSWORD;
-    const pgdatabase = process.env.PGDATABASE;
-    
-    if (pghost && pgport && pguser && pgpassword && pgdatabase) {
-      connectionString = `postgresql://${pguser}:${pgpassword}@${pghost}:${pgport}/${pgdatabase}`;
-    }
-  }
-  
-  const sessionStore = new pgStore({
-    conString: connectionString || process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
+  // Use in-memory session store to avoid database connection issues
+  const SessionStore = MemoryStore(session);
+  const sessionStore = new SessionStore({
+    checkPeriod: 86400000, // Check for expired sessions every day
   });
+  
   const isDevelopment = process.env.NODE_ENV === "development";
   
   return session({
