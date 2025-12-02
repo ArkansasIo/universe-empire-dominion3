@@ -1548,3 +1548,185 @@ export const combatStats = pgTable("combat_stats", {
 export type CombatStats = typeof combatStats.$inferSelect;
 export const insertCombatStatsSchema = createInsertSchema(combatStats).omit({ id: true, updatedAt: true });
 export type InsertCombatStats = z.infer<typeof insertCombatStatsSchema>;
+
+// Universe Events - 50 types of world events
+export const universeEvents = pgTable("universe_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Event details
+  name: varchar("name").notNull(),
+  description: text("description"),
+  eventType: varchar("event_type").notNull(), // "boss_raid", "meteor_strike", "invasion", "anomaly", "treasure_hunt", etc (50 types)
+  eventClass: varchar("event_class").notNull(), // "common", "rare", "epic", "legendary", "mythic"
+  
+  // Location & timing
+  galaxyId: varchar("galaxy_id"),
+  sector: varchar("sector"),
+  duration: integer("duration"), // In minutes
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  
+  // Mechanics
+  participantLimit: integer("participant_limit").default(50),
+  minimumLevel: integer("minimum_level").default(1),
+  rewards: jsonb("rewards").notNull().default({}),
+  difficulty: integer("difficulty").default(1),
+  
+  // Status
+  status: varchar("status").default("active"), // "preparing", "active", "completed", "failed"
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UniverseEvent = typeof universeEvents.$inferSelect;
+export const insertUniverseEventSchema = createInsertSchema(universeEvents).omit({ id: true, createdAt: true });
+export type InsertUniverseEvent = z.infer<typeof insertUniverseEventSchema>;
+
+// Universe Bosses - 90 different bosses
+export const universeBosses = pgTable("universe_bosses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Boss details
+  name: varchar("name").notNull(),
+  description: text("description"),
+  bossType: varchar("boss_type").notNull(), // 90 unique types
+  rarity: varchar("rarity").notNull(), // "common", "rare", "epic", "legendary", "mythic", "transcendent"
+  
+  // Combat stats
+  healthPoints: integer("health_points").notNull().default(10000),
+  attackPower: integer("attack_power").default(100),
+  defense: integer("defense").default(50),
+  speed: integer("speed").default(50),
+  
+  // Mechanics
+  abilities: jsonb("abilities").notNull().default([]), // Special boss abilities
+  weaknesses: jsonb("weaknesses").notNull().default({}),
+  resistances: jsonb("resistances").notNull().default({}),
+  
+  // Loot
+  lootTable: jsonb("loot_table").notNull().default([]),
+  bossReward: jsonb("boss_reward").notNull().default({}),
+  
+  // Difficulty & requirements
+  recommendedLevel: integer("recommended_level").default(50),
+  recommendedPlayers: integer("recommended_players").default(6),
+  minPlayers: integer("min_players").default(1),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UniverseBoss = typeof universeBosses.$inferSelect;
+export const insertUniverseBossSchema = createInsertSchema(universeBosses).omit({ id: true, createdAt: true });
+export type InsertUniverseBoss = z.infer<typeof insertUniverseBossSchema>;
+
+// Boss Encounters - Active boss battles
+export const bossEncounters = pgTable("boss_encounters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  eventId: varchar("event_id").references(() => universeEvents.id, { onDelete: "cascade" }),
+  bossId: varchar("boss_id").notNull().references(() => universeBosses.id),
+  
+  // Encounter state
+  currentHealth: integer("current_health"),
+  status: varchar("status").default("active"), // "active", "defeated", "failed", "abandoned"
+  
+  // Participants
+  participants: jsonb("participants").notNull().default([]),
+  participantCount: integer("participant_count").default(0),
+  
+  // Combat
+  totalDamageDealt: integer("total_damage_dealt").default(0),
+  combatLog: jsonb("combat_log").notNull().default([]),
+  
+  // Rewards
+  totalRewards: jsonb("total_rewards").notNull().default({}),
+  
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export type BossEncounter = typeof bossEncounters.$inferSelect;
+export const insertBossEncounterSchema = createInsertSchema(bossEncounters).omit({ id: true, startedAt: true });
+export type InsertBossEncounter = z.infer<typeof insertBossEncounterSchema>;
+
+// Raid Groups - Groups of 6-50 players for raids
+export const raidGroups = pgTable("raid_groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Group info
+  name: varchar("name").notNull(),
+  description: text("description"),
+  leaderId: varchar("leader_id").notNull().references(() => users.id),
+  
+  // Members (6-50)
+  members: jsonb("members").notNull().default([]),
+  minMembers: integer("min_members").default(6),
+  maxMembers: integer("max_members").default(50),
+  
+  // Status
+  status: varchar("status").default("forming"), // "forming", "ready", "raiding", "disbanded"
+  targetBossId: varchar("target_boss_id").references(() => universeBosses.id),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type RaidGroup = typeof raidGroups.$inferSelect;
+export const insertRaidGroupSchema = createInsertSchema(raidGroups).omit({ id: true, createdAt: true });
+export type InsertRaidGroup = z.infer<typeof insertRaidGroupSchema>;
+
+// Raid Finder - Matchmaking for raid groups
+export const raidFinder = pgTable("raid_finder", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Preferences
+  preferredRole: varchar("preferred_role"), // "tank", "dps", "healer", "support"
+  minRaidLevel: integer("min_raid_level").default(1),
+  maxRaidLevel: integer("max_raid_level").default(99),
+  
+  // Looking for
+  lookingForBossId: varchar("looking_for_boss_id").references(() => universeBosses.id),
+  eventId: varchar("event_id").references(() => universeEvents.id),
+  
+  // Status
+  status: varchar("status").default("queued"), // "queued", "matched", "raiding", "completed"
+  queuedAt: timestamp("queued_at").defaultNow(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type RaidFinder = typeof raidFinder.$inferSelect;
+export const insertRaidFinderSchema = createInsertSchema(raidFinder).omit({ id: true, createdAt: true });
+export type InsertRaidFinder = z.infer<typeof insertRaidFinderSchema>;
+
+// PvE Combat Logs - Individual player combat during events
+export const pveCombatLogs = pgTable("pve_combat_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  eventId: varchar("event_id").notNull().references(() => universeEvents.id, { onDelete: "cascade" }),
+  encounterId: varchar("encounter_id").references(() => bossEncounters.id, { onDelete: "cascade" }),
+  playerId: varchar("player_id").notNull().references(() => users.id),
+  
+  // Combat details
+  roleInCombat: varchar("role_in_combat"), // "tank", "dps", "healer", "support"
+  damageDealt: integer("damage_dealt").default(0),
+  damageReceived: integer("damage_received").default(0),
+  healsProvided: integer("heals_provided").default(0),
+  controlsApplied: integer("controls_applied").default(0),
+  
+  // Results
+  survived: boolean("survived").default(true),
+  contribution: integer("contribution").default(0), // Percentage
+  rewards: jsonb("rewards").notNull().default({}),
+  
+  // Status
+  participationStatus: varchar("participation_status").default("completed"), // "completed", "abandoned", "failed"
+  
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+export type PveCombatLog = typeof pveCombatLogs.$inferSelect;
+export const insertPveCombatLogSchema = createInsertSchema(pveCombatLogs).omit({ id: true, startedAt: true });
+export type InsertPveCombatLog = z.infer<typeof insertPveCombatLogSchema>;

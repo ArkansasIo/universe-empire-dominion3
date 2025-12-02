@@ -54,6 +54,9 @@ import Relics from "@/pages/Relics";
 import FriendsList from "@/pages/FriendsList";
 import Guilds from "@/pages/Guilds";
 import Raids from "@/pages/Raids";
+import UniverseEvents from "@/pages/UniverseEvents";
+import RaidBosses from "@/pages/RaidBosses";
+import RaidFinder from "@/pages/RaidFinder";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -208,6 +211,9 @@ function RouterContent() {
       <Route path="/friends" component={FriendsList} />
       <Route path="/guilds" component={Guilds} />
       <Route path="/raids" component={Raids} />
+      <Route path="/universe-events" component={UniverseEvents} />
+      <Route path="/raid-bosses" component={RaidBosses} />
+      <Route path="/raid-finder" component={RaidFinder} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/console" component={ServerConsole} />

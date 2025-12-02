@@ -47,6 +47,12 @@ import {
   raids,
   raidCombats,
   combatStats,
+  universeEvents,
+  universeBosses,
+  bossEncounters,
+  raidGroups,
+  raidFinder,
+  pveCombatLogs,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -124,6 +130,18 @@ import {
   type InsertRaidCombat,
   type CombatStats,
   type InsertCombatStats,
+  type UniverseEvent,
+  type InsertUniverseEvent,
+  type UniverseBoss,
+  type InsertUniverseBoss,
+  type BossEncounter,
+  type InsertBossEncounter,
+  type RaidGroup,
+  type InsertRaidGroup,
+  type RaidFinder,
+  type InsertRaidFinder,
+  type PveCombatLog,
+  type InsertPveCombatLog,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -313,6 +331,41 @@ export interface IStorage {
   getCombatStats(userId: string): Promise<CombatStats | undefined>;
   createCombatStats(stats: InsertCombatStats): Promise<CombatStats>;
   updateCombatStats(userId: string, updates: Partial<CombatStats>): Promise<CombatStats>;
+  
+  // Universe events operations
+  createUniverseEvent(event: InsertUniverseEvent): Promise<UniverseEvent>;
+  getUniverseEvent(eventId: string): Promise<UniverseEvent | undefined>;
+  getActiveEvents(): Promise<UniverseEvent[]>;
+  updateEventStatus(eventId: string, status: string): Promise<UniverseEvent>;
+  
+  // Universe bosses operations (90 bosses)
+  getAllBosses(): Promise<UniverseBoss[]>;
+  getBossById(bossId: string): Promise<UniverseBoss | undefined>;
+  getBossesByRarity(rarity: string): Promise<UniverseBoss[]>;
+  
+  // Boss encounters operations
+  createBossEncounter(encounter: InsertBossEncounter): Promise<BossEncounter>;
+  getBossEncounter(encounterId: string): Promise<BossEncounter | undefined>;
+  updateEncounterStatus(encounterId: string, status: string): Promise<BossEncounter>;
+  addEncounterParticipant(encounterId: string, playerId: string): Promise<BossEncounter>;
+  
+  // Raid groups operations
+  createRaidGroup(group: InsertRaidGroup): Promise<RaidGroup>;
+  getRaidGroup(groupId: string): Promise<RaidGroup | undefined>;
+  getPlayerRaidGroups(playerId: string): Promise<RaidGroup[]>;
+  addGroupMember(groupId: string, playerId: string): Promise<RaidGroup>;
+  removeGroupMember(groupId: string, playerId: string): Promise<RaidGroup>;
+  
+  // Raid finder operations
+  joinRaidFinder(finderId: InsertRaidFinder): Promise<RaidFinder>;
+  getRaidFinderQueue(limit?: number): Promise<RaidFinder[]>;
+  leaveRaidFinder(finderId: string): Promise<void>;
+  updateFinderStatus(finderId: string, status: string): Promise<RaidFinder>;
+  
+  // PvE combat logs
+  createCombatLog(log: InsertPveCombatLog): Promise<PveCombatLog>;
+  getPlayerCombatLogs(playerId: string): Promise<PveCombatLog[]>;
+  getEventCombatLogs(eventId: string): Promise<PveCombatLog[]>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -1240,6 +1293,131 @@ export class DatabaseStorage implements IStorage {
   async updateCombatStats(userId: string, updates: Partial<CombatStats>): Promise<CombatStats> {
     const [updated] = await db.update(combatStats).set(updates).where(eq(combatStats.playerId, userId)).returning();
     return updated;
+  }
+  
+  // Universe events operations
+  async createUniverseEvent(event: InsertUniverseEvent): Promise<UniverseEvent> {
+    const [created] = await db.insert(universeEvents).values(event).returning();
+    return created;
+  }
+  
+  async getUniverseEvent(eventId: string): Promise<UniverseEvent | undefined> {
+    const [event] = await db.select().from(universeEvents).where(eq(universeEvents.id, eventId));
+    return event;
+  }
+  
+  async getActiveEvents(): Promise<UniverseEvent[]> {
+    return await db.select().from(universeEvents).where(eq(universeEvents.status, "active"));
+  }
+  
+  async updateEventStatus(eventId: string, status: string): Promise<UniverseEvent> {
+    const [updated] = await db.update(universeEvents).set({ status }).where(eq(universeEvents.id, eventId)).returning();
+    return updated;
+  }
+  
+  // Universe bosses operations (90 bosses)
+  async getAllBosses(): Promise<UniverseBoss[]> {
+    return await db.select().from(universeBosses);
+  }
+  
+  async getBossById(bossId: string): Promise<UniverseBoss | undefined> {
+    const [boss] = await db.select().from(universeBosses).where(eq(universeBosses.id, bossId));
+    return boss;
+  }
+  
+  async getBossesByRarity(rarity: string): Promise<UniverseBoss[]> {
+    return await db.select().from(universeBosses).where(eq(universeBosses.rarity, rarity));
+  }
+  
+  // Boss encounters operations
+  async createBossEncounter(encounter: InsertBossEncounter): Promise<BossEncounter> {
+    const [created] = await db.insert(bossEncounters).values(encounter).returning();
+    return created;
+  }
+  
+  async getBossEncounter(encounterId: string): Promise<BossEncounter | undefined> {
+    const [encounter] = await db.select().from(bossEncounters).where(eq(bossEncounters.id, encounterId));
+    return encounter;
+  }
+  
+  async updateEncounterStatus(encounterId: string, status: string): Promise<BossEncounter> {
+    const [updated] = await db.update(bossEncounters).set({ status }).where(eq(bossEncounters.id, encounterId)).returning();
+    return updated;
+  }
+  
+  async addEncounterParticipant(encounterId: string, playerId: string): Promise<BossEncounter> {
+    const encounter = await this.getBossEncounter(encounterId);
+    if (!encounter) throw new Error("Encounter not found");
+    const members = (encounter.participants as any[]) || [];
+    if (!members.includes(playerId)) members.push(playerId);
+    const [updated] = await db.update(bossEncounters).set({ participants: members, participantCount: members.length }).where(eq(bossEncounters.id, encounterId)).returning();
+    return updated;
+  }
+  
+  // Raid groups operations
+  async createRaidGroup(group: InsertRaidGroup): Promise<RaidGroup> {
+    const [created] = await db.insert(raidGroups).values(group).returning();
+    return created;
+  }
+  
+  async getRaidGroup(groupId: string): Promise<RaidGroup | undefined> {
+    const [group] = await db.select().from(raidGroups).where(eq(raidGroups.id, groupId));
+    return group;
+  }
+  
+  async getPlayerRaidGroups(playerId: string): Promise<RaidGroup[]> {
+    return await db.select().from(raidGroups).where(sql`${playerId} = ANY(members)`);
+  }
+  
+  async addGroupMember(groupId: string, playerId: string): Promise<RaidGroup> {
+    const group = await this.getRaidGroup(groupId);
+    if (!group) throw new Error("Group not found");
+    const members = (group.members as any[]) || [];
+    if (members.length >= group.maxMembers) throw new Error("Raid group is full");
+    if (!members.includes(playerId)) members.push(playerId);
+    const [updated] = await db.update(raidGroups).set({ members }).where(eq(raidGroups.id, groupId)).returning();
+    return updated;
+  }
+  
+  async removeGroupMember(groupId: string, playerId: string): Promise<RaidGroup> {
+    const group = await this.getRaidGroup(groupId);
+    if (!group) throw new Error("Group not found");
+    const members = (group.members as any[]).filter(m => m !== playerId);
+    const [updated] = await db.update(raidGroups).set({ members }).where(eq(raidGroups.id, groupId)).returning();
+    return updated;
+  }
+  
+  // Raid finder operations
+  async joinRaidFinder(finder: InsertRaidFinder): Promise<RaidFinder> {
+    const [created] = await db.insert(raidFinder).values(finder).returning();
+    return created;
+  }
+  
+  async getRaidFinderQueue(limit: number = 50): Promise<RaidFinder[]> {
+    return await db.select().from(raidFinder).where(eq(raidFinder.status, "queued")).limit(limit);
+  }
+  
+  async leaveRaidFinder(finderId: string): Promise<void> {
+    await db.delete(raidFinder).where(eq(raidFinder.id, finderId));
+  }
+  
+  async updateFinderStatus(finderId: string, status: string): Promise<RaidFinder> {
+    const [updated] = await db.update(raidFinder).set({ status }).where(eq(raidFinder.id, finderId)).returning();
+    return updated;
+  }
+  
+  // PvE combat logs
+  async createCombatLog(log: InsertPveCombatLog): Promise<PveCombatLog> {
+    const [created] = await db.insert(pveCombatLogs).values(log).returning();
+    return created;
+  }
+  
+  async getPlayerCombatLogs(playerId: string): Promise<PveCombatLog[]> {
+    return await db.select().from(pveCombatLogs).where(eq(pveCombatLogs.playerId, playerId));
+  }
+  
+  async getEventCombatLogs(eventId: string): Promise<PveCombatLog[]> {
+    return await db.select().from(pveCombatLogs).where(eq(pveCombatLogs.eventId, eventId));
   }
   
   // Resource field operations
