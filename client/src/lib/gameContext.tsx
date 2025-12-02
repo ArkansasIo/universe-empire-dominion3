@@ -396,7 +396,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
     },
-    retry: false,
+    retry: 3,
+    retryDelay: 500,
     staleTime: 60000
   });
 
