@@ -1,19 +1,18 @@
 import readline from 'readline';
 import { logger } from './logger';
 
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-};
-
 export class ConsoleMenu {
   private rl: readline.Interface;
+  private colors = {
+    reset: '\x1b[0m',
+    bright: '\x1b[1m',
+    dim: '\x1b[2m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    cyan: '\x1b[36m',
+  };
 
   constructor() {
     this.rl = readline.createInterface({
@@ -25,14 +24,14 @@ export class ConsoleMenu {
 
   private displayHeader() {
     console.clear();
-    console.log(colors.bright + colors.cyan + '╔════════════════════════════════════════════════╗' + colors.reset);
-    console.log(colors.bright + colors.cyan + '║' + colors.reset + colors.bright + '         🖥️  STELLAR DOMINION SERVER CONSOLE     ' + colors.cyan + '║' + colors.reset);
-    console.log(colors.bright + colors.cyan + '╚════════════════════════════════════════════════╝' + colors.reset + '\n');
+    console.log(this.colors.bright + this.colors.cyan + '╔════════════════════════════════════════════════╗' + this.colors.reset);
+    console.log(this.colors.bright + this.colors.cyan + '║' + this.colors.reset + this.colors.bright + '         🖥️  STELLAR DOMINION SERVER CONSOLE     ' + this.colors.cyan + '║' + this.colors.reset);
+    console.log(this.colors.bright + this.colors.cyan + '╚════════════════════════════════════════════════╝' + this.colors.reset + '\n');
   }
 
   displayMainMenu() {
     this.displayHeader();
-    console.log(colors.bright + 'Main Menu:' + colors.reset);
+    console.log(this.colors.bright + 'Main Menu:' + this.colors.reset);
     console.log('  1) View System Status');
     console.log('  2) View Logs');
     console.log('  3) Server Settings');
@@ -44,18 +43,18 @@ export class ConsoleMenu {
   viewSystemStatus() {
     this.displayHeader();
     const stats = logger.getStats();
-    console.log(colors.bright + 'System Status:' + colors.reset);
-    console.log(`  ${colors.green}✓${colors.reset} Total Logs: ${stats.total}`);
-    console.log(`  ${colors.blue}ℹ️${colors.reset}  Info: ${stats.info}`);
-    console.log(`  ${colors.yellow}⚠️${colors.reset}  Warnings: ${stats.warnings}`);
-    console.log(`  ${colors.red}❌${colors.reset} Errors: ${stats.errors}`);
+    console.log(this.colors.bright + 'System Status:' + this.colors.reset);
+    console.log(`  ${this.colors.green}✓${this.colors.reset} Total Logs: ${stats.total}`);
+    console.log(`  ${this.colors.blue}ℹ️${this.colors.reset}  Info: ${stats.info}`);
+    console.log(`  ${this.colors.yellow}⚠️${this.colors.reset}  Warnings: ${stats.warnings}`);
+    console.log(`  ${this.colors.red}❌${this.colors.reset} Errors: ${stats.errors}`);
     console.log(`  🔍 Debug: ${stats.debug}`);
     console.log();
   }
 
   viewLogs() {
     this.displayHeader();
-    console.log(colors.bright + 'Logs Menu:' + colors.reset);
+    console.log(this.colors.bright + 'Logs Menu:' + this.colors.reset);
     console.log('  1) View All Logs (last 20)');
     console.log('  2) View Errors');
     console.log('  3) View Warnings');
@@ -66,7 +65,7 @@ export class ConsoleMenu {
 
   serverSettings() {
     this.displayHeader();
-    console.log(colors.bright + 'Server Settings:' + colors.reset);
+    console.log(this.colors.bright + 'Server Settings:' + this.colors.reset);
     console.log('  1) Set Log Level');
     console.log('  2) Database Info');
     console.log('  3) Session Info');
