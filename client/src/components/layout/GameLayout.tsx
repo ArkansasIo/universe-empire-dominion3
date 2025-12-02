@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useGame } from "@/lib/gameContext";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   Pickaxe, 
@@ -22,7 +23,9 @@ import {
   ShieldAlert,
   LogOut,
   ShoppingBag,
-  Orbit
+  Orbit,
+  Clock,
+  RefreshCw
 } from "lucide-react";
 
 const SidebarItem = ({ href, icon: Icon, label, active, className }: { href: string, icon: any, label: string, active: boolean, className?: string }) => (
@@ -54,9 +57,40 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
   </div>
 );
 
+const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: number, totalTurns: number, isLoading: boolean }) => (
+  <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-4 py-2 rounded shadow-sm min-w-[180px]" data-testid="display-turns">
+    <div className="p-2 rounded-full bg-indigo-100 text-indigo-600">
+      {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+    </div>
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-widest text-indigo-600 font-bold">Turns</span>
+      <div className="flex items-center gap-2">
+        <span className="font-orbitron font-bold text-sm tabular-nums text-indigo-900">
+          {currentTurns.toLocaleString()}
+        </span>
+        <span className="text-[10px] text-indigo-500 font-mono">+6/min</span>
+      </div>
+    </div>
+    <div className="border-l border-indigo-200 pl-3 ml-1">
+      <span className="text-[9px] uppercase tracking-widest text-slate-400">Total</span>
+      <div className="font-mono text-xs text-slate-600">{totalTurns.toLocaleString()}</div>
+    </div>
+  </div>
+);
+
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { resources, planetName, coordinates, isAdmin, logout, username } = useGame();
+
+  const { data: turnData, isLoading: turnsLoading } = useQuery({
+    queryKey: ['/api/turns'],
+    queryFn: async () => {
+      const res = await fetch('/api/turns', { credentials: 'include' });
+      if (!res.ok) return { currentTurns: 0, totalTurns: 0 };
+      return res.json();
+    },
+    refetchInterval: 10000,
+  });
 
   return (
     <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
@@ -74,6 +108,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="flex gap-4">
+          <TurnDisplay 
+            currentTurns={turnData?.currentTurns || 0} 
+            totalTurns={turnData?.totalTurns || 0} 
+            isLoading={turnsLoading} 
+          />
           <ResourceDisplay icon={Box} label="Metal" value={resources.metal} colorClass="text-slate-600" />
           <ResourceDisplay icon={Gem} label="Crystal" value={resources.crystal} colorClass="text-blue-600" />
           <ResourceDisplay icon={Database} label="Deuterium" value={resources.deuterium} colorClass="text-green-600" />

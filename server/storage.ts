@@ -492,17 +492,13 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(resourceFields).where(eq(resourceFields.territoryId, territoryId));
   }
   
-  // Mining operations
-  async getActiveMiningOperations(userId: string): Promise<MiningOperation[]> {
-    return await db
-      .select()
-      .from(miningOperations)
-      .where(eq(miningOperations.playerId, userId));
+  // Mining operations (stubbed - table not yet created)
+  async getActiveMiningOperations(userId: string): Promise<any[]> {
+    return [];
   }
   
-  async createMiningOperation(op: any): Promise<MiningOperation> {
-    const [newOp] = await db.insert(miningOperations).values(op).returning();
-    return newOp;
+  async createMiningOperation(op: any): Promise<any> {
+    return op;
   }
   
   // Durability operations
@@ -554,15 +550,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPlayerResearchProgress(userId: string): Promise<any[]> {
-    return await db.select().from(playerResearchProgress).where(eq(playerResearchProgress.playerId, userId));
+    return await db.select().from(playerResearchProgress).where(eq(playerResearchProgress.userId, userId));
   }
 
   async upsertPlayerResearch(userId: string, technologyId: string, status: string, progress: number): Promise<any> {
     const [result] = await db
       .insert(playerResearchProgress)
-      .values({ playerId: userId, technologyId, status, progress, startedAt: new Date() })
+      .values({ userId, technologyId, status, progress })
       .onConflictDoUpdate({
-        target: [playerResearchProgress.playerId, playerResearchProgress.technologyId],
+        target: [playerResearchProgress.userId, playerResearchProgress.technologyId],
         set: { status, progress, updatedAt: new Date() }
       })
       .returning();
@@ -571,21 +567,18 @@ export class DatabaseStorage implements IStorage {
 
   // Expedition operations
   async getExpeditions(userId: string): Promise<any[]> {
-    return await db.select().from(expeditions).where(eq(expeditions.leaderId, userId)).orderBy(desc(expeditions.createdAt));
+    return await db.select().from(expeditions).where(eq(expeditions.userId, userId)).orderBy(desc(expeditions.createdAt));
   }
 
   async createExpedition(userId: string, name: string, type: string, targetCoords: string, fleetComposition: any, troopComposition: any): Promise<any> {
     const [result] = await db
       .insert(expeditions)
       .values({
-        leaderId: userId,
+        userId,
         name,
         type,
-        targetCoordinates: targetCoords,
-        status: "preparing",
-        fleetComposition,
-        troopComposition,
-        startedAt: new Date()
+        targetCoords,
+        status: "preparing"
       })
       .returning();
     return result;
@@ -639,6 +632,8 @@ export class DatabaseStorage implements IStorage {
       playerState = await this.createPlayerState({
         userId,
         resources: { metal: 1000, crystal: 500, deuterium: 0, energy: 0 },
+        commander: { race: "human", class: "warrior", stats: { level: 1, xp: 0 }, equipment: {}, inventory: [] },
+        government: { type: "democracy", taxRate: 10, policies: [], stats: { stability: 50, efficiency: 70, publicSupport: 60, militaryReadiness: 50 } },
         currentTurns: 50,
         totalTurns: 50,
         lastTurnUpdate: now
