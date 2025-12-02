@@ -135,8 +135,11 @@ export default function Auth() {
       saveCredentials(username.trim(), password);
       console.log("[AUTH] Credentials saved, redirecting to game...");
       
-      // Reload page to trigger game context update
-      window.location.href = "/";
+      // Invalidate auth query to trigger React Query refetch with new credentials
+      // This is better than full page reload as it preserves React state
+      await new Promise(r => setTimeout(r, 100));
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setSubmitting(false);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error("[AUTH] Network/exception error:", errorMsg, err);
