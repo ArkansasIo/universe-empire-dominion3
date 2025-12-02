@@ -550,6 +550,98 @@ export const unitStatistics = pgTable("unit_statistics", {
 
 export type UnitStatistics = typeof unitStatistics.$inferSelect;
 
+// Unit Research System
+export const unitResearchDefinitions = pgTable("unit_research_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  researchKey: varchar("research_key").unique().notNull(),
+  researchName: varchar("research_name").notNull(),
+  category: varchar("category").notNull(),
+  tier: integer("tier").notNull(),
+  cost: jsonb("cost").notNull().default({}),
+  researchTime: integer("research_time").notNull(),
+  description: text("description"),
+  unlocks: jsonb("unlocks").notNull().default([]),
+  prerequisites: jsonb("prerequisites").notNull().default([]),
+  bonuses: jsonb("bonuses").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UnitResearchDefinition = typeof unitResearchDefinitions.$inferSelect;
+
+export const playerUnitResearch = pgTable("player_unit_research", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  researchId: varchar("research_id").notNull().references(() => unitResearchDefinitions.id),
+  status: varchar("status").default("locked"), // locked, available, in_progress, completed
+  progress: real("progress").default(0),
+  completedAt: timestamp("completed_at"),
+  startedAt: timestamp("started_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PlayerUnitResearch = typeof playerUnitResearch.$inferSelect;
+
+export const unitResearchQueue = pgTable("unit_research_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").unique().references(() => users.id, { onDelete: "cascade" }),
+  researchId: varchar("research_id").notNull().references(() => unitResearchDefinitions.id),
+  startedAt: timestamp("started_at").defaultNow(),
+  completionTime: timestamp("completion_time").notNull(),
+  researchPointsInvested: real("research_points_invested").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UnitResearchQueue = typeof unitResearchQueue.$inferSelect;
+
+export const unitClassificationUpgrades = pgTable("unit_classification_upgrades", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  unitId: varchar("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+  upgradeType: varchar("upgrade_type").notNull(),
+  upgradeKey: varchar("upgrade_key").notNull(),
+  tier: integer("tier"),
+  status: varchar("status").default("active"),
+  appliedAt: timestamp("applied_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UnitClassificationUpgrade = typeof unitClassificationUpgrades.$inferSelect;
+
+export const playerUnlockedUnits = pgTable("player_unlocked_units", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  unitType: varchar("unit_type").notNull(),
+  unitClass: varchar("unit_class"),
+  unitJob: varchar("unit_job"),
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PlayerUnlockedUnit = typeof playerUnlockedUnits.$inferSelect;
+
+export const researchPointsLog = pgTable("research_points_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  pointsEarned: real("points_earned").notNull(),
+  source: varchar("source").notNull(),
+  unitId: varchar("unit_id").references(() => units.id),
+  loggedAt: timestamp("logged_at").defaultNow(),
+});
+
+export type ResearchPointsLog = typeof researchPointsLog.$inferSelect;
+
+export const activeResearchBonuses = pgTable("active_research_bonuses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  researchId: varchar("research_id").notNull().references(() => unitResearchDefinitions.id),
+  bonusType: varchar("bonus_type").notNull(),
+  bonusValue: real("bonus_value").notNull(),
+  isActive: boolean("is_active").default(true),
+  appliedAt: timestamp("applied_at").defaultNow(),
+});
+
+export type ActiveResearchBonus = typeof activeResearchBonuses.$inferSelect;
+
 // Messages (player communications, battle reports, espionage reports)
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
