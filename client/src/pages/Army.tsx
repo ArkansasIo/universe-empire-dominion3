@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Users, Swords, Star, Shield, Activity, Plus, Zap, Wand2, Heart, Package } from "lucide-react";
 import { generateTroopName, getRandomTitle, MILITARY_RANKS, TROOP_NAMES, WEAPONS, ARMOR, HELMETS, SHIELDS } from "@/lib/militaryData";
-import { getTroopStats, getClassBuffs, getTypeBuffs, DEBUFFS } from "@/lib/militaryAttributes";
+import { getTroopStats, getClassBuffs, getTypeBuffs, DEBUFFS, calculateCombatPower } from "@/lib/militaryAttributes";
 
 interface Equipment {
   weapon: { name: string; rarity: string; damage: number; weight: number } | null;
@@ -37,6 +37,7 @@ interface Troop {
   attributes?: { strength: number; endurance: number; dexterity: number; intelligence: number; wisdom: number; charisma: number };
   buffs?: string[];
   debuffs?: string[];
+  combatPower?: any;
 }
 
 const TROOP_TYPES = ["infantry", "cavalry", "mage", "archer", "support", "siege"];
@@ -73,7 +74,9 @@ const MOCK_TROOPS: Troop[] = [
     ],
     attributes: getTroopStats("warrior"),
     buffs: ["Battle Cry", "Shield Wall"],
-    debuffs: []
+    debuffs: [],
+    combatPower: calculateCombatPower("warrior", "infantry", getTroopStats("warrior"), 18, 12, 8, 5, 
+      { weapon: { name: "Legendary Greatsword", rarity: "rare", damage: 25, weight: 12 }, armor: { name: "Full Plate", rarity: "rare", defense: 24, weight: 22, evade: -1 }, helmet: { name: "Dragon Scale Helm", rarity: "rare", defense: 6 }, shield: { name: "Knight's Shield", rarity: "rare", defense: 9 } })
   },
   {
     id: "2",
@@ -104,7 +107,9 @@ const MOCK_TROOPS: Troop[] = [
     ],
     attributes: getTroopStats("ranger"),
     buffs: ["Focus Fire", "Eagle Eye"],
-    debuffs: ["Slow"]
+    debuffs: ["Slow"],
+    combatPower: calculateCombatPower("ranger", "archer", getTroopStats("ranger"), 22, 6, 14, 3,
+      { weapon: { name: "Elven Longbow", rarity: "rare", damage: 18, weight: 5 }, armor: { name: "Elven Garb", rarity: "rare", defense: 12, weight: 4, evade: 7 }, helmet: { name: "Steel Helm", rarity: "uncommon", defense: 4 }, shield: null })
   }
 ];
 
@@ -337,6 +342,36 @@ export default function Army() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Combat Power */}
+                      {troop.combatPower && (
+                        <div className="mb-3 p-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded border border-purple-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold text-purple-700">⚔️ COMBAT POWER</p>
+                            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold">
+                              {troop.combatPower.powerRating}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex justify-between bg-white px-2 py-1 rounded">
+                              <span className="text-slate-600">Total:</span>
+                              <span className="font-bold text-purple-700">{troop.combatPower.totalCombatPower}</span>
+                            </div>
+                            <div className="flex justify-between bg-white px-2 py-1 rounded">
+                              <span className="text-slate-600">Attack:</span>
+                              <span className="font-bold text-red-600">{troop.combatPower.attackPower}</span>
+                            </div>
+                            <div className="flex justify-between bg-white px-2 py-1 rounded">
+                              <span className="text-slate-600">Defense:</span>
+                              <span className="font-bold text-blue-600">{troop.combatPower.defensePower}</span>
+                            </div>
+                            <div className="flex justify-between bg-white px-2 py-1 rounded">
+                              <span className="text-slate-600">Mobility:</span>
+                              <span className="font-bold text-green-600">{troop.combatPower.mobilityPower}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Attributes & Effects */}
                       <div>

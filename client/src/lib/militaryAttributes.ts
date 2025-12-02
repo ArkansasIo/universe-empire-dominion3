@@ -203,3 +203,117 @@ export function getClassBuffs(className: string): Buff[] {
 export function getTypeBuffs(troopType: string): Buff[] {
   return TYPE_BUFFS[troopType as keyof typeof TYPE_BUFFS] || [];
 }
+
+// COMBAT POWER CALCULATIONS
+export const CLASS_COMBAT_POWER = {
+  warrior: { base: 45, attack_mult: 1.1, defense_mult: 1.0 },
+  knight: { base: 50, attack_mult: 0.95, defense_mult: 1.25 },
+  berserker: { base: 55, attack_mult: 1.35, defense_mult: 0.8 },
+  paladin: { base: 48, attack_mult: 1.05, defense_mult: 1.15 },
+  ranger: { base: 42, attack_mult: 1.2, defense_mult: 0.85 },
+  scout: { base: 38, attack_mult: 1.15, defense_mult: 0.75 },
+  mage: { base: 46, attack_mult: 1.4, defense_mult: 0.7 },
+  healer: { base: 40, attack_mult: 0.8, defense_mult: 1.05 },
+  engineer: { base: 44, attack_mult: 1.0, defense_mult: 1.1 }
+};
+
+export const TYPE_COMBAT_POWER = {
+  infantry: { base_mult: 1.0, specialization: "balanced" },
+  cavalry: { base_mult: 1.15, specialization: "mobility" },
+  archer: { base_mult: 0.95, specialization: "ranged" },
+  mage: { base_mult: 1.05, specialization: "magical" },
+  support: { base_mult: 0.85, specialization: "utility" },
+  siege: { base_mult: 1.25, specialization: "heavy" }
+};
+
+export const RARITY_COMBAT_BONUS = {
+  common: 0,
+  uncommon: 5,
+  rare: 12,
+  epic: 20,
+  legendary: 35
+};
+
+export interface CombatStats {
+  basePower: number;
+  attackPower: number;
+  defensePower: number;
+  mobilityPower: number;
+  totalCombatPower: number;
+  powerRating: "D" | "C" | "B" | "A" | "S" | "SS";
+}
+
+export function calculateCombatPower(
+  troopClass: string,
+  troopType: string,
+  attributes: any,
+  attack: number,
+  defense: number,
+  speed: number,
+  level: number,
+  equipment: any
+): CombatStats {
+  const classData = CLASS_COMBAT_POWER[troopClass as keyof typeof CLASS_COMBAT_POWER] || CLASS_COMBAT_POWER.warrior;
+  const typeData = TYPE_COMBAT_POWER[troopType as keyof typeof TYPE_COMBAT_POWER] || TYPE_COMBAT_POWER.infantry;
+  
+  // Calculate base power from attributes
+  const attributePower = (
+    (attributes?.strength || 10) * 1.2 +
+    (attributes?.endurance || 10) * 0.8 +
+    (attributes?.dexterity || 10) * 1.0 +
+    (attributes?.intelligence || 10) * 1.1 +
+    (attributes?.wisdom || 10) * 0.9 +
+    (attributes?.charisma || 10) * 0.7
+  );
+
+  // Equipment bonuses
+  let equipmentBonus = 0;
+  if (equipment?.weapon) {
+    equipmentBonus += (equipment.weapon.damage || 0) * 1.5;
+    equipmentBonus += RARITY_COMBAT_BONUS[equipment.weapon.rarity as keyof typeof RARITY_COMBAT_BONUS] || 0;
+  }
+  if (equipment?.armor) {
+    equipmentBonus += (equipment.armor.defense || 0) * 1.0;
+    equipmentBonus += RARITY_COMBAT_BONUS[equipment.armor.rarity as keyof typeof RARITY_COMBAT_BONUS] || 0;
+  }
+  if (equipment?.helmet) {
+    equipmentBonus += (equipment.helmet.defense || 0) * 0.8;
+    equipmentBonus += RARITY_COMBAT_BONUS[equipment.helmet.rarity as keyof typeof RARITY_COMBAT_BONUS] || 0;
+  }
+  if (equipment?.shield) {
+    equipmentBonus += (equipment.shield.defense || 0) * 1.2;
+    equipmentBonus += RARITY_COMBAT_BONUS[equipment.shield.rarity as keyof typeof RARITY_COMBAT_BONUS] || 0;
+  }
+
+  // Calculate component powers
+  const attackPower = (attack + attributePower * 0.3) * classData.attack_mult;
+  const defensePower = (defense + attributePower * 0.2) * classData.defense_mult + equipmentBonus * 0.4;
+  const mobilityPower = speed * (attributes?.dexterity || 10) * 0.8;
+
+  // Base power calculation
+  const basePower = (classData.base + attributePower * 0.4) * typeData.base_mult;
+
+  // Level scaling (each level adds 2% power)
+  const levelScale = Math.pow(1.02, level - 1);
+
+  // Total combat power
+  const totalCombatPower = (basePower + attackPower * 0.4 + defensePower * 0.35 + mobilityPower * 0.15) * levelScale;
+
+  // Determine power rating
+  let powerRating: "D" | "C" | "B" | "A" | "S" | "SS" = "D";
+  if (totalCombatPower < 40) powerRating = "D";
+  else if (totalCombatPower < 60) powerRating = "C";
+  else if (totalCombatPower < 85) powerRating = "B";
+  else if (totalCombatPower < 120) powerRating = "A";
+  else if (totalCombatPower < 160) powerRating = "S";
+  else powerRating = "SS";
+
+  return {
+    basePower: Math.round(basePower),
+    attackPower: Math.round(attackPower),
+    defensePower: Math.round(defensePower),
+    mobilityPower: Math.round(mobilityPower),
+    totalCombatPower: Math.round(totalCombatPower),
+    powerRating
+  };
+}
