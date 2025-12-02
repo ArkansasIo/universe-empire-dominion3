@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { logger } from "./logger";
 import { ConsoleMenu } from "./consoleMenu";
+import { setupAuth } from "./basicAuth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -112,6 +113,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await setupAuth(app);
   registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
