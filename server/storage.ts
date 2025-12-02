@@ -41,6 +41,12 @@ import {
   relicInventory,
   friends,
   friendRequests,
+  guilds,
+  guildMembers,
+  teams,
+  raids,
+  raidCombats,
+  combatStats,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -106,6 +112,18 @@ import {
   type InsertFriend,
   type FriendRequest,
   type InsertFriendRequest,
+  type Guild,
+  type InsertGuild,
+  type GuildMember,
+  type InsertGuildMember,
+  type Team,
+  type InsertTeam,
+  type Raid,
+  type InsertRaid,
+  type RaidCombat,
+  type InsertRaidCombat,
+  type CombatStats,
+  type InsertCombatStats,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -258,6 +276,43 @@ export interface IStorage {
   getPlayerFriendRequests(userId: string): Promise<FriendRequest[]>;
   setFavorite(playerId: string, friendId: string, isFavorite: boolean): Promise<Friend>;
   updateFriendNickname(playerId: string, friendId: string, nickname: string): Promise<Friend>;
+  
+  // Guild operations
+  createGuild(guild: InsertGuild): Promise<Guild>;
+  getGuildById(guildId: string): Promise<Guild | undefined>;
+  getPlayerGuild(userId: string): Promise<Guild | undefined>;
+  updateGuild(guildId: string, updates: Partial<Guild>): Promise<Guild>;
+  deleteGuild(guildId: string): Promise<void>;
+  addGuildMember(guildId: string, playerId: string): Promise<GuildMember>;
+  removeGuildMember(guildId: string, playerId: string): Promise<void>;
+  getGuildMembers(guildId: string): Promise<GuildMember[]>;
+  updateGuildMemberRole(guildId: string, playerId: string, role: string): Promise<GuildMember>;
+  
+  // Team operations (6 players max)
+  createTeam(team: InsertTeam): Promise<Team>;
+  getTeamById(teamId: string): Promise<Team | undefined>;
+  getPlayerTeams(userId: string): Promise<Team[]>;
+  updateTeam(teamId: string, updates: Partial<Team>): Promise<Team>;
+  deleteTeam(teamId: string): Promise<void>;
+  addTeamMember(teamId: string, playerId: string): Promise<Team>;
+  removeTeamMember(teamId: string, playerId: string): Promise<Team>;
+  getTeamMembers(teamId: string): Promise<any[]>;
+  
+  // Raid operations
+  createRaid(raid: InsertRaid): Promise<Raid>;
+  getRaidById(raidId: string): Promise<Raid | undefined>;
+  updateRaidStatus(raidId: string, status: string, result?: string): Promise<Raid>;
+  getTeamRaids(teamId: string): Promise<Raid[]>;
+  
+  // Raid combat operations
+  createRaidCombat(combat: InsertRaidCombat): Promise<RaidCombat>;
+  completeRaidCombat(combatId: string, winner: string, log: any[]): Promise<RaidCombat>;
+  getRaidCombats(raidId: string): Promise<RaidCombat[]>;
+  
+  // Combat stats operations
+  getCombatStats(userId: string): Promise<CombatStats | undefined>;
+  createCombatStats(stats: InsertCombatStats): Promise<CombatStats>;
+  updateCombatStats(userId: string, updates: Partial<CombatStats>): Promise<CombatStats>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -1044,6 +1099,146 @@ export class DatabaseStorage implements IStorage {
       .set({ nickname })
       .where(and(eq(friends.playerId, playerId), eq(friends.friendId, friendId)))
       .returning();
+    return updated;
+  }
+  
+  // Guild operations
+  async createGuild(guild: InsertGuild): Promise<Guild> {
+    const [newGuild] = await db.insert(guilds).values(guild).returning();
+    return newGuild;
+  }
+  
+  async getGuildById(guildId: string): Promise<Guild | undefined> {
+    const [guild] = await db.select().from(guilds).where(eq(guilds.id, guildId));
+    return guild;
+  }
+  
+  async getPlayerGuild(userId: string): Promise<Guild | undefined> {
+    const [member] = await db.select().from(guildMembers).where(eq(guildMembers.playerId, userId));
+    if (!member) return undefined;
+    return this.getGuildById(member.guildId);
+  }
+  
+  async updateGuild(guildId: string, updates: Partial<Guild>): Promise<Guild> {
+    const [updated] = await db.update(guilds).set(updates).where(eq(guilds.id, guildId)).returning();
+    return updated;
+  }
+  
+  async deleteGuild(guildId: string): Promise<void> {
+    await db.delete(guilds).where(eq(guilds.id, guildId));
+  }
+  
+  async addGuildMember(guildId: string, playerId: string): Promise<GuildMember> {
+    const [member] = await db.insert(guildMembers).values({ guildId, playerId }).returning();
+    return member;
+  }
+  
+  async removeGuildMember(guildId: string, playerId: string): Promise<void> {
+    await db.delete(guildMembers).where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.playerId, playerId)));
+  }
+  
+  async getGuildMembers(guildId: string): Promise<GuildMember[]> {
+    return await db.select().from(guildMembers).where(eq(guildMembers.guildId, guildId));
+  }
+  
+  async updateGuildMemberRole(guildId: string, playerId: string, role: string): Promise<GuildMember> {
+    const [updated] = await db.update(guildMembers).set({ role }).where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.playerId, playerId))).returning();
+    return updated;
+  }
+  
+  // Team operations (6 players max)
+  async createTeam(team: InsertTeam): Promise<Team> {
+    const [newTeam] = await db.insert(teams).values(team).returning();
+    return newTeam;
+  }
+  
+  async getTeamById(teamId: string): Promise<Team | undefined> {
+    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    return team;
+  }
+  
+  async getPlayerTeams(userId: string): Promise<Team[]> {
+    return await db.select().from(teams).where(sql`${userId} = ANY(members)`);
+  }
+  
+  async updateTeam(teamId: string, updates: Partial<Team>): Promise<Team> {
+    const [updated] = await db.update(teams).set(updates).where(eq(teams.id, teamId)).returning();
+    return updated;
+  }
+  
+  async deleteTeam(teamId: string): Promise<void> {
+    await db.delete(teams).where(eq(teams.id, teamId));
+  }
+  
+  async addTeamMember(teamId: string, playerId: string): Promise<Team> {
+    const team = await this.getTeamById(teamId);
+    if (!team) throw new Error("Team not found");
+    if ((team.members as any[]).length >= 6) throw new Error("Team is full (6 max)");
+    const [updated] = await db.update(teams).set({ members: sql`array_append(members, ${playerId})` }).where(eq(teams.id, teamId)).returning();
+    return updated;
+  }
+  
+  async removeTeamMember(teamId: string, playerId: string): Promise<Team> {
+    const [updated] = await db.update(teams).set({ members: sql`array_remove(members, ${playerId})` }).where(eq(teams.id, teamId)).returning();
+    return updated;
+  }
+  
+  async getTeamMembers(teamId: string): Promise<any[]> {
+    const team = await this.getTeamById(teamId);
+    return team?.members || [];
+  }
+  
+  // Raid operations
+  async createRaid(raid: InsertRaid): Promise<Raid> {
+    const [newRaid] = await db.insert(raids).values(raid).returning();
+    return newRaid;
+  }
+  
+  async getRaidById(raidId: string): Promise<Raid | undefined> {
+    const [raid] = await db.select().from(raids).where(eq(raids.id, raidId));
+    return raid;
+  }
+  
+  async updateRaidStatus(raidId: string, status: string, result?: string): Promise<Raid> {
+    const updates: any = { status };
+    if (result) updates.result = result;
+    if (status === "completed") updates.endedAt = new Date();
+    const [updated] = await db.update(raids).set(updates).where(eq(raids.id, raidId)).returning();
+    return updated;
+  }
+  
+  async getTeamRaids(teamId: string): Promise<Raid[]> {
+    return await db.select().from(raids).where(or(eq(raids.attackingTeamId, teamId), eq(raids.defendingTeamId, teamId)));
+  }
+  
+  // Raid combat operations
+  async createRaidCombat(combat: InsertRaidCombat): Promise<RaidCombat> {
+    const [newCombat] = await db.insert(raidCombats).values(combat).returning();
+    return newCombat;
+  }
+  
+  async completeRaidCombat(combatId: string, winner: string, log: any[]): Promise<RaidCombat> {
+    const [updated] = await db.update(raidCombats).set({ winner, endedAt: new Date(), combatLog: log }).where(eq(raidCombats.id, combatId)).returning();
+    return updated;
+  }
+  
+  async getRaidCombats(raidId: string): Promise<RaidCombat[]> {
+    return await db.select().from(raidCombats).where(eq(raidCombats.raidId, raidId));
+  }
+  
+  // Combat stats operations
+  async getCombatStats(userId: string): Promise<CombatStats | undefined> {
+    const [stats] = await db.select().from(combatStats).where(eq(combatStats.playerId, userId));
+    return stats;
+  }
+  
+  async createCombatStats(stats: InsertCombatStats): Promise<CombatStats> {
+    const [newStats] = await db.insert(combatStats).values(stats).returning();
+    return newStats;
+  }
+  
+  async updateCombatStats(userId: string, updates: Partial<CombatStats>): Promise<CombatStats> {
+    const [updated] = await db.update(combatStats).set(updates).where(eq(combatStats.playerId, userId)).returning();
     return updated;
   }
   

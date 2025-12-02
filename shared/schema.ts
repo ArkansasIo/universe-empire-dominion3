@@ -1372,3 +1372,179 @@ export const friendRequests = pgTable("friend_requests", {
 export type FriendRequest = typeof friendRequests.$inferSelect;
 export const insertFriendRequestSchema = createInsertSchema(friendRequests).omit({ id: true, createdAt: true });
 export type InsertFriendRequest = z.infer<typeof insertFriendRequestSchema>;
+
+// Guilds - Player organizations (enhanced alliances)
+export const guilds = pgTable("guilds", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Guild info
+  name: varchar("name").notNull(),
+  description: text("description"),
+  emblem: varchar("emblem"), // URL to guild emblem
+  
+  // Leadership
+  leaderId: varchar("leader_id").notNull().references(() => users.id),
+  coLeaders: jsonb("co_leaders").notNull().default([]),
+  
+  // Stats
+  level: integer("level").default(1),
+  totalMembers: integer("total_members").default(1),
+  treasury: integer("treasury").default(0), // Shared currency
+  influence: integer("influence").default(0), // Political power
+  
+  // Settings
+  maxMembers: integer("max_members").default(100),
+  joinRequirementLevel: integer("join_requirement_level").default(1),
+  isRecruiting: boolean("is_recruiting").default(true),
+  
+  // Permissions and roles
+  roles: jsonb("roles").notNull().default([]), // Custom guild roles
+  permissions: jsonb("permissions").notNull().default({}),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Guild = typeof guilds.$inferSelect;
+export const insertGuildSchema = createInsertSchema(guilds).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertGuild = z.infer<typeof insertGuildSchema>;
+
+// Guild Members - Player membership in guilds
+export const guildMembers = pgTable("guild_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").notNull().references(() => guilds.id, { onDelete: "cascade" }),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Role and status
+  role: varchar("role").notNull().default("member"), // leader, officer, member
+  joinedAt: timestamp("joined_at").defaultNow(),
+  
+  // Contributions
+  contributedCurrency: integer("contributed_currency").default(0),
+  contributedResearch: integer("contributed_research").default(0),
+});
+
+export type GuildMember = typeof guildMembers.$inferSelect;
+export const insertGuildMemberSchema = createInsertSchema(guildMembers).omit({ id: true, joinedAt: true });
+export type InsertGuildMember = z.infer<typeof insertGuildMemberSchema>;
+
+// Teams - Squad of 6 players for raids
+export const teams = pgTable("teams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").references(() => guilds.id, { onDelete: "cascade" }),
+  
+  // Team info
+  name: varchar("name").notNull(),
+  description: text("description"),
+  leaderId: varchar("leader_id").notNull().references(() => users.id),
+  
+  // Members (6 max)
+  members: jsonb("members").notNull().default([]), // Array of player IDs
+  maxMembers: integer("max_members").default(6),
+  
+  // Stats
+  totalRaids: integer("total_raids").default(0),
+  winsCount: integer("wins_count").default(0),
+  level: integer("level").default(1),
+  
+  // Settings
+  isLocked: boolean("is_locked").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Team = typeof teams.$inferSelect;
+export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+
+// Raids - Guild vs Guild or Team vs Team combat encounters
+export const raids = pgTable("raids", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Participants
+  attackingTeamId: varchar("attacking_team_id").notNull().references(() => teams.id),
+  defendingTeamId: varchar("defending_team_id").notNull().references(() => teams.id),
+  
+  // Raid details
+  raidType: varchar("raid_type").notNull(), // "guild_war", "pvp_team", "boss_raid", "stronghold_attack"
+  objectiveId: varchar("objective_id"), // Optional: resource to steal, stronghold to attack
+  
+  // Status
+  status: varchar("status").notNull().default("preparing"), // "preparing", "active", "completed"
+  result: varchar("result"), // "attacker_victory", "defender_victory", "tie", "cancelled"
+  
+  // Rewards/Losses
+  attackerLosses: jsonb("attacker_losses").notNull().default({}), // Resources/units lost
+  defenderLosses: jsonb("defender_losses").notNull().default({}),
+  rewards: jsonb("rewards").notNull().default({}),
+  
+  // Timestamps
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Raid = typeof raids.$inferSelect;
+export const insertRaidSchema = createInsertSchema(raids).omit({ id: true, createdAt: true });
+export type InsertRaid = z.infer<typeof insertRaidSchema>;
+
+// Raid Combat Encounters - Individual combat rounds in a raid
+export const raidCombats = pgTable("raid_combats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  raidId: varchar("raid_id").notNull().references(() => raids.id, { onDelete: "cascade" }),
+  
+  // Combatants
+  attackerId: varchar("attacker_id").notNull().references(() => users.id),
+  defenderId: varchar("defender_id").notNull().references(() => users.id),
+  
+  // Combat details
+  round: integer("round").default(1),
+  attackerShips: jsonb("attacker_ships").notNull().default([]),
+  defenderShips: jsonb("defender_ships").notNull().default([]),
+  
+  // Results
+  winner: varchar("winner"), // "attacker", "defender", "draw"
+  attackerDamage: integer("attacker_damage").default(0),
+  defenderDamage: integer("defender_damage").default(0),
+  combatLog: jsonb("combat_log").notNull().default([]),
+  
+  // Timestamps
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+export type RaidCombat = typeof raidCombats.$inferSelect;
+export const insertRaidCombatSchema = createInsertSchema(raidCombats).omit({ id: true, startedAt: true });
+export type InsertRaidCombat = z.infer<typeof insertRaidCombatSchema>;
+
+// Combat Statistics - Track player combat performance
+export const combatStats = pgTable("combat_stats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Battle stats
+  totalBattles: integer("total_battles").default(0),
+  wins: integer("wins").default(0),
+  losses: integer("losses").default(0),
+  draws: integer("draws").default(0),
+  
+  // Raid stats
+  raidParticipations: integer("raid_participations").default(0),
+  raidVictories: integer("raid_victories").default(0),
+  
+  // Unit stats
+  unitsDestroyed: integer("units_destroyed").default(0),
+  unitsLost: integer("units_lost").default(0),
+  
+  // Rankings
+  combatRating: integer("combat_rating").default(1000),
+  raidRating: integer("raid_rating").default(1000),
+  
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type CombatStats = typeof combatStats.$inferSelect;
+export const insertCombatStatsSchema = createInsertSchema(combatStats).omit({ id: true, updatedAt: true });
+export type InsertCombatStats = z.infer<typeof insertCombatStatsSchema>;
