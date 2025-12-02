@@ -135,11 +135,10 @@ export default function Auth() {
       saveCredentials(username.trim(), password);
       console.log("[AUTH] Credentials saved, redirecting to game...");
       
-      // Invalidate auth query to trigger React Query refetch with new credentials
-      // This is better than full page reload as it preserves React state
-      await new Promise(r => setTimeout(r, 100));
-      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      setSubmitting(false);
+      // Small delay to ensure credentials are saved, then force full page reload
+      // This ensures all React Query caches are cleared and everything refetches fresh
+      await new Promise(r => setTimeout(r, 200));
+      window.location.replace("/");
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error("[AUTH] Network/exception error:", errorMsg, err);

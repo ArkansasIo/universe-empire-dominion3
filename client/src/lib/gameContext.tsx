@@ -1150,7 +1150,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isLoading = authLoading || gameStateLoading;
+  // Include initialization phase in loading state to prevent brief flash of Auth page
+  const isLoading = authLoading || gameStateLoading || (authUser && serverGameState && !isInitialized);
 
   return (
     <GameContext.Provider value={{ 
