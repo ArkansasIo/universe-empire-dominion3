@@ -57,6 +57,8 @@ import Raids from "@/pages/Raids";
 import UniverseEvents from "@/pages/UniverseEvents";
 import RaidBosses from "@/pages/RaidBosses";
 import RaidFinder from "@/pages/RaidFinder";
+import BackendAdmin from "@/pages/BackendAdmin";
+import KnowledgeLibrary from "@/pages/KnowledgeLibrary";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
