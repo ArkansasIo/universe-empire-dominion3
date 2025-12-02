@@ -181,6 +181,62 @@ export async function setupAuth(app: Express) {
     }
   });
 
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      let userId = (req.session as any)?.userId;
+      
+      // Try session auth first
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          logger.info("AUTH", `Session auth successful for userId: ${userId}`);
+          return res.json({ 
+            id: user.id, 
+            username: user.username,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            adminRole: user.adminRole,
+            firstName: user.firstName
+          });
+        }
+      }
+      
+      // Try basic auth from Authorization header
+      const authHeader = req.get('authorization');
+      if (authHeader && authHeader.startsWith('Basic ')) {
+        try {
+          const encoded = authHeader.slice(6);
+          const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+          const [username, password] = decoded.split(':');
+          
+          if (username && password) {
+            const user = await storage.getUserByUsername(username);
+            if (user && verifyPassword(password, user.passwordHash)) {
+              (req.session as any).userId = user.id;
+              logger.info("AUTH", `Basic auth successful for user: ${username}`);
+              return res.json({ 
+                id: user.id, 
+                username: user.username,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                adminRole: user.adminRole,
+                firstName: user.firstName
+              });
+            }
+          }
+        } catch (err) {
+          logger.warn("AUTH", `Basic auth header parse error in /api/auth/user: ${String(err)}`);
+        }
+      }
+      
+      logger.warn("AUTH", "No valid authentication for /api/auth/user");
+      res.status(401).json({ message: "Unauthorized" });
+    } catch (error) {
+      logger.error("AUTH", "Auth user endpoint error", {}, error);
+      res.status(500).json({ message: "Authentication check failed" });
+    }
+  });
+
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) return res.status(500).json({ message: "Logout failed" });
