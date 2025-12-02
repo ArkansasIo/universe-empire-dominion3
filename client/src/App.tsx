@@ -46,6 +46,8 @@ import Factions from "@/pages/Factions";
 import EmpireProgression from "@/pages/EmpireProgression";
 import WarpNetwork from "@/pages/WarpNetwork";
 import Stations from "@/pages/Stations";
+import Merchants from "@/pages/Merchants";
+import CelestialBrowser from "@/pages/CelestialBrowser";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -192,6 +194,8 @@ function RouterContent() {
       <Route path="/empire-progression" component={EmpireProgression} />
       <Route path="/warp-network" component={WarpNetwork} />
       <Route path="/stations" component={Stations} />
+      <Route path="/merchants" component={Merchants} />
+      <Route path="/celestial-browser" component={CelestialBrowser} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/console" component={ServerConsole} />

@@ -265,6 +265,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/universe", icon: Orbit, label: "Universe" },
                 { href: "/exploration", icon: Compass, label: "Exploration" },
                 { href: "/warp-network", icon: Network, label: "Warp Network" },
+                { href: "/celestial-browser", icon: CircleDot, label: "Celestial Browser" },
               ]}
             />
             
@@ -289,6 +290,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               location={location}
               items={[
                 { href: "/market", icon: ShoppingBag, label: "Market" },
+                { href: "/merchants", icon: User, label: "Merchants" },
                 { href: "/achievements", icon: Trophy, label: "Achievements" },
               ]}
             />
