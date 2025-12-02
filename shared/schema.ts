@@ -1092,3 +1092,132 @@ export const systemSettings = pgTable("system_settings", {
 export const insertSystemSettingsSchema = createInsertSchema(systemSettings).omit({ id: true, updatedAt: true });
 export type InsertSystemSettings = z.infer<typeof insertSystemSettingsSchema>;
 export type SystemSettings = typeof systemSettings.$inferSelect;
+
+// Story Mode - Campaign and Mission progression
+export const storyCampaigns = pgTable("story_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Campaign tracking
+  currentAct: integer("current_act").default(1),
+  currentChapter: integer("current_chapter").default(1),
+  completedActs: integer("completed_acts").default(0),
+  isCompleted: boolean("is_completed").default(false),
+  
+  // Progress
+  storyProgress: real("story_progress").default(0), // 0-100%
+  totalXpEarned: integer("total_xp_earned").default(0),
+  
+  // Campaign state
+  campaignState: jsonb("campaign_state").notNull().default({}),
+  npcsEncountered: jsonb("npcs_encountered").notNull().default([]),
+  completedMissions: jsonb("completed_missions").notNull().default([]),
+  
+  // Timestamps
+  startedAt: timestamp("started_at").defaultNow(),
+  lastPlayedAt: timestamp("last_played_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type StoryCampaign = typeof storyCampaigns.$inferSelect;
+export const insertStoryCampaignSchema = createInsertSchema(storyCampaigns).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStoryCampaign = z.infer<typeof insertStoryCampaignSchema>;
+
+// Story Missions - Individual missions within chapters
+export const storyMissions = pgTable("story_missions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  campaignId: varchar("campaign_id").references(() => storyCampaigns.id, { onDelete: "cascade" }),
+  
+  // Mission classification
+  act: integer("act").notNull(),
+  chapter: integer("chapter").notNull(),
+  missionType: varchar("mission_type").notNull(), // "main", "side", "optional"
+  
+  // Mission details
+  title: varchar("title").notNull(),
+  description: text("description"),
+  lore: text("lore"),
+  difficulty: integer("difficulty").default(1),
+  
+  // NPC involved
+  npcName: varchar("npc_name"),
+  npcRole: varchar("npc_role"),
+  npcTrait: varchar("npc_trait"),
+  
+  // Objectives
+  objectives: jsonb("objectives").notNull().default([]),
+  
+  // Rewards
+  rewardXp: integer("reward_xp").default(0),
+  rewardMetal: integer("reward_metal").default(0),
+  rewardCrystal: integer("reward_crystal").default(0),
+  rewardDeuterium: integer("reward_deuterium").default(0),
+  rewardBadge: varchar("reward_badge"),
+  rewardItems: jsonb("reward_items").notNull().default([]),
+  
+  // Status
+  isCompleted: boolean("is_completed").default(false),
+  isActive: boolean("is_active").default(true),
+  completedAt: timestamp("completed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type StoryMission = typeof storyMissions.$inferSelect;
+export const insertStoryMissionSchema = createInsertSchema(storyMissions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStoryMission = z.infer<typeof insertStoryMissionSchema>;
+
+// Achievements - Player achievement tracking
+export const achievements = pgTable("achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Achievement details
+  achievementId: varchar("achievement_id").notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category").notNull(), // "story", "combat", "economic", "exploration"
+  
+  // Progress
+  progress: integer("progress").default(0),
+  target: integer("target").default(1),
+  isCompleted: boolean("is_completed").default(false),
+  
+  // Rewards
+  rewardXp: integer("reward_xp").default(0),
+  rewardBadge: varchar("reward_badge"),
+  
+  // Status
+  unlockedAt: timestamp("unlocked_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Achievement = typeof achievements.$inferSelect;
+export const insertAchievementSchema = createInsertSchema(achievements).omit({ id: true, createdAt: true });
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+
+// Element Buffs/Debuffs - Combat element system
+export const elementBuffs = pgTable("element_buffs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  missionId: varchar("mission_id").references(() => storyMissions.id, { onDelete: "cascade" }),
+  
+  // Element info
+  elementType: varchar("element_type").notNull(), // fire, water, lightning, earth, ice, shadow, light
+  buffType: varchar("buff_type").notNull(), // "damage", "defense", "speed", "healing"
+  magnitude: real("magnitude").default(1.0),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  activatedAt: timestamp("activated_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ElementBuff = typeof elementBuffs.$inferSelect;
+export const insertElementBuffSchema = createInsertSchema(elementBuffs).omit({ id: true, createdAt: true });
+export type InsertElementBuff = z.infer<typeof insertElementBuffSchema>;

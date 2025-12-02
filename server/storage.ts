@@ -31,6 +31,10 @@ import {
   playerProfiles,
   megaStructures,
   empireDifficulties,
+  storyCampaigns,
+  storyMissions,
+  achievements,
+  elementBuffs,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -76,6 +80,14 @@ import {
   type InsertMegaStructure,
   type EmpireDifficulty,
   type InsertEmpireDifficulty,
+  type StoryCampaign,
+  type InsertStoryCampaign,
+  type StoryMission,
+  type InsertStoryMission,
+  type Achievement,
+  type InsertAchievement,
+  type ElementBuff,
+  type InsertElementBuff,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -178,6 +190,27 @@ export interface IStorage {
   createEmpireDifficulty(difficulty: InsertEmpireDifficulty): Promise<EmpireDifficulty>;
   updateEmpireDifficulty(userId: string, updates: Partial<EmpireDifficulty>): Promise<EmpireDifficulty>;
   setDifficultyLevel(userId: string, level: number, kardashevLevel?: number): Promise<EmpireDifficulty>;
+  
+  // Story Campaign operations
+  getStoryCampaign(userId: string): Promise<StoryCampaign | undefined>;
+  createStoryCampaign(campaign: InsertStoryCampaign): Promise<StoryCampaign>;
+  updateStoryCampaign(userId: string, updates: Partial<StoryCampaign>): Promise<StoryCampaign>;
+  
+  // Story Mission operations
+  getStoryMission(missionId: string): Promise<StoryMission | undefined>;
+  getUserStoryMissions(userId: string): Promise<StoryMission[]>;
+  createStoryMission(mission: InsertStoryMission): Promise<StoryMission>;
+  completeStoryMission(missionId: string, userId: string): Promise<StoryMission>;
+  
+  // Achievement operations
+  getUserAchievements(userId: string): Promise<Achievement[]>;
+  getAchievementByIdForUser(userId: string, achievementId: string): Promise<Achievement | undefined>;
+  createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  updateAchievementProgress(achievementId: string, userId: string, progress: number): Promise<Achievement>;
+  
+  // Element Buff operations
+  getActiveBuffs(userId: string, missionId?: string): Promise<ElementBuff[]>;
+  createElementBuff(buff: InsertElementBuff): Promise<ElementBuff>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -708,6 +741,84 @@ export class DatabaseStorage implements IStorage {
       scalingFactor: 1.0,
       difficultyMultiplier: 1.0
     } as InsertEmpireDifficulty);
+  }
+  
+  // Story Campaign operations
+  async getStoryCampaign(userId: string): Promise<StoryCampaign | undefined> {
+    const [campaign] = await db.select().from(storyCampaigns).where(eq(storyCampaigns.playerId, userId));
+    return campaign;
+  }
+  
+  async createStoryCampaign(campaign: InsertStoryCampaign): Promise<StoryCampaign> {
+    const [newCampaign] = await db.insert(storyCampaigns).values(campaign).returning();
+    return newCampaign;
+  }
+  
+  async updateStoryCampaign(userId: string, updates: Partial<StoryCampaign>): Promise<StoryCampaign> {
+    const [updated] = await db.update(storyCampaigns).set(updates).where(eq(storyCampaigns.playerId, userId)).returning();
+    return updated;
+  }
+  
+  // Story Mission operations
+  async getStoryMission(missionId: string): Promise<StoryMission | undefined> {
+    const [mission] = await db.select().from(storyMissions).where(eq(storyMissions.id, missionId));
+    return mission;
+  }
+  
+  async getUserStoryMissions(userId: string): Promise<StoryMission[]> {
+    return await db.select().from(storyMissions).where(eq(storyMissions.playerId, userId));
+  }
+  
+  async createStoryMission(mission: InsertStoryMission): Promise<StoryMission> {
+    const [newMission] = await db.insert(storyMissions).values(mission).returning();
+    return newMission;
+  }
+  
+  async completeStoryMission(missionId: string, userId: string): Promise<StoryMission> {
+    const [completed] = await db.update(storyMissions)
+      .set({ isCompleted: true, completedAt: new Date() })
+      .where(and(eq(storyMissions.id, missionId), eq(storyMissions.playerId, userId)))
+      .returning();
+    return completed;
+  }
+  
+  // Achievement operations
+  async getUserAchievements(userId: string): Promise<Achievement[]> {
+    return await db.select().from(achievements).where(eq(achievements.playerId, userId));
+  }
+  
+  async getAchievementByIdForUser(userId: string, achievementId: string): Promise<Achievement | undefined> {
+    const [achievement] = await db.select().from(achievements)
+      .where(and(eq(achievements.playerId, userId), eq(achievements.achievementId, achievementId)));
+    return achievement;
+  }
+  
+  async createAchievement(achievement: InsertAchievement): Promise<Achievement> {
+    const [newAchievement] = await db.insert(achievements).values(achievement).returning();
+    return newAchievement;
+  }
+  
+  async updateAchievementProgress(achievementId: string, userId: string, progress: number): Promise<Achievement> {
+    const [updated] = await db.update(achievements)
+      .set({ progress, isCompleted: progress >= (await db.select().from(achievements).where(and(eq(achievements.achievementId, achievementId), eq(achievements.playerId, userId))))[0]?.target })
+      .where(and(eq(achievements.achievementId, achievementId), eq(achievements.playerId, userId)))
+      .returning();
+    return updated;
+  }
+  
+  // Element Buff operations
+  async getActiveBuffs(userId: string, missionId?: string): Promise<ElementBuff[]> {
+    if (missionId) {
+      return await db.select().from(elementBuffs)
+        .where(and(eq(elementBuffs.playerId, userId), eq(elementBuffs.missionId, missionId), eq(elementBuffs.isActive, true)));
+    }
+    return await db.select().from(elementBuffs)
+      .where(and(eq(elementBuffs.playerId, userId), eq(elementBuffs.isActive, true)));
+  }
+  
+  async createElementBuff(buff: InsertElementBuff): Promise<ElementBuff> {
+    const [newBuff] = await db.insert(elementBuffs).values(buff).returning();
+    return newBuff;
   }
   
   // Resource field operations

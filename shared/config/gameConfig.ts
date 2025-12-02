@@ -155,3 +155,163 @@ export const RACE_BONUSES = {
   energy: { production: 0.9, combat: 1.1, research: 1.0 },
   hybrid: { production: 1.0, combat: 1.0, research: 1.05 },
 };
+
+// Story Mode - 12 Acts with Characters and Lore
+export const STORY_MODE = {
+  acts: [
+    {
+      id: 1,
+      title: "Genesis",
+      prolog: "Your empire awakens in the void of space. Commander, you must establish your first colony.",
+      chapters: [
+        { id: 1, name: "First Light", description: "Build your initial settlement", difficulty: 1, xp: 100 },
+        { id: 2, name: "First Resources", description: "Mine metal and crystal", difficulty: 1, xp: 150 },
+        { id: 3, name: "First Fleet", description: "Construct your first ships", difficulty: 2, xp: 200 },
+      ],
+      npc: { name: "Admiral Vex", role: "Guide", trait: "Wise strategist" },
+      rewards: { metal: 5000, crystal: 2500, xp: 500, badge: "Genesis" },
+    },
+    {
+      id: 2,
+      title: "Expansion",
+      prolog: "Territory awaits. Expand your reach across the stars.",
+      chapters: [
+        { id: 1, name: "Second Colony", description: "Colonize a new world", difficulty: 2, xp: 250 },
+        { id: 2, name: "Trade Routes", description: "Establish market connections", difficulty: 2, xp: 300 },
+        { id: 3, name: "Diplomatic Mission", description: "Make first contact", difficulty: 3, xp: 400 },
+      ],
+      npc: { name: "Merchant Kess", role: "Trader", trait: "Shrewd negotiator" },
+      rewards: { metal: 10000, crystal: 5000, deuterium: 1000, xp: 1000, badge: "Expansionist" },
+    },
+    {
+      id: 3,
+      title: "First Contact",
+      prolog: "You are not alone. Discover who shares the galaxy.",
+      chapters: [
+        { id: 1, name: "Scout Mission", description: "Explore unknown systems", difficulty: 3, xp: 300 },
+        { id: 2, name: "Ancient Signals", description: "Decipher alien transmissions", difficulty: 3, xp: 350 },
+        { id: 3, name: "Treaty Negotiation", description: "Forge your first alliance", difficulty: 4, xp: 500 },
+      ],
+      npc: { name: "Linguist Zor", role: "Scholar", trait: "Knowledgeable diplomat" },
+      rewards: { metal: 15000, crystal: 8000, deuterium: 3000, xp: 1500, badge: "First Contact" },
+    },
+    {
+      id: 4,
+      title: "Conflict Rises",
+      prolog: "Not all seek peace. War clouds gather on the horizon.",
+      chapters: [
+        { id: 1, name: "Border Skirmish", description: "Defend your colony from pirates", difficulty: 4, xp: 400 },
+        { id: 2, name: "Arms Race", description: "Upgrade military defenses", difficulty: 4, xp: 450 },
+        { id: 3, name: "First Blood", description: "Engage in space combat", difficulty: 5, xp: 600 },
+      ],
+      npc: { name: "General Thorn", role: "Military Commander", trait: "Strategic warrior" },
+      rewards: { metal: 20000, crystal: 10000, deuterium: 5000, xp: 2000, badge: "War Hero" },
+    },
+    {
+      id: 5,
+      title: "Ancient Awakening",
+      prolog: "Deep within space, something ancient stirs. Your discovery will change everything.",
+      chapters: [
+        { id: 1, name: "Ruins Discovery", description: "Explore ancient megastructure", difficulty: 5, xp: 500 },
+        { id: 2, name: "Decipher Tech", description: "Unlock ancient technology", difficulty: 5, xp: 550 },
+        { id: 3, name: "Unleash Power", description: "Activate the ancient device", difficulty: 6, xp: 700 },
+      ],
+      npc: { name: "Archaeologist Mira", role: "Historian", trait: "Brilliant researcher" },
+      rewards: { metal: 25000, crystal: 15000, deuterium: 8000, xp: 2500, badge: "Archaeologist" },
+    },
+    {
+      id: 6,
+      title: "Galactic Politics",
+      prolog: "The galaxy's fate hangs in balance. Political alliances will determine power.",
+      chapters: [
+        { id: 1, name: "Council Meeting", description: "Attend galactic council", difficulty: 4, xp: 400 },
+        { id: 2, name: "Espionage Mission", description: "Gather intelligence on rivals", difficulty: 5, xp: 500 },
+        { id: 3, name: "Grand Alliance", description: "Unite against common threat", difficulty: 6, xp: 700 },
+      ],
+      npc: { name: "Ambassador Lyx", role: "Diplomat", trait: "Cunning strategist" },
+      rewards: { metal: 30000, crystal: 20000, deuterium: 10000, xp: 3000, badge: "Diplomat" },
+    },
+    {
+      id: 7,
+      title: "Dark Forces",
+      prolog: "An evil rises from the depths. Ancient darkness threatens all life.",
+      chapters: [
+        { id: 1, name: "Plague Spreads", description: "Investigate mysterious epidemic", difficulty: 6, xp: 600 },
+        { id: 2, name: "Source Revealed", description: "Discover the enemy's origin", difficulty: 6, xp: 650 },
+        { id: 3, name: "Final Stand", description: "Battle the dark entity", difficulty: 7, xp: 900 },
+      ],
+      npc: { name: "Mystic Shadowblade", role: "Dark Knight", trait: "Tormented soul seeking redemption" },
+      rewards: { metal: 40000, crystal: 25000, deuterium: 15000, xp: 4000, badge: "Savior" },
+    },
+    {
+      id: 8,
+      title: "Dimensional Rift",
+      prolog: "Reality itself begins to fracture. You must seal the rift between worlds.",
+      chapters: [
+        { id: 1, name: "Anomaly Detection", description: "Detect dimensional instability", difficulty: 6, xp: 600 },
+        { id: 2, name: "Research Rift", description: "Study the dimensional tear", difficulty: 7, xp: 700 },
+        { id: 3, name: "Close the Portal", description: "Seal the rift permanently", difficulty: 8, xp: 1000 },
+      ],
+      npc: { name: "Physicist Dr. Kern", role: "Scientist", trait: "Brilliant but obsessed" },
+      rewards: { metal: 50000, crystal: 30000, deuterium: 20000, xp: 5000, badge: "Dimensional Master" },
+    },
+    {
+      id: 9,
+      title: "Corporate Conspiracy",
+      prolog: "Mega-corporations manipulate the galaxy from shadows. Expose their conspiracy.",
+      chapters: [
+        { id: 1, name: "Corporate Espionage", description: "Infiltrate corporate servers", difficulty: 7, xp: 700 },
+        { id: 2, name: "Evidence Gathering", description: "Collect proof of corruption", difficulty: 7, xp: 750 },
+        { id: 3, name: "Expose Truth", description: "Broadcast the conspiracy", difficulty: 7, xp: 800 },
+      ],
+      npc: { name: "CEO Valens", role: "Corrupt Businessman", trait: "Ruthless and cunning" },
+      rewards: { metal: 60000, crystal: 35000, deuterium: 25000, xp: 6000, badge: "Whistleblower" },
+    },
+    {
+      id: 10,
+      title: "The Kardashev Challenge",
+      prolog: "Ascend to god-like power. Construct a megastructure and harness star energy.",
+      chapters: [
+        { id: 1, name: "Blueprint Creation", description: "Design the Dyson Sphere", difficulty: 8, xp: 900 },
+        { id: 2, name: "Resource Gathering", description: "Collect materials across galaxy", difficulty: 8, xp: 950 },
+        { id: 3, name: "Construction Begins", description: "Start building the sphere", difficulty: 8, xp: 1000 },
+      ],
+      npc: { name: "Architect Prime", role: "Master Engineer", trait: "Visionary builder" },
+      rewards: { metal: 100000, crystal: 50000, deuterium: 50000, xp: 8000, badge: "Kardashev II" },
+    },
+    {
+      id: 11,
+      title: "The Ascendant Path",
+      prolog: "Few reach this height. Transcend mortal limitations and reshape reality itself.",
+      chapters: [
+        { id: 1, name: "Ascension Research", description: "Study transcendence theory", difficulty: 9, xp: 1000 },
+        { id: 2, name: "Cosmic Convergence", description: "Align with cosmic forces", difficulty: 9, xp: 1100 },
+        { id: 3, name: "Become Divine", description: "Achieve godhood", difficulty: 10, xp: 1500 },
+      ],
+      npc: { name: "The Oracle", role: "Cosmic Entity", trait: "All-knowing and timeless" },
+      rewards: { metal: 150000, crystal: 100000, deuterium: 100000, xp: 10000, badge: "Divine" },
+    },
+    {
+      id: 12,
+      title: "Eternity's End",
+      prolog: "You stand at the end of time itself. The fate of all existence rests in your hands.",
+      chapters: [
+        { id: 1, name: "Reality Collapse", description: "Prevent universal entropy", difficulty: 10, xp: 1200 },
+        { id: 2, name: "Recreate Cosmos", description: "Rebuild the universe", difficulty: 10, xp: 1300 },
+        { id: 3, name: "Eternal Reign", description: "Rule over all existence", difficulty: 10, xp: 2000 },
+      ],
+      npc: { name: "The Architect", role: "Creator", trait: "The ultimate being" },
+      rewards: { metal: 200000, crystal: 150000, deuterium: 150000, xp: 15000, badge: "Eternal Ruler" },
+    },
+  ],
+  
+  elements: {
+    fire: { damageBoost: 1.3, defenseReduction: 0.8, weakTo: "water" },
+    water: { damageBoost: 1.2, defenseBoost: 1.1, weakTo: "lightning" },
+    lightning: { damageBoost: 1.4, speedBoost: 1.25, weakTo: "earth" },
+    earth: { damageBoost: 1.0, defenseBoost: 1.3, weakTo: "fire" },
+    ice: { speedReduction: 0.7, damageBoost: 1.15, weakTo: "fire" },
+    shadow: { stealth: 1.5, damageBoost: 1.25, weakTo: "light" },
+    light: { defenseBoost: 1.4, healingBoost: 1.5, weakTo: "shadow" },
+  },
+};
