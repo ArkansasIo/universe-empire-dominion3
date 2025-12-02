@@ -3,8 +3,9 @@
 A comprehensive 4X space strategy game built with React, Express, and PostgreSQL. Explore the galaxy, manage your empire, research technologies, and engage in epic space battles.
 
 **Website:** [stellar-dominion.replit.dev](https://stellar-dominion.replit.dev)  
-**Version:** 0.8.2-beta  
-**Status:** 🟡 In Active Development
+**Version:** 0.9.0-beta  
+**Status:** 🟢 Heavy Active Development
+**Last Updated:** December 2, 2024
 
 ---
 
@@ -53,12 +54,15 @@ Access the game at `http://localhost:5000`
 
 ### Core Systems
 - **🏗️ Colony Management** - Build and manage planetary colonies
-- **🔬 Research Technology Tree** - 25+ technologies across 3 research areas (Physics, Society, Engineering)
+- **🔬 Research Technology Tree** - 120+ facilities with tech trees
 - **🚀 Fleet Management** - Build and command diverse spacecraft
-- **⚔️ Combat System** - Real-time space battles with strategy elements
+- **⚔️ Combat System** - Multi-layer damage, tactics, battle formations
 - **🗺️ Galaxy Exploration** - Procedurally-generated universe with expeditions
 - **🤝 Alliance System** - Form alliances, trade resources, conduct diplomacy
 - **💰 Market** - Buy/sell resources with other players
+- **🏦 Bank System** - Deposit/withdraw currency, track transactions
+- **📊 Empire Progression** - Empire leveling (1-999), tiers (1-21), rankings
+- **🧠 Knowledge Library** - Master 10 knowledge types, 4 classes, 5 tiers (2000+ points)
 
 ### Expedition System
 - **Fleet & Troop Composition** - Assemble diverse teams for missions
@@ -84,16 +88,33 @@ Access the game at `http://localhost:5000`
 ## 🎮 Game Systems
 
 ### Resource Management
-- **Metal** - Basic construction material
-- **Crystal** - Advanced technology component
-- **Deuterium** - Fuel and energy source
+- **Metal** - Basic construction material (value: 1x)
+- **Crystal** - Advanced technology component (value: 1.5x)
+- **Deuterium** - Fuel and energy source (value: 2x)
 - **Energy** - Power generation and consumption
 
+### Currency System
+- **Silver** - Base currency (value: 1x, everyday transactions)
+- **Gold** - Premium currency (value: 100x, advanced features)
+- **Platinum** - Ultra-premium currency (value: 10,000x, exclusive items)
+- **20+ Uses**: Trading, construction acceleration, research speedup, equipment, alliance management, cosmetics, battle pass, espionage, etc.
+
+### Knowledge & Learning
+- **10 Knowledge Types**: Military, Engineering, Science, Agriculture, Commerce, Diplomacy, Exploration, Arcane, Medicine, Espionage
+- **4 Knowledge Classes**: Novice, Apprentice, Journeyman, Expert
+- **5 Knowledge Tiers**: Foundation, Intermediate, Advanced, Master, Supreme
+- **2000+ Mastery Points**: Track progression across all systems
+- **Synergy Bonuses**: Combining knowledge types unlocks unique bonuses
+
 ### Empire Progression
-- **Empire Levels** - Progression system (1-∞)
+- **Empire Levels** - Progression system (1-999) with experience tracking
+- **Tier System** - 21 tiers with progression bonuses and unlocks
 - **Kardashev Scale** - Measure of civilization advancement
+- **Prestige System** - Hard reset with permanent multipliers
+- **Empire Value** - Total wealth calculation (resources + currency + fleet)
+- **Leaderboards** - Rankings based on empire value
 - **Units & Buildings** - Construct military and production facilities
-- **Turn System** - 3-5 game turns per minute
+- **Turn System** - 6 game turns per minute
 
 ### Combat
 - **Battle System** - Fleet vs Fleet, Space vs Ground
@@ -330,6 +351,19 @@ This is an active development project. Contributions welcome!
 - **Community:** Join our Discord (coming soon)
 
 ---
+
+## 📈 Recent Updates (v0.9.0)
+
+- ✨ Bank system with deposits, withdrawals, and transaction history
+- ✨ Empire progression with tier system and prestige mechanics
+- ✨ Knowledge library with 10 knowledge types and synergy system
+- ✨ 3-tier currency economy (Silver/Gold/Platinum)
+- ✨ Empire value calculation and rankings leaderboard
+- ✨ 53 game pages fully implemented
+- ✨ 22 configuration files for all game systems
+- ✨ 8 new API routes for progression and banking
+- 🔧 Fixed critical database schema issues
+- 🔧 Integrated all game source files with APIs
 
 **Last Updated:** December 2, 2024  
 **Maintained by:** Stellar Dominion Development Team
