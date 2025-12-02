@@ -781,6 +781,93 @@ export const levelUnlockEvents = pgTable("level_unlock_events", {
 
 export type LevelUnlockEvent = typeof levelUnlockEvents.$inferSelect;
 
+// User Accounts System (Regular Player Account Management)
+export const userProfiles = pgTable("user_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").unique().references(() => users.id, { onDelete: "cascade" }),
+  tier: integer("tier").notNull().default(1),
+  tierName: varchar("tier_name").default("newbie"),
+  accountStatus: varchar("account_status").default("active"),
+  bio: text("bio"),
+  location: varchar("location"),
+  profileImageUrl: varchar("profile_image_url"),
+  websiteUrl: varchar("website_url"),
+  lastLoginAt: timestamp("last_login_at"),
+  lastActivityAt: timestamp("last_activity_at"),
+  joinDate: timestamp("join_date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+
+export const userPrivacySettings = pgTable("user_privacy_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").unique().references(() => users.id, { onDelete: "cascade" }),
+  profileVisibility: varchar("profile_visibility").default("public"),
+  fleetVisibility: varchar("fleet_visibility").default("hidden"),
+  allianceVisibility: varchar("alliance_visibility").default("public"),
+  allowPrivateMessages: boolean("allow_private_messages").default(true),
+  allowFriendRequests: boolean("allow_friend_requests").default(true),
+  showOnlineStatus: boolean("show_online_status").default(true),
+  showLastLogin: boolean("show_last_login").default(false),
+  blockList: jsonb("block_list").default([]),
+  friendList: jsonb("friend_list").default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
+
+export const userAchievements = pgTable("user_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  achievementKey: varchar("achievement_key").notNull(),
+  achievementName: varchar("achievement_name").notNull(),
+  achievementCategory: varchar("achievement_category"),
+  progressCurrent: integer("progress_current").default(0),
+  progressTarget: integer("progress_target").notNull(),
+  progressPercent: integer("progress_percent").default(0),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+  rewardGold: real("reward_gold").default(0),
+  rewardPlatinum: real("reward_platinum").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+
+export const userBadges = pgTable("user_badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  badgeKey: varchar("badge_key").notNull(),
+  badgeName: varchar("badge_name").notNull(),
+  badgeDescription: text("badge_description"),
+  earnedAt: timestamp("earned_at").defaultNow(),
+  progressPercent: integer("progress_percent").default(100),
+  rarity: varchar("rarity"),
+});
+
+export type UserBadge = typeof userBadges.$inferSelect;
+
+export const userStatistics = pgTable("user_statistics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").unique().references(() => users.id, { onDelete: "cascade" }),
+  totalPlaytimeHours: real("total_playtime_hours").default(0),
+  totalBattles: real("total_battles").default(0),
+  totalBattlesWon: real("total_battles_won").default(0),
+  totalTrades: real("total_trades").default(0),
+  totalResourcesEarned: real("total_resources_earned").default(0),
+  totalResourcesSpent: real("total_resources_spent").default(0),
+  averageSessionMinutes: real("average_session_minutes").default(0),
+  loginStreakDays: integer("login_streak_days").default(0),
+  longestLoginStreakDays: integer("longest_login_streak_days").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserStatistics = typeof userStatistics.$inferSelect;
+
 // Currency System (Gold, Silver, Platinum)
 export const playerCurrency = pgTable("player_currency", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
