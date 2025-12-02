@@ -1,0 +1,11 @@
+{
+  "economyMultiplier": 1,
+  "researchSpeedMultiplier": 1,
+  "buildSpeedMultiplier": 1,
+  "difficultySetting": "normal",
+  "maintenanceMode": false,
+  "maintenanceMessage": "",
+  "maxPlayers": 1000,
+  "pvpEnabled": true,
+  "eventActive": null
+}

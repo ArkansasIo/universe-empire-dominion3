@@ -60,5 +60,14 @@ args = "npm run build"
 task = "shell.exec"
 args = "npm run check"
 
+[[workflows.workflow]]
+name = "Run Admin panel"
+mode = "sequential"
+author = 19430532
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run admin"
+
 [agent]
 mockupState = "FULLSTACK"
