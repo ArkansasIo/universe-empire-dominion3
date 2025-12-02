@@ -749,6 +749,65 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ==== EXPEDITION ROUTES ====
+  
+  app.get("/api/expeditions", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const expeditions = await storage.getExpeditions(userId);
+      res.json(expeditions);
+    } catch (error: any) {
+      console.error("Error fetching expeditions:", error);
+      res.status(500).json({ message: "Failed to fetch expeditions" });
+    }
+  });
+
+  app.post("/api/expeditions", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { name, type, targetCoordinates, fleetComposition, troopComposition } = req.body;
+      const expedition = await storage.createExpedition(userId, name, type, targetCoordinates, fleetComposition, troopComposition);
+      res.json(expedition);
+    } catch (error: any) {
+      console.error("Error creating expedition:", error);
+      res.status(500).json({ message: "Failed to create expedition" });
+    }
+  });
+
+  app.get("/api/expeditions/:id/team", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const { id } = req.params;
+      const team = await storage.getExpeditionTeams(id);
+      res.json(team);
+    } catch (error: any) {
+      console.error("Error fetching expedition team:", error);
+      res.status(500).json({ message: "Failed to fetch expedition team" });
+    }
+  });
+
+  app.post("/api/expeditions/:id/team", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const { id } = req.params;
+      const { unitId, role } = req.body;
+      const member = await storage.addTeamMember(id, unitId, role);
+      res.json(member);
+    } catch (error: any) {
+      console.error("Error adding team member:", error);
+      res.status(500).json({ message: "Failed to add team member" });
+    }
+  });
+
+  app.get("/api/expeditions/:id/encounters", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const { id } = req.params;
+      const encounters = await storage.getExpeditionEncounters(id);
+      res.json(encounters);
+    } catch (error: any) {
+      console.error("Error fetching encounters:", error);
+      res.status(500).json({ message: "Failed to fetch encounters" });
+    }
+  });
+
   return httpServer;
 }
 
