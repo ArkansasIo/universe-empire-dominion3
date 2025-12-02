@@ -51,7 +51,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { resources, planetName } = useGame();
+  const { resources, planetName, coordinates } = useGame();
 
   return (
     <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
@@ -86,7 +86,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                   <Globe className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="font-orbitron font-bold text-slate-900">{planetName}</h3>
-                <p className="text-xs text-muted-foreground">[1:102:8]</p>
+                <p className="text-xs text-muted-foreground">[{coordinates}]</p>
              </div>
           </div>
 
@@ -105,6 +105,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             
             <div className="px-4 mt-6 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">Navigation</div>
             <SidebarItem href="/fleet" icon={Send} label="Fleet" active={location === "/fleet"} />
+            <SidebarItem href="/interstellar" icon={Rocket} label="Interstellar" active={location === "/interstellar"} />
             <SidebarItem href="/galaxy" icon={Globe} label="Galaxy" active={location === "/galaxy"} />
             
             <div className="px-4 mt-6 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>

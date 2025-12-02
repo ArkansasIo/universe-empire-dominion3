@@ -19,6 +19,7 @@ import Settings from "@/pages/Settings";
 import Messages from "@/pages/Messages";
 import Alliance from "@/pages/Alliance";
 import Artifacts from "@/pages/Artifacts";
+import Interstellar from "@/pages/Interstellar";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/artifacts" component={Artifacts} />
       <Route path="/shipyard" component={Shipyard} />
       <Route path="/fleet" component={Fleet} />
+      <Route path="/interstellar" component={Interstellar} />
       <Route path="/galaxy" component={Galaxy} />
       <Route path="/commander" component={Commander} />
       <Route path="/government" component={Government} />

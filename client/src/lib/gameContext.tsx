@@ -117,6 +117,7 @@ interface GameState {
   alliance: Alliance | null;
   artifacts: Artifact[];
   cronJobs: CronJob[];
+  coordinates: string;
   updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
@@ -140,6 +141,7 @@ interface GameState {
   activateArtifact: (id: string) => void;
   toggleCronJob: (id: string) => void;
   runCronJob: (id: string) => void;
+  travelTo: (destinationName: string, coords: string, cost: { deuterium: number }) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -247,7 +249,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [activeMissions, setActiveMissions] = useState<Mission[]>([]);
 
-  const planetName = "Homeworld";
+  const [planetName, setPlanetName] = useState("Homeworld");
+  const [coordinates, setCoordinates] = useState("1:102:8");
 
   // Calculate production
   const getProduction = () => {
@@ -707,6 +710,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const travelTo = (destinationName: string, coords: string, cost: { deuterium: number }) => {
+    if (resources.deuterium >= cost.deuterium) {
+       setResources(prev => ({ ...prev, deuterium: prev.deuterium - cost.deuterium }));
+       setPlanetName(destinationName);
+       setCoordinates(coords);
+       addEvent("Hyperspace Jump", `Fleet successfully jumped to ${destinationName} [${coords}].`, "success");
+    } else {
+       alert("Insufficient Deuterium for jump!");
+    }
+  };
+
   return (
     <GameContext.Provider value={{ 
        resources, 
@@ -715,7 +729,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        units,
        commander,
        government,
-       planetName, 
+       planetName,
+       coordinates, 
        events,
        queue,
        activeMissions,
@@ -746,7 +761,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        leaveAlliance,
        activateArtifact,
        toggleCronJob,
-       runCronJob
+       runCronJob,
+       travelTo
     }}>
       {children}
     </GameContext.Provider>
