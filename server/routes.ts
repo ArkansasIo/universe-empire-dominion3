@@ -966,3 +966,27 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch rankings" });
     }
   });
+
+  // ==== ITEMS/INVENTORY ROUTES ====
+  
+  app.get("/api/inventory", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const items = await db.select().from(playerItems).where(eq(playerItems.playerId, userId));
+      res.json(items);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch inventory" });
+    }
+  });
+
+  // ==== FACILITIES ROUTES ====
+
+  app.get("/api/facilities/types", async (req: Request, res: any) => {
+    const types = ["resource", "energy", "storage", "military", "research", "civilian", "special"];
+    res.json({ types, totalFacilities: 120 });
+  });
+
+  // ==== COMBAT FORMATIONS ROUTES ====
+
+};
+export default registerRoutes;
