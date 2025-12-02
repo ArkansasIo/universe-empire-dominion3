@@ -4,6 +4,7 @@ import { GovernmentState, GOVERNMENTS, GovernmentId, POLICIES } from './governme
 import { Alliance, AllianceMember, MOCK_ALLIANCES } from './allianceData';
 import { Artifact, ARTIFACTS } from './artifactData';
 import { simulateCombat, BattleReport } from './gameLogic';
+import { CronJob, DEFAULT_CRON_JOBS } from './cronData';
 
 interface Resources {
   metal: number;
@@ -115,6 +116,7 @@ interface GameState {
   messages: Message[];
   alliance: Alliance | null;
   artifacts: Artifact[];
+  cronJobs: CronJob[];
   updateBuilding: (building: keyof Buildings, name: string, time: number) => void;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
@@ -136,6 +138,8 @@ interface GameState {
   joinAlliance: (id: string) => void;
   leaveAlliance: () => void;
   activateArtifact: (id: string) => void;
+  toggleCronJob: (id: string) => void;
+  runCronJob: (id: string) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -234,6 +238,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     ARTIFACTS[0], ARTIFACTS[3] // Start with Star Map and Banner
   ]);
 
+  const [cronJobs, setCronJobs] = useState<CronJob[]>(DEFAULT_CRON_JOBS);
+
   const [events, setEvents] = useState<GameEvent[]>([
     { id: "1", title: "Welcome Commander", description: "Colony established on Homeworld.", type: "success", timestamp: Date.now() }
   ]);
@@ -282,12 +288,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
-  // Game Loop
+  // Main Game Loop
   useEffect(() => {
     const interval = setInterval(() => {
+      const now = Date.now();
       const production = getProduction();
       const speedMult = config.gameSpeed;
 
+      // 1. Resource Production (Now formally part of "resource_tick" logic, but kept inline for smooth UI)
+      // We sync this with the cron job update visually
       setResources(prev => ({
         metal: prev.metal + (production.metal * 10 * speedMult),
         crystal: prev.crystal + (production.crystal * 10 * speedMult),
@@ -295,8 +304,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         energy: production.energy
       }));
 
-      // Process Queue
-      const now = Date.now();
+      // 2. Process Cron Jobs
+      setCronJobs(prev => prev.map(job => {
+        if (job.enabled && now - job.lastRun >= job.interval) {
+           // Execute Job Logic
+           if (job.id === "auto_mine" && research["aiTech"] > 0) {
+              // Logic for auto-mine
+              // addEvent("Auto-Mine", "Automated drones collected nearby debris.", "info");
+           }
+           
+           return { ...job, lastRun: now };
+        }
+        return job;
+      }));
+
+      // 3. Process Queue
       setQueue(prev => {
         const finished = prev.filter(item => item.endTime <= now);
         const remaining = prev.filter(item => item.endTime > now);
@@ -319,22 +341,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return remaining;
       });
 
-      // Process Missions (Advanced)
+      // 4. Process Missions
       setActiveMissions(prev => {
-         // Separate into processing lists
          const arriving = prev.filter(m => m.status === "outbound" && m.arrivalTime <= now && !m.processed);
          const returning = prev.filter(m => m.status === "return" && m.returnTime <= now);
          const ongoing = prev.filter(m => !((m.status === "outbound" && m.arrivalTime <= now) || (m.status === "return" && m.returnTime <= now)));
 
-         // Handle Arriving Fleets (Attack/Transport logic)
          if (arriving.length > 0) {
             arriving.forEach(m => {
                if (m.type === "attack") {
-                  // Mock defenders: Random pirate fleet roughly 50% size of attacker
                   const defenders: Units = { lightFighter: Math.floor(Math.random() * 50), heavyFighter: Math.floor(Math.random() * 10) };
                   const report = simulateCombat(m.units, defenders);
                   
-                  // Generate Combat Message
                   const newMsg: Message = {
                      id: Math.random().toString(36).substr(2, 9),
                      from: "Fleet Command",
@@ -347,29 +365,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                      battleReport: report
                   };
                   setMessages(prevMsgs => [newMsg, ...prevMsgs]);
-                  
-                  // Update Resources with Loot (if returning)
-                  if (report.winner === "attacker") {
-                     // Fleet turns around with loot
-                     // In a full backend, loot would be carried by ships. Here we just add it on return? 
-                     // Better: Add loot property to mission and add resources on return.
-                     // For prototype simplicity: Instant loot credit (magic subspace transfer) or just note it in report.
-                     // Let's mock carrying it back:
-                     // m.loot = report.loot; 
-                  }
-                  
                   addEvent("Battle Engaged", `Fleet engaged hostiles at ${m.target}.`, "warning");
                } else {
                   addEvent("Fleet Arrived", `Fleet reached destination ${m.target}.`, "info");
                }
-               
-               // Mark processed and set to return
                m.status = "return";
                m.processed = true;
             });
          }
 
-         // Handle Returning Fleets
          if (returning.length > 0) {
             returning.forEach(m => {
                addEvent("Fleet Returned", `Fleet returned from ${m.target}.`, "info");
@@ -383,20 +387,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             });
          }
 
-         // Re-merge lists: 
-         // - arriving items are now "return" status (need to keep them in active list but updated)
-         // - returning items are removed (mission done)
-         // - ongoing items kept
-         
          const nextActive = [
             ...ongoing,
-            ...arriving // These have been mutated to status="return"
+            ...arriving 
          ];
 
          return nextActive;
       });
 
-      // Random Events
+      // 5. Random Events (Cron-like random trigger)
       if (Math.random() > 0.995) {
          const randomEvents = [
             { title: "Merchant Arrival", desc: "A wandering trader has docked at the spaceport.", type: "info" },
@@ -411,7 +410,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [buildings, commander, government, config]);
+  }, [buildings, commander, government, config, research, cronJobs]);
 
   const addEvent = (title: string, description: string, type: GameEvent["type"]) => {
     setEvents(prev => [{
@@ -696,6 +695,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      }
   };
 
+  const toggleCronJob = (id: string) => {
+    setCronJobs(prev => prev.map(j => j.id === id ? { ...j, enabled: !j.enabled } : j));
+  };
+
+  const runCronJob = (id: string) => {
+    const job = cronJobs.find(j => j.id === id);
+    if (job) {
+       addEvent("Manual Job Trigger", `Manually triggered ${job.name}`, "info");
+       setCronJobs(prev => prev.map(j => j.id === id ? { ...j, lastRun: Date.now() } : j));
+    }
+  };
+
   return (
     <GameContext.Provider value={{ 
        resources, 
@@ -712,6 +723,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        messages,
        alliance,
        artifacts,
+       cronJobs,
        updateBuilding,
        updateResearch,
        buildUnit,
@@ -732,7 +744,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        createAlliance,
        joinAlliance,
        leaveAlliance,
-       activateArtifact
+       activateArtifact,
+       toggleCronJob,
+       runCronJob
     }}>
       {children}
     </GameContext.Provider>

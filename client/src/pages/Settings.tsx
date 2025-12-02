@@ -7,10 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Server, Shield, Monitor, Database, Power, Save, RefreshCw } from "lucide-react";
+import { Settings as SettingsIcon, Server, Shield, Monitor, Database, Power, Save, RefreshCw, Clock, Play, Pause } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function Settings() {
-  const { config, updateConfig } = useGame();
+  const { config, updateConfig, cronJobs, toggleCronJob, runCronJob } = useGame();
 
   return (
     <GameLayout>
@@ -24,6 +25,7 @@ export default function Settings() {
            <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start">
               <TabsTrigger value="game" className="font-orbitron"><Monitor className="w-4 h-4 mr-2" /> Game Rules</TabsTrigger>
               <TabsTrigger value="server" className="font-orbitron"><Server className="w-4 h-4 mr-2" /> Server Config</TabsTrigger>
+              <TabsTrigger value="cron" className="font-orbitron"><Clock className="w-4 h-4 mr-2" /> Cron Jobs</TabsTrigger>
               <TabsTrigger value="account" className="font-orbitron"><SettingsIcon className="w-4 h-4 mr-2" /> Account</TabsTrigger>
            </TabsList>
 
@@ -173,6 +175,51 @@ export default function Settings() {
                     </CardContent>
                  </Card>
               </div>
+           </TabsContent>
+
+           {/* CRON JOBS TAB */}
+           <TabsContent value="cron" className="mt-6">
+              <Card className="bg-white border-slate-200">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <Clock className="w-5 h-5 text-purple-600" /> Scheduled Tasks (Cron)
+                    </CardTitle>
+                    <CardDescription>Manage periodic background tasks and server automation.</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                    <div className="space-y-4">
+                       {cronJobs.map(job => {
+                          const isDue = Date.now() - job.lastRun >= job.interval;
+                          return (
+                             <div key={job.id} className="flex items-center justify-between p-4 bg-slate-50 rounded border border-slate-100">
+                                <div className="flex items-center gap-4">
+                                   <div className={`w-2 h-2 rounded-full ${job.enabled ? "bg-green-500 animate-pulse" : "bg-slate-300"}`} />
+                                   <div>
+                                      <div className="font-bold text-slate-900 flex items-center gap-2">
+                                         {job.name}
+                                         <Badge variant="outline" className="text-[10px] uppercase">{job.type}</Badge>
+                                      </div>
+                                      <div className="text-xs text-slate-500">{job.description}</div>
+                                      <div className="text-[10px] font-mono text-slate-400 mt-1">
+                                         Interval: {job.interval / 1000}s | Last Run: {new Date(job.lastRun).toLocaleTimeString()}
+                                      </div>
+                                   </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                   <Button variant="ghost" size="sm" onClick={() => runCronJob(job.id)}>
+                                      <Play className="w-4 h-4" />
+                                   </Button>
+                                   <Switch 
+                                      checked={job.enabled}
+                                      onCheckedChange={() => toggleCronJob(job.id)}
+                                   />
+                                </div>
+                             </div>
+                          );
+                       })}
+                    </div>
+                 </CardContent>
+              </Card>
            </TabsContent>
 
            {/* ACCOUNT TAB */}
