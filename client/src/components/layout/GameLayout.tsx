@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 
 const SidebarItem = ({ href, icon: Icon, label, active, className, indent = false }: { href: string, icon: any, label: string, active: boolean, className?: string, indent?: boolean }) => (
-  <Link href={href}>
+  <Link href={href} data-testid={`link-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}>
     <div className={cn(
       "flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2",
       indent ? "px-6 py-2 text-xs" : "px-4 py-3",
@@ -77,6 +77,7 @@ const CollapsibleMenu = ({ title, icon: Icon, items, location, defaultOpen = fal
     <div className="mb-1">
       <button 
         onClick={() => setIsOpen(!isOpen)}
+        data-testid={`button-menu-${title.toLowerCase().replace(/\s+/g, '-')}`}
         className={cn(
           "w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-all duration-200 border-l-2",
           hasActiveChild 
