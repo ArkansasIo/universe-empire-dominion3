@@ -8,9 +8,19 @@ import { CronJob, DEFAULT_CRON_JOBS } from './cronData';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 async function apiRequest(method: string, url: string, data?: any) {
+  const headers: Record<string, string> = data ? { 'Content-Type': 'application/json' } : {};
+  
+  // Add basic auth if credentials are stored
+  const username = localStorage.getItem('stellar_username');
+  const password = localStorage.getItem('stellar_password');
+  if (username && password) {
+    const encoded = btoa(`${username}:${password}`);
+    headers['Authorization'] = `Basic ${encoded}`;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { 'Content-Type': 'application/json' } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: 'include'
   });

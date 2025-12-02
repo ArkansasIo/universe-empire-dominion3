@@ -156,10 +156,35 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = (req, res, next) => {
-  const userId = (req.session as any)?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // First try session
+  let userId = (req.session as any)?.userId;
+  if (userId) {
+    return next();
   }
-  next();
+  
+  // Fallback to basic auth from Authorization header
+  const authHeader = req.get('authorization');
+  if (authHeader && authHeader.startsWith('Basic ')) {
+    try {
+      const encoded = authHeader.slice(6);
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      const [username, password] = decoded.split(':');
+      
+      if (username && password) {
+        const user = await storage.getUserByUsername(username);
+        if (user && user.passwordHash) {
+          const passwordValid = verifyPassword(password, user.passwordHash);
+          if (passwordValid) {
+            (req.session as any).userId = user.id;
+            return next();
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn("AUTH", "Basic auth header parse error", {}, err);
+    }
+  }
+  
+  res.status(401).json({ message: "Unauthorized" });
 };
