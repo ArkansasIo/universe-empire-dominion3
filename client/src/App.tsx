@@ -39,6 +39,7 @@ import TechTree from "@/pages/TechTree";
 import Blueprints from "@/pages/Blueprints";
 import TechnologyTree from "@/pages/TechnologyTree";
 import Expeditions from "@/pages/Expeditions";
+import Army from "@/pages/Army";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -161,6 +162,7 @@ function RouterContent() {
       <Route path="/artifacts" component={Artifacts} />
       <Route path="/shipyard" component={Shipyard} />
       <Route path="/fleet" component={Fleet} />
+      <Route path="/army" component={Army} />
       <Route path="/interstellar" component={Interstellar} />
       <Route path="/galaxy" component={Galaxy} />
       <Route path="/universe" component={Universe} />
