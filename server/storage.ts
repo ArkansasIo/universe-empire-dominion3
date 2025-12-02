@@ -1352,7 +1352,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(expeditionTeams).where(eq(expeditionTeams.expeditionId, expeditionId));
   }
 
-  async addTeamMember(expeditionId: string, unitId: string, role: string): Promise<any> {
+  async addExpeditionMember(expeditionId: string, unitId: string, role: string): Promise<any> {
     const [result] = await db
       .insert(expeditionTeams)
       .values({ expeditionId, unitId, role })

@@ -49,6 +49,11 @@ import Stations from "@/pages/Stations";
 import Merchants from "@/pages/Merchants";
 import CelestialBrowser from "@/pages/CelestialBrowser";
 import Diagnostics from "@/pages/Diagnostics";
+import StoryMode from "@/pages/StoryMode";
+import Relics from "@/pages/Relics";
+import FriendsList from "@/pages/FriendsList";
+import Guilds from "@/pages/Guilds";
+import Raids from "@/pages/Raids";
 import { useGame } from "@/lib/gameContext";
 
 function LoadingSplash() {
@@ -198,6 +203,11 @@ function RouterContent() {
       <Route path="/merchants" component={Merchants} />
       <Route path="/celestial-browser" component={CelestialBrowser} />
       <Route path="/diagnostics" component={Diagnostics} />
+      <Route path="/story-mode" component={StoryMode} />
+      <Route path="/relics" component={Relics} />
+      <Route path="/friends" component={FriendsList} />
+      <Route path="/guilds" component={Guilds} />
+      <Route path="/raids" component={Raids} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/console" component={ServerConsole} />
