@@ -1,4 +1,4 @@
-import { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import passport from "passport";
 import { eq, desc, and, gte, lte, or, asc } from "drizzle-orm";
 import { db } from "./db/index";
@@ -34,14 +34,14 @@ function getUserId(req: Request) {
   return user?.id || "";
 }
 
-function isAuthenticated(req: Request, res: Response, next: Function) {
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   next();
 }
 
-export async function registerRoutes(app: Express) {
+export function registerRoutes(app: Express) {
   // ==== PLAYER STATE ROUTES ====
 
   app.get("/api/player/state", isAuthenticated, async (req: Request, res: any) => {
