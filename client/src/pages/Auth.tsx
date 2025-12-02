@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Rocket, Shield, Info, Loader2, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Auth() {
   const { isLoading, login } = useGame();
+  const queryClient = useQueryClient();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgot, setIsForgot] = useState(false);
   const [username, setUsername] = useState("");
