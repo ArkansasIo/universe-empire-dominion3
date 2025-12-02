@@ -13,6 +13,7 @@ import Research from "@/pages/Research";
 import Shipyard from "@/pages/Shipyard";
 import Fleet from "@/pages/Fleet";
 import Galaxy from "@/pages/Galaxy";
+import Universe from "@/pages/Universe";
 import Commander from "@/pages/Commander";
 import Government from "@/pages/Government";
 import Settings from "@/pages/Settings";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/fleet" component={Fleet} />
       <Route path="/interstellar" component={Interstellar} />
       <Route path="/galaxy" component={Galaxy} />
+      <Route path="/universe" component={Universe} />
       <Route path="/commander" component={Commander} />
       <Route path="/government" component={Government} />
       <Route path="/alliance" component={Alliance} />
