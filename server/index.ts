@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { logger } from "./logger";
+import { ConsoleMenu } from "./consoleMenu";
 
 const app = express();
 const httpServer = createServer(app);
@@ -38,6 +40,17 @@ export function log(message: string, source = "express", level: "info" | "succes
   };
 
   console.log(`${formattedTime} [${source}] ${icons[level]} ${message}`);
+  
+  // Also log to the structured logger
+  if (level === "error") {
+    logger.error("SERVER" as any, message);
+  } else if (level === "warn") {
+    logger.warn("SERVER" as any, message);
+  } else if (level === "success") {
+    logger.info("SERVER" as any, message);
+  } else {
+    logger.info("SERVER" as any, message);
+  }
 }
 
 app.use((req, res, next) => {

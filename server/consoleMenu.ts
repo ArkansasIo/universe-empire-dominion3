@@ -75,29 +75,32 @@ export class ConsoleMenu {
   }
 
   displayLogEntry(entry: any) {
-    const icon = {
+    const level = entry.level as string;
+    const icons: Record<string, string> = {
       debug: '🔍',
       info: 'ℹ️',
       warn: '⚠️',
       error: '❌'
-    }[entry.level] || '•';
+    };
+    const icon = icons[level] || '•';
 
-    const levelColor = {
-      debug: colors.dim,
-      info: colors.blue,
-      warn: colors.yellow,
-      error: colors.red
-    }[entry.level] || colors.reset;
+    const levelColors: Record<string, string> = {
+      debug: this.colors.dim,
+      info: this.colors.blue,
+      warn: this.colors.yellow,
+      error: this.colors.red
+    };
+    const levelColor = levelColors[level] || this.colors.reset;
 
     console.log(
-      `${entry.timestamp} ${icon} ${levelColor}[${entry.category}]${colors.reset} ${entry.message}`,
+      `${entry.timestamp} ${icon} ${levelColor}[${entry.category}]${this.colors.reset} ${entry.message}`,
       entry.data ? JSON.stringify(entry.data).substring(0, 50) : ''
     );
   }
 
   async prompt(question: string): Promise<string> {
     return new Promise((resolve) => {
-      this.rl.question(colors.cyan + question + colors.reset, (answer) => {
+      this.rl.question(this.colors.cyan + question + this.colors.reset, (answer) => {
         resolve(answer.trim());
       });
     });
@@ -125,7 +128,7 @@ export class ConsoleMenu {
 
         case '4':
           logger.clear();
-          console.log(colors.green + '✓ Logs cleared' + colors.reset);
+          console.log(this.colors.green + '✓ Logs cleared' + this.colors.reset);
           await this.prompt('Press Enter to continue...');
           break;
 
@@ -137,12 +140,12 @@ export class ConsoleMenu {
 
         case '0':
           running = false;
-          console.log(colors.green + '✓ Exiting console...' + colors.reset);
+          console.log(this.colors.green + '✓ Exiting console...' + this.colors.reset);
           this.rl.close();
           break;
 
         default:
-          console.log(colors.red + '✗ Invalid option' + colors.reset);
+          console.log(this.colors.red + '✗ Invalid option' + this.colors.reset);
           await this.prompt('Press Enter to continue...');
       }
     }
@@ -155,31 +158,31 @@ export class ConsoleMenu {
     switch (choice) {
       case '1': {
         const logs = logger.getLogs(undefined, undefined, 20);
-        console.log(colors.bright + 'Last 20 Logs:' + colors.reset);
+        console.log(this.colors.bright + 'Last 20 Logs:' + this.colors.reset);
         logs.forEach(log => this.displayLogEntry(log));
         break;
       }
       case '2': {
         const logs = logger.getLogs('error');
-        console.log(colors.bright + colors.red + `Errors (${logs.length}):` + colors.reset);
+        console.log(this.colors.bright + this.colors.red + `Errors (${logs.length}):` + this.colors.reset);
         logs.forEach(log => this.displayLogEntry(log));
         break;
       }
       case '3': {
         const logs = logger.getLogs('warn');
-        console.log(colors.bright + colors.yellow + `Warnings (${logs.length}):` + colors.reset);
+        console.log(this.colors.bright + this.colors.yellow + `Warnings (${logs.length}):` + this.colors.reset);
         logs.forEach(log => this.displayLogEntry(log));
         break;
       }
       case '4': {
         const logs = logger.getLogs(undefined, 'AUTH', 20);
-        console.log(colors.bright + 'Auth Logs:' + colors.reset);
+        console.log(this.colors.bright + 'Auth Logs:' + this.colors.reset);
         logs.forEach(log => this.displayLogEntry(log));
         break;
       }
       case '5': {
         const logs = logger.getLogs(undefined, 'API', 20);
-        console.log(colors.bright + 'API Logs:' + colors.reset);
+        console.log(this.colors.bright + 'API Logs:' + this.colors.reset);
         logs.forEach(log => this.displayLogEntry(log));
         break;
       }
@@ -194,22 +197,22 @@ export class ConsoleMenu {
 
     switch (choice) {
       case '1':
-        console.log(colors.bright + 'Log Levels:' + colors.reset);
+        console.log(this.colors.bright + 'Log Levels:' + this.colors.reset);
         console.log('  debug, info, warn, error');
         break;
       case '2':
-        console.log(colors.bright + 'Database Info:' + colors.reset);
+        console.log(this.colors.bright + 'Database Info:' + this.colors.reset);
         console.log(`  Host: ${process.env.PGHOST || 'localhost'}`);
         console.log(`  Port: ${process.env.PGPORT || 5432}`);
         console.log(`  Database: ${process.env.PGDATABASE || 'stellar'}`);
         break;
       case '3':
-        console.log(colors.bright + 'Session Info:' + colors.reset);
+        console.log(this.colors.bright + 'Session Info:' + this.colors.reset);
         console.log(`  TTL: 7 days`);
         console.log(`  Store: Memory`);
         break;
       case '4':
-        console.log(colors.bright + 'Environment Variables:' + colors.reset);
+        console.log(this.colors.bright + 'Environment Variables:' + this.colors.reset);
         console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
         console.log(`  PORT: ${process.env.PORT || 5000}`);
         break;

@@ -665,5 +665,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ==== LOGGING ROUTES ====
+  
+  app.get("/api/logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const { logger } = await import("./logger");
+      const level = req.query.level as string | undefined;
+      const category = req.query.category as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const logs = logger.getLogs(level as any, category as any, limit);
+      const stats = logger.getStats();
+      
+      res.json({ logs, stats });
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+      res.status(500).json({ message: "Failed to fetch logs" });
+    }
+  });
+
   return httpServer;
 }
