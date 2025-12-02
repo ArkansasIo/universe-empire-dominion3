@@ -69,7 +69,13 @@ export async function setupAuth(app: Express) {
       });
 
       (req.session as any).userId = user.id;
-      res.json({ message: "Account created", user });
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session creation failed" });
+        }
+        res.json({ message: "Account created", user });
+      });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
@@ -94,7 +100,13 @@ export async function setupAuth(app: Express) {
       }
 
       (req.session as any).userId = user.id;
-      res.json({ message: "Login successful", user });
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json({ message: "Login successful", user });
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
@@ -102,8 +114,9 @@ export async function setupAuth(app: Express) {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.logout((err) => {
+    req.session.destroy((err) => {
       if (err) return res.status(500).json({ message: "Logout failed" });
+      res.clearCookie("connect.sid");
       res.json({ message: "Logout successful" });
     });
   });
