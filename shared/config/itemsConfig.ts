@@ -126,7 +126,7 @@ export const ITEMS_DATABASE = [
   { name: "Crystal Mail", type: "armor", class: "rare", rank: 6, description: "Crystalline armor", requiredLevel: 22, stats: { defense: 38, magic: 8 }, sellPrice: 1000 },
   { name: "Warlord Plate", type: "armor", class: "epic", rank: 19, description: "Armor of ancient warlords", requiredLevel: 52, stats: { defense: 88, strength: 12 }, sellPrice: 5500 },
   { name: "Rune Plate", type: "armor", class: "rare", rank: 9, description: "Protected by runes", requiredLevel: 34, stats: { defense: 45, magic: 10 }, sellPrice: 1900 },
-  { name: "Mythril Plate", type: "armor", class: "mythic", rank: 70, description: "Mythril body armor", requiredLevel: 82, stats: { defense: 160, allResist: 15 }, stillPrice: 45000 },
+  { name: "Mythril Plate", type: "armor", class: "mythic", rank: 70, description: "Mythril body armor", requiredLevel: 82, stats: { defense: 160, allResist: 15 }, sellPrice: 45000 },
   { name: "Frost Armor", type: "armor", class: "rare", rank: 8, description: "Radiates cold", requiredLevel: 30, stats: { defense: 44, coldResist: 20 }, sellPrice: 1600 },
 
   // Add more armor pieces (30 more types: shoulders, gauntlets, legs, boots, boots, cloaks, etc.)
