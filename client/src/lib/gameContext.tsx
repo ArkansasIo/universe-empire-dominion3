@@ -3,7 +3,7 @@ import { CommanderState, Item, RaceId, ClassId, SubClassId, RACES, CLASSES, SUBC
 import { GovernmentState, GOVERNMENTS, GovernmentId, POLICIES } from './governmentData';
 import { Alliance, AllianceMember, MOCK_ALLIANCES } from './allianceData';
 import { Artifact, ARTIFACTS } from './artifactData';
-import { simulateCombat, BattleReport } from './gameLogic';
+import { simulateCombat, simulateEspionage, simulateSabotage, BattleReport, EspionageReport } from './gameLogic';
 import { CronJob, DEFAULT_CRON_JOBS } from './cronData';
 
 interface Resources {
@@ -69,7 +69,7 @@ export interface QueueItem {
 
 export interface Mission {
   id: string;
-  type: "attack" | "transport" | "espionage" | "colonize" | "deploy";
+  type: "attack" | "transport" | "espionage" | "colonize" | "deploy" | "sabotage";
   target: string; // Coordinates e.g. "1:102:8"
   units: Units;
   arrivalTime: number;
@@ -97,8 +97,9 @@ export interface Message {
   body: string;
   timestamp: number;
   read: boolean;
-  type: "player" | "system" | "alliance" | "combat";
+  type: "player" | "system" | "alliance" | "combat" | "espionage";
   battleReport?: BattleReport; // Optional attachment
+  espionageReport?: EspionageReport;
 }
 
 interface GameState {
@@ -356,6 +357,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                   const defenders: Units = { lightFighter: Math.floor(Math.random() * 50), heavyFighter: Math.floor(Math.random() * 10) };
                   const report = simulateCombat(m.units, defenders);
                   
+                  // Apply loot if attacker won
+                  if (report.winner === "attacker") {
+                      setResources(prev => ({
+                          ...prev,
+                          metal: prev.metal + report.loot.metal,
+                          crystal: prev.crystal + report.loot.crystal,
+                          deuterium: prev.deuterium + report.loot.deuterium
+                      }));
+                  }
+
                   const newMsg: Message = {
                      id: Math.random().toString(36).substr(2, 9),
                      from: "Fleet Command",
@@ -369,6 +380,40 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                   };
                   setMessages(prevMsgs => [newMsg, ...prevMsgs]);
                   addEvent("Battle Engaged", `Fleet engaged hostiles at ${m.target}.`, "warning");
+               } else if (m.type === "espionage") {
+                  // Mock espionage check
+                  const probeCount = m.units.espionageProbe || 0;
+                  const report = simulateEspionage(probeCount, 3, research.espionageTech || 0);
+                  
+                  const newMsg: Message = {
+                     id: Math.random().toString(36).substr(2, 9),
+                     from: "Intel Ops",
+                     to: "Commander",
+                     subject: `Espionage Report: [${m.target}]`,
+                     body: `Intelligence gathered from ${m.target}. Counter-espionage chance: ${report.counterEspionage}%`,
+                     timestamp: now,
+                     read: false,
+                     type: "espionage",
+                     espionageReport: report
+                  };
+                  setMessages(prevMsgs => [newMsg, ...prevMsgs]);
+                  addEvent("Espionage Success", `Data retrieved from ${m.target}.`, "info");
+               } else if (m.type === "sabotage") {
+                  const saboteurs = m.units.spy || 0; // Assume 'spy' unit or just any unit for now, let's say marines
+                  const result = simulateSabotage(10); // Mock count
+                  
+                  const newMsg: Message = {
+                     id: Math.random().toString(36).substr(2, 9),
+                     from: "Spec Ops",
+                     to: "Commander",
+                     subject: `Sabotage Result: [${m.target}]`,
+                     body: result.log,
+                     timestamp: now,
+                     read: false,
+                     type: "combat"
+                  };
+                  setMessages(prevMsgs => [newMsg, ...prevMsgs]);
+                  addEvent("Sabotage Mission", result.success ? "Sabotage successful!" : "Sabotage failed.", result.success ? "success" : "danger");
                } else {
                   addEvent("Fleet Arrived", `Fleet reached destination ${m.target}.`, "info");
                }

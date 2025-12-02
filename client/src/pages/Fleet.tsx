@@ -221,6 +221,7 @@ export default function Fleet() {
                            { id: "attack", icon: Crosshair, label: "Attack", color: "text-red-600" },
                            { id: "transport", icon: Truck, label: "Transport", color: "text-green-600" },
                            { id: "espionage", icon: Search, label: "Espionage", color: "text-blue-600" },
+                           { id: "sabotage", icon: Skull, label: "Sabotage", color: "text-orange-600" },
                            { id: "colonize", icon: MapPin, label: "Colonize", color: "text-yellow-600" },
                            { id: "deploy", icon: Anchor, label: "Deploy", color: "text-purple-600" },
                         ].map(m => (

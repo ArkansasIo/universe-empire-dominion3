@@ -12,6 +12,15 @@ export interface BattleReport {
   log: string[];
 }
 
+export interface EspionageReport {
+  resources: { metal: number; crystal: number; deuterium: number; energy: number };
+  buildings?: { [key: string]: number };
+  units?: { [key: string]: number };
+  defense?: { [key: string]: number };
+  tech?: { [key: string]: number };
+  counterEspionage: number; // Chance of probes being destroyed
+}
+
 export function simulateCombat(attackerFleet: Units, defenderFleet: Units): BattleReport {
   // 1. Initialize fleets
   let attackers = expandFleet(attackerFleet);
@@ -31,6 +40,7 @@ export function simulateCombat(attackerFleet: Units, defenderFleet: Units): Batt
     // Attackers shoot
     attackers.forEach(att => {
       if (defenders.length === 0) return;
+      // Rapid fire logic could go here (chance to shoot again)
       const targetIndex = Math.floor(Math.random() * defenders.length);
       const target = defenders[targetIndex];
       
@@ -41,6 +51,7 @@ export function simulateCombat(attackerFleet: Units, defenderFleet: Units): Batt
         target.currentShield = 0; // Shields collapse
       } else {
         target.currentShield -= att.attack; // Shields absorb
+        // Small chance (1%) for shield to fail completely if damage > 1% of shield?
       }
     });
 
@@ -94,7 +105,10 @@ export function simulateCombat(attackerFleet: Units, defenderFleet: Units): Batt
   if (winner === "attacker") {
     const cargo = attackers.reduce((sum, ship) => sum + ship.cargo, 0);
     const mockPlanetResources = 50000; // Assume target had 50k of each
-    const lootAmount = Math.min(cargo, mockPlanetResources); // Take what fits
+    // Loot algorithm: Take up to 50% of resources, limited by cargo
+    const totalStealable = mockPlanetResources * 3 * 0.5; // 50% of 150k
+    const lootAmount = Math.min(cargo, totalStealable); 
+    
     loot = {
       metal: Math.floor(lootAmount / 3),
       crystal: Math.floor(lootAmount / 3),
@@ -111,6 +125,68 @@ export function simulateCombat(attackerFleet: Units, defenderFleet: Units): Batt
     loot,
     log
   };
+}
+
+export function simulateEspionage(probeCount: number, enemyEspionageLevel: number, myEspionageLevel: number): EspionageReport {
+   // Logic:
+   // Level difference determines what you see.
+   // Probe count adds to effective level but increases counter-espionage chance.
+   
+   const levelDiff = (myEspionageLevel + Math.sqrt(probeCount)) - enemyEspionageLevel;
+   
+   const report: EspionageReport = {
+      resources: { 
+         metal: Math.floor(Math.random() * 100000), 
+         crystal: Math.floor(Math.random() * 50000), 
+         deuterium: Math.floor(Math.random() * 20000),
+         energy: Math.floor(Math.random() * 5000)
+      },
+      counterEspionage: Math.min(100, probeCount * 2) // 2% chance per probe
+   };
+
+   if (levelDiff >= 1) {
+      report.units = {
+         lightFighter: Math.floor(Math.random() * 50),
+         smallCargo: Math.floor(Math.random() * 20),
+         solarSatellite: Math.floor(Math.random() * 10)
+      };
+   }
+
+   if (levelDiff >= 3) {
+      report.defense = {
+         rocketLauncher: Math.floor(Math.random() * 50),
+         lightLaser: Math.floor(Math.random() * 20)
+      };
+   }
+
+   if (levelDiff >= 5) {
+      report.buildings = {
+         metalMine: Math.floor(Math.random() * 20),
+         crystalMine: Math.floor(Math.random() * 15),
+         deuteriumSynthesizer: Math.floor(Math.random() * 10)
+      };
+   }
+
+   if (levelDiff >= 7) {
+      report.tech = {
+         weaponsTech: Math.floor(Math.random() * 10),
+         shieldingTech: Math.floor(Math.random() * 10),
+         armourTech: Math.floor(Math.random() * 10)
+      };
+   }
+
+   return report;
+}
+
+export function simulateSabotage(saboteurs: number): { success: boolean, log: string } {
+   const chance = Math.min(0.9, saboteurs * 0.1); // 10% per saboteur
+   const roll = Math.random();
+
+   if (roll < chance) {
+      return { success: true, log: "Saboteurs successfully disabled enemy energy grid for 1 hour." };
+   } else {
+      return { success: false, log: "Saboteurs were detected and neutralized by security forces." };
+   }
 }
 
 // Helpers

@@ -1,5 +1,5 @@
 import GameLayout from "@/components/layout/GameLayout";
-import { useGame } from "@/lib/gameContext";
+import { BattleReport, EspionageReport } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -159,12 +159,56 @@ export default function Messages() {
                           <div className="flex gap-2">
                              {activeMessage.type === "system" && <Badge variant="outline" className="border-blue-200 text-blue-600">System</Badge>}
                              {activeMessage.type === "combat" && <Badge variant="outline" className="border-red-200 text-red-600">Combat Report</Badge>}
+                             {activeMessage.type === "espionage" && <Badge variant="outline" className="border-yellow-200 text-yellow-600">Espionage</Badge>}
                              {activeMessage.type === "alliance" && <Badge variant="outline" className="border-green-200 text-green-600">Alliance</Badge>}
                           </div>
                        </div>
                     </CardHeader>
                     <CardContent className="flex-1 p-6 overflow-y-auto">
-                       {activeMessage.battleReport ? (
+                       {activeMessage.espionageReport ? (
+                          <div className="space-y-6">
+                              <div className="bg-slate-50 p-4 rounded border border-slate-100">
+                                 <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-orbitron font-bold text-lg text-slate-900">Planetary Intelligence</h3>
+                                    <Badge variant="outline" className="text-xs">Counter-Intel: {activeMessage.espionageReport.counterEspionage}%</Badge>
+                                 </div>
+                                 
+                                 <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                       <h4 className="text-xs font-bold uppercase text-slate-500 mb-2">Resources</h4>
+                                       <div className="space-y-1 font-mono text-sm">
+                                          <div className="flex justify-between"><span>Metal:</span> <span>{activeMessage.espionageReport.resources.metal.toLocaleString()}</span></div>
+                                          <div className="flex justify-between"><span>Crystal:</span> <span>{activeMessage.espionageReport.resources.crystal.toLocaleString()}</span></div>
+                                          <div className="flex justify-between"><span>Deuterium:</span> <span>{activeMessage.espionageReport.resources.deuterium.toLocaleString()}</span></div>
+                                          <div className="flex justify-between"><span>Energy:</span> <span>{activeMessage.espionageReport.resources.energy.toLocaleString()}</span></div>
+                                       </div>
+                                    </div>
+                                    
+                                    {activeMessage.espionageReport.units && (
+                                       <div>
+                                          <h4 className="text-xs font-bold uppercase text-slate-500 mb-2">Fleet Detected</h4>
+                                          <div className="space-y-1 font-mono text-sm">
+                                             {Object.entries(activeMessage.espionageReport.units).map(([u, c]) => (
+                                                <div key={u} className="flex justify-between capitalize"><span>{u.replace(/([A-Z])/g, ' $1').trim()}:</span> <span>{c}</span></div>
+                                             ))}
+                                          </div>
+                                       </div>
+                                    )}
+                                 </div>
+                                 
+                                 {activeMessage.espionageReport.buildings && (
+                                    <div className="mt-4 pt-4 border-t border-slate-200">
+                                       <h4 className="text-xs font-bold uppercase text-slate-500 mb-2">Structures</h4>
+                                       <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-sm">
+                                          {Object.entries(activeMessage.espionageReport.buildings).map(([b, l]) => (
+                                             <div key={b} className="flex justify-between capitalize"><span>{b.replace(/([A-Z])/g, ' $1').trim()}:</span> <span>{l}</span></div>
+                                          ))}
+                                       </div>
+                                    </div>
+                                 )}
+                              </div>
+                          </div>
+                       ) : activeMessage.battleReport ? (
                           <div className="space-y-6">
                              <div className="flex justify-between items-center bg-slate-100 p-4 rounded">
                                 <div className="text-center">
