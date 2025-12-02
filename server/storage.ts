@@ -527,6 +527,94 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Tier and Empire progression
+  async addTierExperience(userId: string, amount: number): Promise<PlayerState> {
+    const state = await this.getPlayerState(userId);
+    if (!state) throw new Error("Player state not found");
+    
+    const tierExp = (state.tierExperience || 0) + amount;
+    const tierConfig = require("@shared/config/gameConfig").TIER_CONFIG;
+    const currentTier = state.tier || 1;
+    
+    let newTier = currentTier;
+    let remainingExp = tierExp;
+    
+    for (let i = currentTier; i <= tierConfig.maxTier && i < tierConfig.tiers.length; i++) {
+      const tierReq = tierConfig.tiers[i - 1]?.expRequirement || 1000000;
+      if (remainingExp >= tierReq) {
+        remainingExp -= tierReq;
+        newTier = i + 1;
+      } else break;
+    }
+    
+    return this.updatePlayerState(userId, { 
+      tier: Math.min(newTier, tierConfig.maxTier),
+      tierExperience: remainingExp
+    });
+  }
+
+  async addEmpireExperience(userId: string, amount: number): Promise<PlayerState> {
+    const state = await this.getPlayerState(userId);
+    if (!state) throw new Error("Player state not found");
+    
+    const empireExp = (state.empireExperience || 0) + amount;
+    const empireConfig = require("@shared/config/gameConfig").EMPIRE_LEVEL_CONFIG;
+    const currentLevel = state.empireLevel || 1;
+    
+    let newLevel = currentLevel;
+    let baseReq = empireConfig.baseExpRequirement;
+    let totalExp = 0;
+    
+    for (let i = 1; i <= empireConfig.maxLevel; i++) {
+      const reqForLevel = Math.floor(baseReq * Math.pow(empireConfig.expMultiplier, i - 1));
+      if (totalExp + reqForLevel <= empireExp) {
+        totalExp += reqForLevel;
+        newLevel = i + 1;
+      } else break;
+    }
+    
+    return this.updatePlayerState(userId, {
+      empireLevel: Math.min(newLevel, empireConfig.maxLevel),
+      empireExperience: empireExp - totalExp
+    });
+  }
+
+  // Currency operations  
+  async getPlayerCurrency(userId: string): Promise<any> {
+    const [currency] = await db.select().from(playerCurrency).where(eq(playerCurrency.userId, userId));
+    return currency || { userId, silver: 0, gold: 0, platinum: 0 };
+  }
+
+  async addCurrency(userId: string, silver: number = 0, gold: number = 0, platinum: number = 0, reason: string = "unknown"): Promise<any> {
+    const current = await this.getPlayerCurrency(userId);
+    const newSilver = (current.silver || 0) + silver;
+    const newGold = (current.gold || 0) + gold;
+    const newPlatinum = (current.platinum || 0) + platinum;
+
+    // Log transaction
+    if (silver !== 0) await db.insert(currencyTransactions).values({
+      userId, currencyType: "silver", amount: silver, reason,
+      balanceBefore: current.silver || 0, balanceAfter: newSilver
+    });
+    if (gold !== 0) await db.insert(currencyTransactions).values({
+      userId, currencyType: "gold", amount: gold, reason,
+      balanceBefore: current.gold || 0, balanceAfter: newGold
+    });
+    if (platinum !== 0) await db.insert(currencyTransactions).values({
+      userId, currencyType: "platinum", amount: platinum, reason,
+      balanceBefore: current.platinum || 0, balanceAfter: newPlatinum
+    });
+
+    const [updated] = await db.insert(playerCurrency).values({
+      userId, silver: newSilver, gold: newGold, platinum: newPlatinum
+    }).onConflictDoUpdate({
+      target: playerCurrency.userId,
+      set: { silver: newSilver, gold: newGold, platinum: newPlatinum }
+    }).returning();
+    
+    return updated;
+  }
+
   async createPlayerState(playerState: InsertPlayerState): Promise<PlayerState> {
     const [state] = await db
       .insert(playerStates)

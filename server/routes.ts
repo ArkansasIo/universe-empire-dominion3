@@ -800,4 +800,91 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to create counter offer" });
     }
   });
+
+  // ==== TIER & EMPIRE PROGRESSION ROUTES ====
+  
+  app.get("/api/progression/tier", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const state = await storage.getPlayerState(userId);
+      res.json({ tier: state?.tier || 1, tierExperience: state?.tierExperience || 0 });
+    } catch (error: any) {
+      console.error("Error fetching tier:", error);
+      res.status(500).json({ message: "Failed to fetch tier" });
+    }
+  });
+
+  app.post("/api/progression/tier/add-xp", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { amount } = req.body;
+      const updated = await storage.addTierExperience(userId, amount || 0);
+      res.json({ tier: updated.tier, tierExperience: updated.tierExperience });
+    } catch (error: any) {
+      console.error("Error adding tier XP:", error);
+      res.status(500).json({ message: "Failed to add tier experience" });
+    }
+  });
+
+  app.get("/api/progression/empire", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const state = await storage.getPlayerState(userId);
+      res.json({ empireLevel: state?.empireLevel || 1, empireExperience: state?.empireExperience || 0 });
+    } catch (error: any) {
+      console.error("Error fetching empire level:", error);
+      res.status(500).json({ message: "Failed to fetch empire level" });
+    }
+  });
+
+  app.post("/api/progression/empire/add-xp", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { amount } = req.body;
+      const updated = await storage.addEmpireExperience(userId, amount || 0);
+      res.json({ empireLevel: updated.empireLevel, empireExperience: updated.empireExperience });
+    } catch (error: any) {
+      console.error("Error adding empire XP:", error);
+      res.status(500).json({ message: "Failed to add empire experience" });
+    }
+  });
+
+  // ==== CURRENCY ROUTES ====
+
+  app.get("/api/currency/balance", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const currency = await storage.getPlayerCurrency(userId);
+      res.json(currency);
+    } catch (error: any) {
+      console.error("Error fetching currency:", error);
+      res.status(500).json({ message: "Failed to fetch currency" });
+    }
+  });
+
+  app.post("/api/currency/add", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const { silver = 0, gold = 0, platinum = 0, reason = "unknown" } = req.body;
+      const updated = await storage.addCurrency(userId, silver, gold, platinum, reason);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error adding currency:", error);
+      res.status(500).json({ message: "Failed to add currency" });
+    }
+  });
+
+  app.get("/api/currency/transactions", isAuthenticated, async (req: Request, res: any) => {
+    try {
+      const userId = getUserId(req);
+      const transactions = await db.select().from(currencyTransactions)
+        .where(eq(currencyTransactions.userId, userId))
+        .orderBy(desc(currencyTransactions.createdAt))
+        .limit(50);
+      res.json(transactions);
+    } catch (error: any) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
 }
