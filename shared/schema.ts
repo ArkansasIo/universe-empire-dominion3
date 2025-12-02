@@ -81,11 +81,11 @@ export const playerStates = pgTable("player_states", {
   
   // Empire progression (1-999 levels)
   empireLevel: integer("empire_level").notNull().default(1),
-  empireExperience: bigint("empire_experience").notNull().default(0),
+  empireExperience: bigint("empire_experience", { mode: "number" }).notNull().default(0),
   
   // Tier system (1-21 tiers)
   tier: integer("tier").notNull().default(1),
-  tierExperience: bigint("tier_experience").notNull().default(0),
+  tierExperience: bigint("tier_experience", { mode: "number" }).notNull().default(0),
   
   // Prestige system
   prestigeLevel: integer("prestige_level").notNull().default(0),
@@ -1816,17 +1816,17 @@ export const playerCurrency = pgTable("player_currency", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   
   // 3-tier currency balances
-  silver: bigint("silver").notNull().default(0),
-  gold: bigint("gold").notNull().default(0),
-  platinum: bigint("platinum").notNull().default(0),
+  silver: bigint("silver", { mode: "number" }).notNull().default(0),
+  gold: bigint("gold", { mode: "number" }).notNull().default(0),
+  platinum: bigint("platinum", { mode: "number" }).notNull().default(0),
   
   // Lifetime earned/spent tracking
-  silverEarned: bigint("silver_earned").notNull().default(0),
-  silverSpent: bigint("silver_spent").notNull().default(0),
-  goldEarned: bigint("gold_earned").notNull().default(0),
-  goldSpent: bigint("gold_spent").notNull().default(0),
-  platinumEarned: bigint("platinum_earned").notNull().default(0),
-  platinumSpent: bigint("platinum_spent").notNull().default(0),
+  silverEarned: bigint("silver_earned", { mode: "number" }).notNull().default(0),
+  silverSpent: bigint("silver_spent", { mode: "number" }).notNull().default(0),
+  goldEarned: bigint("gold_earned", { mode: "number" }).notNull().default(0),
+  goldSpent: bigint("gold_spent", { mode: "number" }).notNull().default(0),
+  platinumEarned: bigint("platinum_earned", { mode: "number" }).notNull().default(0),
+  platinumSpent: bigint("platinum_spent", { mode: "number" }).notNull().default(0),
   
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
@@ -1841,12 +1841,12 @@ export const currencyTransactions = pgTable("currency_transactions", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   
   currencyType: varchar("currency_type").notNull(), // "silver", "gold", "platinum"
-  amount: bigint("amount").notNull(), // positive for income, negative for expense
+  amount: bigint("amount", { mode: "number" }).notNull(), // positive for income, negative for expense
   reason: varchar("reason").notNull(), // "quest_reward", "combat_loot", "construction_cost", "research_cost", "trade", "market_fee", etc
   relatedId: varchar("related_id"), // quest ID, battle ID, etc
   
-  balanceBefore: bigint("balance_before").notNull(),
-  balanceAfter: bigint("balance_after").notNull(),
+  balanceBefore: bigint("balance_before", { mode: "number" }).notNull(),
+  balanceAfter: bigint("balance_after", { mode: "number" }).notNull(),
   
   createdAt: timestamp("created_at").defaultNow(),
 });
