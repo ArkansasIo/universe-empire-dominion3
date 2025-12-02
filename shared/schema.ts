@@ -781,6 +781,148 @@ export const levelUnlockEvents = pgTable("level_unlock_events", {
 
 export type LevelUnlockEvent = typeof levelUnlockEvents.$inferSelect;
 
+// Currency System (Gold, Silver, Platinum)
+export const playerCurrency = pgTable("player_currency", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").unique().references(() => users.id, { onDelete: "cascade" }),
+  gold: real("gold").notNull().default(0),
+  silver: real("silver").notNull().default(0),
+  platinum: real("platinum").notNull().default(0),
+  totalEarnedGold: real("total_earned_gold").notNull().default(0),
+  totalEarnedSilver: real("total_earned_silver").notNull().default(0),
+  totalEarnedPlatinum: real("total_earned_platinum").notNull().default(0),
+  totalSpentGold: real("total_spent_gold").notNull().default(0),
+  totalSpentSilver: real("total_spent_silver").notNull().default(0),
+  totalSpentPlatinum: real("total_spent_platinum").notNull().default(0),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PlayerCurrency = typeof playerCurrency.$inferSelect;
+
+export const currencyTransactions = pgTable("currency_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  transactionType: varchar("transaction_type").notNull(),
+  currencyType: varchar("currency_type").notNull(),
+  amount: real("amount").notNull(),
+  balanceAfter: real("balance_after").notNull(),
+  source: varchar("source"),
+  targetPlayerId: varchar("target_player_id").references(() => users.id),
+  description: text("description"),
+  relatedId: varchar("related_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CurrencyTransaction = typeof currencyTransactions.$inferSelect;
+
+export const currencyConversions = pgTable("currency_conversions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  fromCurrency: varchar("from_currency").notNull(),
+  toCurrency: varchar("to_currency").notNull(),
+  fromAmount: real("from_amount").notNull(),
+  toAmount: real("to_amount").notNull(),
+  conversionFee: real("conversion_fee").default(0),
+  convertedAt: timestamp("converted_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CurrencyConversion = typeof currencyConversions.$inferSelect;
+
+export const currencyExchangeOrders = pgTable("currency_exchange_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  offeringCurrency: varchar("offering_currency").notNull(),
+  offeringAmount: real("offering_amount").notNull(),
+  requestingCurrency: varchar("requesting_currency").notNull(),
+  requestingAmount: real("requesting_amount").notNull(),
+  status: varchar("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at"),
+});
+
+export type CurrencyExchangeOrder = typeof currencyExchangeOrders.$inferSelect;
+
+export const currencyEarnings = pgTable("currency_earnings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  earningsType: varchar("earnings_type").notNull(),
+  currencyType: varchar("currency_type").notNull(),
+  amount: real("amount").notNull(),
+  dailyTotal: real("daily_total").default(0),
+  earnedAt: timestamp("earned_at").defaultNow(),
+});
+
+export type CurrencyEarnings = typeof currencyEarnings.$inferSelect;
+
+export const currencyExpenses = pgTable("currency_expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expenseType: varchar("expense_type").notNull(),
+  currencyType: varchar("currency_type").notNull(),
+  amount: real("amount").notNull(),
+  dailyTotal: real("daily_total").default(0),
+  expenseReason: varchar("expense_reason"),
+  relatedId: varchar("related_id"),
+  spentAt: timestamp("spent_at").defaultNow(),
+});
+
+export type CurrencyExpenses = typeof currencyExpenses.$inferSelect;
+
+export const currencyMarketPrices = pgTable("currency_market_prices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromCurrency: varchar("from_currency").notNull(),
+  toCurrency: varchar("to_currency").notNull(),
+  exchangeRate: real("exchange_rate").notNull(),
+  supply: real("supply"),
+  demand: real("demand"),
+  trend: varchar("trend"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type CurrencyMarketPrices = typeof currencyMarketPrices.$inferSelect;
+
+export const playerWealth = pgTable("player_wealth", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  totalWealth: real("total_wealth").notNull(),
+  wealthRank: integer("wealth_rank"),
+  previousRank: integer("previous_rank"),
+  wealthPercentile: real("wealth_percentile"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PlayerWealth = typeof playerWealth.$inferSelect;
+
+export const currencyBonuses = pgTable("currency_bonuses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").references(() => users.id, { onDelete: "cascade" }),
+  bonusType: varchar("bonus_type").notNull(),
+  currencyType: varchar("currency_type").notNull(),
+  bonusMultiplier: real("bonus_multiplier").notNull(),
+  isGlobal: boolean("is_global").default(false),
+  activeUntil: timestamp("active_until").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CurrencyBonus = typeof currencyBonuses.$inferSelect;
+
+export const currencyTheftLog = pgTable("currency_theft_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  victimPlayerId: varchar("victim_player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  thiefPlayerId: varchar("thief_player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  currencyType: varchar("currency_type").notNull(),
+  amountStolen: real("amount_stolen").notNull(),
+  successRate: real("success_rate"),
+  consequences: varchar("consequences"),
+  reportedAt: timestamp("reported_at"),
+  stolenAt: timestamp("stolen_at").defaultNow(),
+});
+
+export type CurrencyTheftLog = typeof currencyTheftLog.$inferSelect;
+
 // Messages (player communications, battle reports, espionage reports)
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
