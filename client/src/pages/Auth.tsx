@@ -46,16 +46,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden">
-      <Button 
-        variant="ghost" 
-        className="absolute top-4 left-4 text-slate-700 hover:text-slate-900 z-20 transition-colors"
-        data-testid="button-back-to-title"
-        onClick={() => window.location.reload()}
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Back
-      </Button>
-      
       <Card className="w-full max-w-md bg-white border border-slate-300 text-slate-900 relative z-10 shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="text-center pb-2">
           <div className="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
