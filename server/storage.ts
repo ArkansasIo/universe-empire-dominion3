@@ -39,6 +39,8 @@ import {
   npcVendors,
   relics,
   relicInventory,
+  friends,
+  friendRequests,
   type User,
   type UpsertUser,
   type PlayerState,
@@ -100,6 +102,10 @@ import {
   type InsertRelic,
   type RelicInventory,
   type InsertRelicInventory,
+  type Friend,
+  type InsertFriend,
+  type FriendRequest,
+  type InsertFriendRequest,
   adminUsers
 } from "@shared/schema";
 import { db } from "./db/index";
@@ -241,6 +247,17 @@ export interface IStorage {
   getPlayerRelicInventory(userId: string): Promise<RelicInventory[]>;
   acquireRelic(userId: string, relicId: string): Promise<RelicInventory>;
   equipRelic(userId: string, relicId: string, slot: string): Promise<RelicInventory>;
+  
+  // Friends operations (50 max per player)
+  getPlayerFriends(userId: string): Promise<Friend[]>;
+  getFriendsCount(userId: string): Promise<number>;
+  addFriend(playerId: string, friendId: string, message?: string): Promise<FriendRequest>;
+  acceptFriendRequest(requestId: string): Promise<Friend>;
+  rejectFriendRequest(requestId: string): Promise<FriendRequest>;
+  removeFriend(playerId: string, friendId: string): Promise<void>;
+  getPlayerFriendRequests(userId: string): Promise<FriendRequest[]>;
+  setFavorite(playerId: string, friendId: string, isFavorite: boolean): Promise<Friend>;
+  updateFriendNickname(playerId: string, friendId: string, nickname: string): Promise<Friend>;
   
   // Resource field operations
   getFieldsByTerritory(territoryId: string): Promise<ResourceField[]>;
@@ -930,6 +947,104 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(relicInventory.playerId, userId), eq(relicInventory.relicId, relicId)))
       .returning();
     return equipped;
+  }
+  
+  // Friends operations (50 max per player)
+  async getPlayerFriends(userId: string): Promise<Friend[]> {
+    return await db.select().from(friends).where(
+      and(
+        eq(friends.playerId, userId),
+        eq(friends.friendshipStatus, "accepted")
+      )
+    );
+  }
+  
+  async getFriendsCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql`count(*)` }).from(friends).where(
+      and(
+        eq(friends.playerId, userId),
+        eq(friends.friendshipStatus, "accepted")
+      )
+    );
+    return result[0]?.count as number || 0;
+  }
+  
+  async addFriend(playerId: string, friendId: string, message?: string): Promise<FriendRequest> {
+    // Check if max friends reached (50)
+    const friendCount = await this.getFriendsCount(playerId);
+    if (friendCount >= 50) {
+      throw new Error("Maximum friends list size reached (50)");
+    }
+    
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const [request] = await db.insert(friendRequests).values({
+      senderId: playerId,
+      receiverId: friendId,
+      message,
+      expiresAt,
+    }).returning();
+    return request;
+  }
+  
+  async acceptFriendRequest(requestId: string): Promise<Friend> {
+    const request = await db.select().from(friendRequests).where(eq(friendRequests.id, requestId)).then(r => r[0]);
+    if (!request) throw new Error("Friend request not found");
+    
+    // Update request status
+    await db.update(friendRequests)
+      .set({ status: "accepted", respondedAt: new Date() })
+      .where(eq(friendRequests.id, requestId));
+    
+    // Create friendship
+    const [friendship] = await db.insert(friends).values({
+      playerId: request.receiverId,
+      friendId: request.senderId,
+      friendshipStatus: "accepted",
+      acceptedAt: new Date(),
+    }).returning();
+    return friendship;
+  }
+  
+  async rejectFriendRequest(requestId: string): Promise<FriendRequest> {
+    const [updated] = await db.update(friendRequests)
+      .set({ status: "rejected", respondedAt: new Date() })
+      .where(eq(friendRequests.id, requestId))
+      .returning();
+    return updated;
+  }
+  
+  async removeFriend(playerId: string, friendId: string): Promise<void> {
+    await db.delete(friends).where(
+      and(
+        eq(friends.playerId, playerId),
+        eq(friends.friendId, friendId)
+      )
+    );
+  }
+  
+  async getPlayerFriendRequests(userId: string): Promise<FriendRequest[]> {
+    return await db.select().from(friendRequests).where(
+      and(
+        eq(friendRequests.receiverId, userId),
+        eq(friendRequests.status, "pending")
+      )
+    );
+  }
+  
+  async setFavorite(playerId: string, friendId: string, isFavorite: boolean): Promise<Friend> {
+    const [updated] = await db.update(friends)
+      .set({ isFavorite })
+      .where(and(eq(friends.playerId, playerId), eq(friends.friendId, friendId)))
+      .returning();
+    return updated;
+  }
+  
+  async updateFriendNickname(playerId: string, friendId: string, nickname: string): Promise<Friend> {
+    const [updated] = await db.update(friends)
+      .set({ nickname })
+      .where(and(eq(friends.playerId, playerId), eq(friends.friendId, friendId)))
+      .returning();
+    return updated;
   }
   
   // Resource field operations

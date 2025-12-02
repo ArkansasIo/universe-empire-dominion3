@@ -1324,3 +1324,51 @@ export const relicInventory = pgTable("relic_inventory", {
 export type RelicInventory = typeof relicInventory.$inferSelect;
 export const insertRelicInventorySchema = createInsertSchema(relicInventory).omit({ id: true, acquiredAt: true });
 export type InsertRelicInventory = z.infer<typeof insertRelicInventorySchema>;
+
+// Friends List - Social system (50 max per player)
+export const friends = pgTable("friends", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  friendId: varchar("friend_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Relationship details
+  friendshipStatus: varchar("friendship_status").notNull().default("pending"), // "pending", "accepted", "blocked"
+  nickname: varchar("nickname"), // Custom name for friend
+  notes: text("notes"), // Personal notes about friend
+  
+  // Interaction tracking
+  isOnline: boolean("is_online").default(false),
+  lastSeen: timestamp("last_seen"),
+  isFavorite: boolean("is_favorite").default(false),
+  
+  // Timestamps
+  addedAt: timestamp("added_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Friend = typeof friends.$inferSelect;
+export const insertFriendSchema = createInsertSchema(friends).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFriend = z.infer<typeof insertFriendSchema>;
+
+// Friend Requests - Pending friend requests
+export const friendRequests = pgTable("friend_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  senderId: varchar("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: varchar("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Request details
+  message: text("message"), // Optional message with request
+  status: varchar("status").notNull().default("pending"), // "pending", "accepted", "rejected", "expired"
+  
+  // Timestamps
+  sentAt: timestamp("sent_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+  expiresAt: timestamp("expires_at"), // Default 30 days
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type FriendRequest = typeof friendRequests.$inferSelect;
+export const insertFriendRequestSchema = createInsertSchema(friendRequests).omit({ id: true, createdAt: true });
+export type InsertFriendRequest = z.infer<typeof insertFriendRequestSchema>;
