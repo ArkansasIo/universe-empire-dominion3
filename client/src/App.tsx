@@ -207,6 +207,11 @@ function RouterContent() {
       <Route path="/universe-events" component={UniverseEvents} />
       <Route path="/raid-bosses" component={RaidBosses} />
       <Route path="/raid-finder" component={RaidFinder} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/server-console" component={ServerConsole} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
