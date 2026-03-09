@@ -165,12 +165,22 @@ import { registerDiagnosticsRoutes } from "./routes-diagnostics";
   const statusOff = `${colors.red}●${colors.reset}`;
   const statusWarning = `${colors.yellow}●${colors.reset}`;
   
+  const listenOptions: {
+    port: number;
+    host: string;
+    reusePort?: boolean;
+  } = {
+    port,
+    host: "0.0.0.0",
+  };
+
+  // `reusePort` is not supported on Windows sockets.
+  if (process.platform !== "win32") {
+    listenOptions.reusePort = true;
+  }
+
   httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
+    listenOptions,
     () => {
       log(`serving on port ${port}`);
       

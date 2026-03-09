@@ -558,7 +558,7 @@ export default function Messages() {
                                <div className="flex justify-between items-start mb-1">
                                   <span className={cn("text-sm flex items-center gap-1", !msg.read ? "text-slate-900" : "text-slate-600")}>
                                      {msg.type === "combat" && <Crosshair className="w-3 h-3 text-red-500" />}
-                                     {msg.type === "trade" && <ArrowRightLeft className="w-3 h-3 text-green-500" />}
+                                     {msg.type === "player" && <ArrowRightLeft className="w-3 h-3 text-green-500" />}
                                      {msg.from}
                                   </span>
                                   <span className="text-[10px] text-slate-400">{new Date(msg.timestamp).toLocaleDateString()}</span>
@@ -649,7 +649,7 @@ export default function Messages() {
                                {activeMessage.type === "combat" && <Badge variant="outline" className="border-red-200 text-red-600">Combat Report</Badge>}
                                {activeMessage.type === "espionage" && <Badge variant="outline" className="border-yellow-200 text-yellow-600">Espionage</Badge>}
                                {activeMessage.type === "alliance" && <Badge variant="outline" className="border-green-200 text-green-600">Alliance</Badge>}
-                               {activeMessage.type === "trade" && <Badge variant="outline" className="border-purple-200 text-purple-600">Trade</Badge>}
+                               {activeMessage.type === "player" && <Badge variant="outline" className="border-purple-200 text-purple-600">Player</Badge>}
                             </div>
                          </div>
                       </CardHeader>

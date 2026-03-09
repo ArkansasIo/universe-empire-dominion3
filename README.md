@@ -366,4 +366,4 @@ This is an active development project. Contributions welcome!
 - 🔧 Integrated all game source files with APIs
 
 **Last Updated:** December 2, 2024  
-**Maintained by:** Stellar Dominion Development Team
+**Developed by:** Stephen ([@ArkansasIo](https://github.com/ArkansasIo) | [@Apocalypsecoder0](https://github.com/Apocalypsecoder0))

@@ -192,7 +192,7 @@ export const TYPE_RESISTANCES = {
   siege: { slow: 1.2, stun: 0.9, weaken: 0.7 }
 };
 
-export function getTroopStats(className: string): { [key: string]: number } {
+export function getTroopStats(className: string): { strength: number; endurance: number; dexterity: number; intelligence: number; wisdom: number; charisma: number } {
   return CLASS_ATTRIBUTES[className as keyof typeof CLASS_ATTRIBUTES] || CLASS_ATTRIBUTES.warrior;
 }
 

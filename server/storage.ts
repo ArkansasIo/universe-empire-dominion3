@@ -1091,8 +1091,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateAchievementProgress(achievementId: string, userId: string, progress: number): Promise<Achievement> {
+    const existing = await db.select().from(achievements).where(and(eq(achievements.achievementId, achievementId), eq(achievements.playerId, userId)));
+    const target = existing[0]?.target || 100;
     const [updated] = await db.update(achievements)
-      .set({ progress, isCompleted: progress >= (await db.select().from(achievements).where(and(eq(achievements.achievementId, achievementId), eq(achievements.playerId, userId))))[0]?.target })
+      .set({ progress, isCompleted: progress >= target })
       .where(and(eq(achievements.achievementId, achievementId), eq(achievements.playerId, userId)))
       .returning();
     return updated;
@@ -1135,7 +1137,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Faction standing not found");
     }
     
-    const newRep = Math.max(-1000, Math.min(1000, current.reputation + delta));
+    const newRep = Math.max(-1000, Math.min(1000, (current.reputation || 0) + delta));
     let standing = "neutral";
     if (newRep < -500) standing = "hostile";
     else if (newRep < -100) standing = "unfriendly";
@@ -1162,7 +1164,7 @@ export class DatabaseStorage implements IStorage {
   
   async getVendorInventory(vendorId: string): Promise<any[]> {
     const [vendor] = await db.select().from(npcVendors).where(eq(npcVendors.vendorId, vendorId));
-    return vendor?.inventory || [];
+    return (vendor?.inventory as any[]) || [];
   }
   
   // Relic operations
@@ -1375,7 +1377,7 @@ export class DatabaseStorage implements IStorage {
   
   async getTeamMembers(teamId: string): Promise<any[]> {
     const team = await this.getTeamById(teamId);
-    return team?.members || [];
+    return (team?.members as any[]) || [];
   }
   
   // Raid operations
@@ -1509,17 +1511,17 @@ export class DatabaseStorage implements IStorage {
   async addGroupMember(groupId: string, playerId: string): Promise<RaidGroup> {
     const group = await this.getRaidGroup(groupId);
     if (!group) throw new Error("Group not found");
-    const members = (group.members as any[]) || [];
-    if (members.length >= group.maxMembers) throw new Error("Raid group is full");
+    const members = (group.members || []) as string[];
+    if (members.length >= (group.maxMembers || 0)) throw new Error("Raid group is full");
     if (!members.includes(playerId)) members.push(playerId);
     const [updated] = await db.update(raidGroups).set({ members }).where(eq(raidGroups.id, groupId)).returning();
     return updated;
   }
-  
+
   async removeGroupMember(groupId: string, playerId: string): Promise<RaidGroup> {
     const group = await this.getRaidGroup(groupId);
     if (!group) throw new Error("Group not found");
-    const members = (group.members as any[]).filter(m => m !== playerId);
+    const members = ((group.members || []) as string[]).filter(m => m !== playerId);
     const [updated] = await db.update(raidGroups).set({ members }).where(eq(raidGroups.id, groupId)).returning();
     return updated;
   }
@@ -1595,7 +1597,7 @@ export class DatabaseStorage implements IStorage {
     
     if (existing) {
       const [updated] = await db.update(playerItems)
-        .set({ quantity: existing.quantity + quantity })
+        .set({ quantity: (existing.quantity || 0) + quantity })
         .where(eq(playerItems.id, existing.id))
         .returning();
       return updated;
@@ -1612,11 +1614,11 @@ export class DatabaseStorage implements IStorage {
     
     if (!item) throw new Error("Item not found in inventory");
     
-    if (item.quantity <= quantity) {
+    if ((item.quantity || 0) <= quantity) {
       await db.delete(playerItems).where(eq(playerItems.id, item.id));
     } else {
       await db.update(playerItems)
-        .set({ quantity: item.quantity - quantity })
+        .set({ quantity: (item.quantity || 0) - quantity })
         .where(eq(playerItems.id, item.id));
     }
   }

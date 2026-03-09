@@ -13,7 +13,7 @@ runButton = "Project"
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -21,7 +21,7 @@ args = "Start application"
 
 [[workflows.workflow]]
 name = "Start application"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -30,7 +30,7 @@ waitForPort = 5000
 
 [[workflows.workflow]]
 name = "backend-console"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -38,7 +38,7 @@ args = "tsx server/console/index.ts"
 
 [[workflows.workflow]]
 name = "db-monitor"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -46,7 +46,7 @@ args = "tsx server/console/database-monitor.ts"
 
 [[workflows.workflow]]
 name = "auth-monitor"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -54,7 +54,7 @@ args = "tsx server/console/auth-monitor.ts"
 
 [[workflows.workflow]]
 name = "performance-monitor"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -62,7 +62,7 @@ args = "tsx server/console/performance-monitor.ts"
 
 [[workflows.workflow]]
 name = "log-export"
-author = "agent"
+author = "Stephen"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

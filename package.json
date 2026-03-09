@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "author": "Stephen (https://github.com/ArkansasIo | https://github.com/Apocalypsecoder0)",
   "scripts": {
     "dev:client": "vite dev --port 5000",
-    "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev:server": "tsx server/index.ts",
+    "dev": "tsx script/dev.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",

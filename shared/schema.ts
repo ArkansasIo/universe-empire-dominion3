@@ -1853,7 +1853,7 @@ export const currencyTransactions = pgTable("currency_transactions", {
 
 export type CurrencyTransaction = typeof currencyTransactions.$inferSelect;
 export const insertCurrencyTransactionSchema = createInsertSchema(currencyTransactions).omit({ id: true, createdAt: true });
-export type InsertCurrencyTransaction = z.infer<typeof currencyTransactionSchema>;
+export type InsertCurrencyTransaction = z.infer<typeof insertCurrencyTransactionSchema>;
 
 // Bank System - Player Banking
 export const bankAccounts = pgTable("bank_accounts", {

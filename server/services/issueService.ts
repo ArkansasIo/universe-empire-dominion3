@@ -189,7 +189,8 @@ export class IssueService {
     const issue = this.issues.get(id);
     if (!issue) return undefined;
 
-    issue.tags = [...new Set([...issue.tags, ...tags])];
+    const uniqueTags = new Set([...issue.tags, ...tags]);
+    issue.tags = Array.from(uniqueTags);
     return issue;
   }
 
@@ -217,17 +218,15 @@ export class IssueService {
         },
         {} as Record<IssueSeverity, number>
       ),
-      byCategory: Object.fromEntries(
-        Array.from(
-          issues.reduce(
-            (acc, i) => {
-              acc.set(i.category, (acc.get(i.category) || 0) + 1);
-              return acc;
-            },
-            new Map<string, number>()
-          )
-        )
-      ),
+      byCategory: Array.from(
+        issues.reduce(
+          (acc, i) => {
+            acc.set(i.category, (acc.get(i.category) || 0) + 1);
+            return acc;
+          },
+          new Map<string, number>()
+        ).entries()
+      ).reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {} as Record<string, number>),
     };
 
     const topIssues = periodIssues.sort((a, b) => b.occurrences - a.occurrences).slice(0, 10);

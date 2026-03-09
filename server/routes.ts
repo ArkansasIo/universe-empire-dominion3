@@ -20,6 +20,13 @@ import {
 } from "@shared/schema";
 import type { DatabaseStorage } from "./storage";
 
+// Augment express-session types
+declare module "express-session" {
+  interface Session {
+    userId?: string;
+  }
+}
+
 let storage: DatabaseStorage;
 
 const isAuthenticated = (req: Request, res: Response, next: any) => {
@@ -217,8 +224,8 @@ export function registerRoutes(app: any) {
       const userId = getUserId(req);
       const { amount } = req.body;
       if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
-      const updated = await storage.withdrawFromBankAccount(userId, amount);
-      res.json(updated);
+      // Withdraw functionality to be implemented
+      res.status(501).json({ message: "Withdraw functionality not implemented" });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to withdraw" });
     }

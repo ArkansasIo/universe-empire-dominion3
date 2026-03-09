@@ -471,7 +471,7 @@ export default function Auth() {
            </div>
            <div className="text-xs text-slate-500 space-y-1 text-center">
              <span className="block">Version 0.1.0 // Universe: Nexus-Alpha</span>
-             <span className="block text-slate-600">Developed by Tanang20</span>
+             <span className="block text-slate-600">Developed by Stephen</span>
            </div>
         </CardFooter>
       </Card>

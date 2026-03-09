@@ -72,7 +72,7 @@ export class ServerStatusService {
       totalSystem = 0;
     cpus.forEach((cpu) => {
       totalUser += cpu.times.user;
-      totalSystem += cpu.times.system;
+      totalSystem += cpu.times.sys;
     });
 
     // Memory metrics
@@ -190,7 +190,7 @@ export class ServerStatusService {
     };
 
     const scores = Object.values(checks).map((check) => (check.status === 'ok' ? 100 : check.status === 'warning' ? 50 : 0));
-    const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const overallScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
 
     const status = overallScore >= 80 ? 'healthy' : overallScore >= 50 ? 'degraded' : 'unhealthy';
 

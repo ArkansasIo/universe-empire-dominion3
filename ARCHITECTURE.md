@@ -536,4 +536,4 @@ try {
 ---
 
 **Last Updated:** December 2, 2024  
-**Maintained by:** Stellar Dominion Development Team
+**Developed by:** Stephen ([@ArkansasIo](https://github.com/ArkansasIo) | [@Apocalypsecoder0](https://github.com/Apocalypsecoder0))

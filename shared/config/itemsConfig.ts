@@ -139,7 +139,7 @@ export const ITEMS_DATABASE = [
   { name: "Ranger Leathers", type: "armor", class: "rare", rank: 7, description: "Agile ranger outfit", requiredLevel: 28, stats: { defense: 32, speed: 8 }, sellPrice: 1300 },
   { name: "Rogue Silks", type: "armor", class: "rare", rank: 8, description: "Sneaky assassin wear", requiredLevel: 30, stats: { defense: 28, stealth: 15 }, sellPrice: 1600 },
   { name: "Holy Vestments", type: "armor", class: "rare", rank: 9, description: "Sacred clothing", requiredLevel: 35, stats: { defense: 40, holy: 15 }, sellPrice: 1900 },
-  { name: "Barbarian Furs", type: "armor", class: "rare", rank: 7, description: "Wild beast hide", requiredLevel: 26, stats: { defense: 42, strength: 8, defense: 42 }, sellPrice: 1250 },
+  { name: "Barbarian Furs", type: "armor", class: "rare", rank: 7, description: "Wild beast hide", requiredLevel: 26, stats: { defense: 42, strength: 8 }, sellPrice: 1250 },
 
   // Continue with remaining items to build comprehensive database...
   // (Accessories, Consumables, etc. - abbreviated for space)

@@ -71,7 +71,7 @@ export default function Privacy() {
 
           <section className="text-xs text-slate-400 pt-4 border-t border-slate-200">
             <p>Last updated: December 2024</p>
-            <p>Developed by Tanang20</p>
+            <p>Developed by Stephen</p>
           </section>
         </CardContent>
 
