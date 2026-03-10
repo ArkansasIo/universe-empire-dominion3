@@ -2,7 +2,7 @@
 
 A comprehensive 4X space strategy game built with React, Express, and PostgreSQL. Explore the galaxy, manage your empire, research technologies, and engage in epic space battles.
 
-**Website:** [stellar-dominion.replit.dev](https://stellar-dominion.replit.dev)  
+**Website:** [stellar-dominion.replit.dev](https://stellardominion.ca
 **Version:** 1.0.0-release  
 **Status:** 🟢 PRODUCTION READY
 **Last Updated:** March 9, 2026
