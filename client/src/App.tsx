@@ -1,133 +1,95 @@
 import { Switch, Route } from "wouter";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GameProvider } from "@/lib/gameContext";
-import NotFound from "@/pages/not-found";
 import { Rocket } from "lucide-react";
 
-import Overview from "@/pages/Overview";
-import Resources from "@/pages/Resources";
-import Facilities from "@/pages/Facilities";
-import Research from "@/pages/Research";
-import Shipyard from "@/pages/Shipyard";
-import Fleet from "@/pages/Fleet";
-import Galaxy from "@/pages/Galaxy";
-import Universe from "@/pages/Universe";
-import UniverseGenerator from "@/pages/UniverseGenerator";
-import Commander from "@/pages/Commander";
-import Government from "@/pages/Government";
-import Settings from "@/pages/Settings";
-import Messages from "@/pages/Messages";
-import Alliance from "@/pages/Alliance";
-import Artifacts from "@/pages/Artifacts";
-import Interstellar from "@/pages/Interstellar";
-import Admin from "@/pages/Admin";
-import Auth from "@/pages/Auth";
-import Market from "@/pages/Market";
-import About from "@/pages/About";
-import Combat from "@/pages/Combat";
-import BattleLogs from "@/pages/BattleLogs";
-import AccountSetup from "@/pages/AccountSetup";
-import Terms from "@/pages/Terms";
-import Privacy from "@/pages/Privacy";
-import ServerConsole from "@/pages/ServerConsole";
-import Exploration from "@/pages/Exploration";
-import Colonies from "@/pages/Colonies";
-import TechTree from "@/pages/TechTree";
-import Blueprints from "@/pages/Blueprints";
-import TechnologyTree from "@/pages/TechnologyTree";
-import Expeditions from "@/pages/Expeditions";
-import Army from "@/pages/Army";
-import MegaStructures from "@/pages/MegaStructures";
-import Achievements from "@/pages/Achievements";
-import Factions from "@/pages/Factions";
-import EmpireProgression from "@/pages/EmpireProgression";
-import WarpNetwork from "@/pages/WarpNetwork";
-import Stations from "@/pages/Stations";
-import Merchants from "@/pages/Merchants";
-import CelestialBrowser from "@/pages/CelestialBrowser";
-import Diagnostics from "@/pages/Diagnostics";
-import StoryMode from "@/pages/StoryMode";
-import Relics from "@/pages/Relics";
-import FriendsList from "@/pages/FriendsList";
-import Guilds from "@/pages/Guilds";
-import Raids from "@/pages/Raids";
-import UniverseEvents from "@/pages/UniverseEvents";
-import RaidBosses from "@/pages/RaidBosses";
-import RaidFinder from "@/pages/RaidFinder";
-import EmpirePlanetViewer from "@/pages/EmpirePlanetViewer";
-import ResearchLab from "@/pages/ResearchLab";
-import GameAssetsGallery from "@/pages/GameAssetsGallery";
 import { useGame } from "@/lib/gameContext";
+
+const NotFound = lazy(() => import("@/pages/not-found"));
+const Overview = lazy(() => import("@/pages/Overview"));
+const Resources = lazy(() => import("@/pages/Resources"));
+const Facilities = lazy(() => import("@/pages/Facilities"));
+const Research = lazy(() => import("@/pages/Research"));
+const Shipyard = lazy(() => import("@/pages/Shipyard"));
+const Fleet = lazy(() => import("@/pages/Fleet"));
+const Galaxy = lazy(() => import("@/pages/Galaxy"));
+const Universe = lazy(() => import("@/pages/Universe"));
+const UniverseGenerator = lazy(() => import("@/pages/UniverseGenerator"));
+const Commander = lazy(() => import("@/pages/Commander"));
+const Government = lazy(() => import("@/pages/Government"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const Messages = lazy(() => import("@/pages/Messages"));
+const Alliance = lazy(() => import("@/pages/Alliance"));
+const Artifacts = lazy(() => import("@/pages/Artifacts"));
+const Interstellar = lazy(() => import("@/pages/Interstellar"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const Auth = lazy(() => import("@/pages/Auth"));
+const Market = lazy(() => import("@/pages/Market"));
+const About = lazy(() => import("@/pages/About"));
+const Combat = lazy(() => import("@/pages/Combat"));
+const BattleLogs = lazy(() => import("@/pages/BattleLogs"));
+const AccountSetup = lazy(() => import("@/pages/AccountSetup"));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Privacy = lazy(() => import("@/pages/Privacy"));
+const ServerConsole = lazy(() => import("@/pages/ServerConsole"));
+const Exploration = lazy(() => import("@/pages/Exploration"));
+const Colonies = lazy(() => import("@/pages/Colonies"));
+const TechTree = lazy(() => import("@/pages/TechTree"));
+const Blueprints = lazy(() => import("@/pages/Blueprints"));
+const TechnologyTree = lazy(() => import("@/pages/TechnologyTree"));
+const Expeditions = lazy(() => import("@/pages/Expeditions"));
+const Army = lazy(() => import("@/pages/Army"));
+const MegaStructures = lazy(() => import("@/pages/MegaStructures"));
+const Achievements = lazy(() => import("@/pages/Achievements"));
+const Factions = lazy(() => import("@/pages/Factions"));
+const EmpireProgression = lazy(() => import("@/pages/EmpireProgression"));
+const WarpNetwork = lazy(() => import("@/pages/WarpNetwork"));
+const Stations = lazy(() => import("@/pages/Stations"));
+const Merchants = lazy(() => import("@/pages/Merchants"));
+const CelestialBrowser = lazy(() => import("@/pages/CelestialBrowser"));
+const Diagnostics = lazy(() => import("@/pages/Diagnostics"));
+const StoryMode = lazy(() => import("@/pages/StoryMode"));
+const Relics = lazy(() => import("@/pages/Relics"));
+const FriendsList = lazy(() => import("@/pages/FriendsList"));
+const Guilds = lazy(() => import("@/pages/Guilds"));
+const Raids = lazy(() => import("@/pages/Raids"));
+const UniverseEvents = lazy(() => import("@/pages/UniverseEvents"));
+const RaidBosses = lazy(() => import("@/pages/RaidBosses"));
+const RaidFinder = lazy(() => import("@/pages/RaidFinder"));
+const EmpirePlanetViewer = lazy(() => import("@/pages/EmpirePlanetViewer"));
+const ResearchLab = lazy(() => import("@/pages/ResearchLab"));
+const GameAssetsGallery = lazy(() => import("@/pages/GameAssetsGallery"));
 
 function LoadingSplash() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-hidden relative">
-      <style>{`
-        @keyframes orbit {
-          from { transform: rotate(0deg) translateX(80px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3); }
-          50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 80px rgba(59, 130, 246, 0.5); }
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .orbit { animation: orbit 8s linear infinite; }
-        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-        .fade-in { animation: fade-in 0.8s ease-out; }
-        .slide-up { animation: slide-up 0.8s ease-out; }
-      `}</style>
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }} />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center justify-center">
-        <div className="relative w-32 h-32 mb-8">
-          <div className="absolute inset-0 border-2 border-transparent border-t-blue-500 border-r-cyan-500 rounded-full animate-spin" style={{ animationDuration: '3s' }} />
-          <div className="absolute inset-2 border border-transparent border-t-blue-400 rounded-full animate-spin" style={{ animationDuration: '5s', animationDirection: 'reverse' }} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/50" style={{ animation: 'pulse-glow 2s ease-in-out infinite' }}>
-              <Rocket className="w-12 h-12 text-white" />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center relative">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center">
+        <div className="relative w-24 h-24 mb-6">
+          <div className="absolute inset-0 border-2 border-transparent border-t-blue-500 border-r-cyan-500 rounded-full animate-spin" />
+          <div className="absolute inset-3 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40">
+            <Rocket className="w-8 h-8 text-white" />
           </div>
         </div>
 
-        <div className="text-center mt-8 slide-up">
-          <h1 className="font-orbitron text-5xl font-bold text-white tracking-widest mb-3">
-            STELLAR <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">DOMINION</span>
-          </h1>
-          <p className="text-slate-300 font-rajdhani text-sm tracking-widest uppercase mb-8 fade-in">
-            Connecting to Nexus Command System
-          </p>
+        <h1 className="font-orbitron text-4xl font-bold text-white tracking-widest mb-2">
+          STELLAR <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">DOMINION</span>
+        </h1>
+        <p className="text-slate-300 font-rajdhani text-xs tracking-widest uppercase mb-5">
+          Connecting to Nexus Command System
+        </p>
 
-          <div className="flex justify-center gap-3 mb-8">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
-          </div>
-
-          <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden mb-6">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 animate-pulse" style={{ width: '70%' }} />
-          </div>
-
-          <p className="text-slate-400 font-rajdhani text-xs">Initializing game systems...</p>
+        <div className="w-44 h-1 bg-slate-800 rounded-full overflow-hidden mb-4">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 animate-pulse w-3/4" />
         </div>
+
+        <p className="text-slate-400 font-rajdhani text-xs">Initializing game systems...</p>
       </div>
 
-      <div className="absolute bottom-6 text-slate-500 text-xs font-mono z-10">
+      <div className="absolute bottom-6 text-slate-500 text-xs font-mono">
         <span className="text-blue-400">v1.0.0</span> • Production Ready
       </div>
     </div>
@@ -136,8 +98,51 @@ function LoadingSplash() {
 
 function RouterContent() {
   const { isLoggedIn, needsSetup, isLoading } = useGame();
+  const [showSplash, setShowSplash] = useState(true);
+  const loadingStartedAtRef = useRef<number | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isLoading) {
+      if (loadingStartedAtRef.current === null) {
+        loadingStartedAtRef.current = Date.now();
+      }
+      setShowSplash(true);
+      return;
+    }
+
+    if (loadingStartedAtRef.current === null) {
+      setShowSplash(false);
+      return;
+    }
+
+    const elapsed = Date.now() - loadingStartedAtRef.current;
+    const minSplashMs = 350;
+    if (elapsed >= minSplashMs) {
+      setShowSplash(false);
+      loadingStartedAtRef.current = null;
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setShowSplash(false);
+      loadingStartedAtRef.current = null;
+    }, minSplashMs - elapsed);
+
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const maxSplashMs = 6000;
+    const timeout = setTimeout(() => {
+      setShowSplash(false);
+    }, maxSplashMs);
+
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
+  if (isLoading && showSplash) {
     return <LoadingSplash />;
   }
 
@@ -222,7 +227,11 @@ function RouterContent() {
 }
 
 function Router() {
-  return <RouterContent />;
+  return (
+    <Suspense fallback={<LoadingSplash />}>
+      <RouterContent />
+    </Suspense>
+  );
 }
 
 function App() {

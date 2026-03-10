@@ -477,37 +477,55 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (authUser && serverGameState && !isInitialized) {
-      const state = serverGameState;
-      setResources(state.resources || { metal: 1000, crystal: 500, deuterium: 0, energy: 0 });
-      setBuildings({
-        metalMine: state.buildings?.metalMine || 1,
-        crystalMine: state.buildings?.crystalMine || 1,
-        deuteriumSynthesizer: state.buildings?.deuteriumSynthesizer || 0,
-        solarPlant: state.buildings?.solarPlant || 1,
-        roboticsFactory: state.buildings?.roboticsFactory || 0,
-        shipyard: state.buildings?.shipyard || 0,
-        researchLab: state.buildings?.researchLab || 0,
-      });
-      setOrbitalBuildings(state.orbitalBuildings || {});
-      setResearch(state.research || {});
-      setUnits(state.units || {});
-      if (state.commander) setCommander(state.commander);
-      if (state.government) setGovernment(state.government);
-      if (state.artifacts) setArtifacts(state.artifacts);
-      if (state.cronJobs) setCronJobs(state.cronJobs);
-      setPlanetName(state.planetName || "Earth");
-      setCoordinates(state.coordinates || "1:1:100:3");
-      setUsername(authUser.firstName || authUser.email?.split('@')[0] || authUser.username || 'Commander');
-      setTotalTurns(state.totalTurns || 0);
-      setCurrentTurns(state.currentTurns || 0);
-      setIsLoggedIn(true);
-      setNeedsSetup(!state.setupComplete);
-      setIsActualAdmin(authUser.isAdmin || false);
-      setAdminRole(authUser.adminRole || null);
-      setIsInitialized(true);
+    if (authLoading) {
+      return;
     }
-  }, [authUser, serverGameState, isInitialized]);
+
+    if (!authUser) {
+      setIsLoggedIn(false);
+      setNeedsSetup(false);
+      setIsInitialized(false);
+      setUsername("");
+      return;
+    }
+
+    setIsLoggedIn(true);
+    setUsername(authUser.firstName || authUser.email?.split('@')[0] || authUser.username || 'Commander');
+    setIsActualAdmin(authUser.isAdmin || false);
+    setAdminRole(authUser.adminRole || null);
+  }, [authUser, authLoading]);
+
+  useEffect(() => {
+    if (!authUser || isInitialized || gameStateLoading) {
+      return;
+    }
+
+    const state = (serverGameState && typeof serverGameState === "object") ? serverGameState : {};
+
+    setResources((state as any).resources || { metal: 1000, crystal: 500, deuterium: 0, energy: 0 });
+    setBuildings({
+      metalMine: (state as any).buildings?.metalMine || 1,
+      crystalMine: (state as any).buildings?.crystalMine || 1,
+      deuteriumSynthesizer: (state as any).buildings?.deuteriumSynthesizer || 0,
+      solarPlant: (state as any).buildings?.solarPlant || 1,
+      roboticsFactory: (state as any).buildings?.roboticsFactory || 0,
+      shipyard: (state as any).buildings?.shipyard || 0,
+      researchLab: (state as any).buildings?.researchLab || 0,
+    });
+    setOrbitalBuildings((state as any).orbitalBuildings || {});
+    setResearch((state as any).research || {});
+    setUnits((state as any).units || {});
+    if ((state as any).commander) setCommander((state as any).commander);
+    if ((state as any).government) setGovernment((state as any).government);
+    if ((state as any).artifacts) setArtifacts((state as any).artifacts);
+    if ((state as any).cronJobs) setCronJobs((state as any).cronJobs);
+    setPlanetName((state as any).planetName || "Earth");
+    setCoordinates((state as any).coordinates || "1:1:100:3");
+    setTotalTurns((state as any).totalTurns || 0);
+    setCurrentTurns((state as any).currentTurns || 0);
+    setNeedsSetup(Boolean((state as any).setupComplete === false));
+    setIsInitialized(true);
+  }, [authUser, serverGameState, gameStateLoading, isInitialized]);
 
   useEffect(() => {
     if (serverMissions && Array.isArray(serverMissions)) {
@@ -1147,8 +1165,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Simple loading state: only show loading during initial auth check or when auth succeeded but game state pending
-  const isLoading = authLoading || (authUser && (gameStateLoading || !serverGameState || !isInitialized));
+  // Simple loading state: only show loading during initial auth check and game-state bootstrap.
+  const isLoading = authLoading || (Boolean(authUser) && gameStateLoading && !isInitialized);
 
   return (
     <GameContext.Provider value={{ 

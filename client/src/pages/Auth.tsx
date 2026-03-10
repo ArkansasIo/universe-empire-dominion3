@@ -42,6 +42,15 @@ export default function Auth() {
     localStorage.removeItem("stellar_password");
   };
 
+  const useDemoAccount = () => {
+    setIsForgot(false);
+    setIsLogin(true);
+    setError("");
+    setTempPassword("");
+    setUsername("player1");
+    setPassword("password123");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -267,6 +276,19 @@ export default function Auth() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {isLogin && !isForgot && (
+                  <Button
+                    type="button"
+                    onClick={useDemoAccount}
+                    variant="outline"
+                    className="w-full border-slate-300 text-slate-700 hover:bg-slate-100"
+                    data-testid="button-demo-login"
+                    disabled={submitting}
+                  >
+                    Use Demo Account (player1)
+                  </Button>
+                )}
+
                 <div>
                   <Label htmlFor="username" className="text-slate-900 text-sm font-semibold">Username</Label>
                   <Input
