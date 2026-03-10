@@ -23,20 +23,35 @@
 ---
 
 ### 2. **RENDER** (Very Popular)
-**Free Tier:** Single free instance (limited resources)
+**Best For:** Managed web service + PostgreSQL with GitHub auto-deploy
 - ✅ PostgreSQL databases supported
 - ✅ GitHub integration
 - ✅ Free custom domain
-- ❌ Free tier has 0.5GB RAM (tight)
+- ✅ Infrastructure-as-code via `render.yaml`
 
 **Steps:**
-1. Go to https://render.com
-2. Sign up with GitHub
-3. Create "Web Service" from GitHub repo
-4. Add PostgreSQL database
-5. Deploy
+1. Push this repository to GitHub (including `render.yaml`).
+2. Go to https://render.com and sign in with GitHub.
+3. Click **New +** → **Blueprint** and select your repository.
+4. Confirm the detected blueprint resources:
+   - Web service: `stellar-dominion`
+   - Database: `stellar-dominion-db`
+5. Review web service settings (from `render.yaml`):
+   - Build command: `npm ci --include=dev && npm run build`
+   - Start command: `npm start`
+   - Node version: `20`
+   - Health check path: `/api/status/health`
+6. Add/verify environment variables:
+   - `NODE_ENV=production`
+   - `PORT=5000`
+   - `SESSION_SECRET` (auto-generated in blueprint)
+   - `DATABASE_URL` (auto-linked from Render PostgreSQL)
+7. Deploy the blueprint.
+8. After first deploy, run schema migration once:
+   - Open the web service Shell and run: `npm run db:push`
+9. Open your live URL: `https://your-app.onrender.com`
 
-**Cost:** Free, but may sleep if inactive
+**Cost:** Typically starts on paid Starter plans for always-on web + Postgres
 
 ---
 
