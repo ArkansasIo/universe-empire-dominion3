@@ -148,7 +148,7 @@ export function getAllianceTier(
  */
 export function calculateCombinedBonuses(
   allianceTier: keyof typeof ALLIANCE_BONUS_CONFIG,
-  factionType?: keyof typeof FACTION_BONUSES,
+  factionType?: keyof typeof MULTIPLAYER_BONUS_CONFIG['FACTION_BONUSES'],
   activityMultiplier: number = 1.0,
   specializationBonus: number = 0
 ): {

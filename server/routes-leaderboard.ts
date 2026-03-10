@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { playerStates } from "../shared/schema";
 
