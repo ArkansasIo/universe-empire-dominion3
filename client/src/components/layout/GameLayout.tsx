@@ -237,6 +237,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/research", icon: FlaskConical, label: "Research Lab" },
                 { href: "/research-lab", icon: Zap, label: "Research Management" },
                 { href: "/technology-tree", icon: GraduationCap, label: "Tech Tree" },
+                { href: "/ogame-compendium", icon: Database, label: "OGame Compendium" },
                 { href: "/blueprints", icon: FileText, label: "Blueprints" },
                 { href: "/artifacts", icon: Hexagon, label: "Artifacts" },
               ]}

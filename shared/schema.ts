@@ -1973,3 +1973,37 @@ export const empireValues = pgTable("empire_values", {
 export type EmpireValue = typeof empireValues.$inferSelect;
 export const insertEmpireValueSchema = createInsertSchema(empireValues).omit({ id: true, lastCalculated: true });
 export type InsertEmpireValue = z.infer<typeof insertEmpireValueSchema>;
+
+// OGame Catalog Categories - normalized compendium categories
+export const ogameCatalogCategories = pgTable("ogame_catalog_categories", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type OgameCatalogCategory = typeof ogameCatalogCategories.$inferSelect;
+export const insertOgameCatalogCategorySchema = createInsertSchema(ogameCatalogCategories).omit({ createdAt: true });
+export type InsertOgameCatalogCategory = z.infer<typeof insertOgameCatalogCategorySchema>;
+
+// OGame Catalog Entries - buildings, ships, research, defenses, moon facilities, officers
+export const ogameCatalogEntries = pgTable("ogame_catalog_entries", {
+  id: varchar("id").primaryKey(),
+  categoryId: varchar("category_id").notNull().references(() => ogameCatalogCategories.id, { onDelete: "cascade" }),
+  entryType: varchar("entry_type").notNull(),
+  name: varchar("name").notNull(),
+  description: text("description").notNull().default(""),
+  baseCost: jsonb("base_cost").notNull().default({ metal: 0, crystal: 0, deuterium: 0 }),
+  baseTimeSeconds: integer("base_time_seconds").notNull().default(0),
+  growthFactor: real("growth_factor").notNull().default(1),
+  prerequisites: jsonb("prerequisites").notNull().default({}),
+  stats: jsonb("stats").notNull().default({}),
+  isMoonOnly: boolean("is_moon_only").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type OgameCatalogEntry = typeof ogameCatalogEntries.$inferSelect;
+export const insertOgameCatalogEntrySchema = createInsertSchema(ogameCatalogEntries).omit({ createdAt: true, updatedAt: true });
+export type InsertOgameCatalogEntry = z.infer<typeof insertOgameCatalogEntrySchema>;

@@ -133,9 +133,29 @@ import achievementRoutes from "./routes-achievements";
 import autoBuyResourcesRoutes from "./routes-autobuyresources";
 import tradingRoutes from "./routes-trading";
 import assetsRoutes from "./routes-assets";
+import ogameRoutes from "./routes-ogame";
+import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
 
 (async () => {
   await setupAuth(app);
+
+  try {
+    const seedSummary = await seedOgameCatalogIfNeeded();
+    if (seedSummary.seeded) {
+      log(
+        `Seeded OGame catalog: ${seedSummary.categoryCount} categories, ${seedSummary.entryCount} entries`,
+        "startup",
+        "success",
+      );
+    }
+  } catch (error) {
+    log(
+      `OGame catalog seed skipped: ${(error as Error).message}`,
+      "startup",
+      "warn",
+    );
+  }
+
   registerRoutes(app);
   registerSettingsRoutes(app);
   registerStatusRoutes(app);
@@ -158,6 +178,7 @@ import assetsRoutes from "./routes-assets";
   app.use('/api/autobuy', autoBuyResourcesRoutes);
   app.use('/api/trading', tradingRoutes);
   app.use('/api/assets', assetsRoutes);
+  app.use('/api/ogame', ogameRoutes);
 
   // Error handling middleware
   app.use((err: any, req: any, res: any, next: any) => {

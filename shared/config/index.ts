@@ -193,6 +193,17 @@ export {
   generatePlaceholderAssetManifest,
 } from './gameAssetsConfig';
 
+// OGame Catalog Exports
+export {
+  OGAME_CATALOG_CATEGORIES,
+  OGAME_CATALOG_ENTRIES,
+  OGAME_CATALOG_ENTRY_MAP,
+  type OgameCatalogEntryType,
+  type OgameCatalogCost,
+  type OgameCatalogCategoryDefinition,
+  type OgameCatalogEntryDefinition,
+} from './ogameCatalogConfig';
+
 // Research Queue & Lab System Exports
 export {
   LAB_TIERS,

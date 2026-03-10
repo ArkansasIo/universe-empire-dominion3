@@ -387,3 +387,119 @@ export async function buildShips(userId: string, shipType: string, quantity: num
     throw error;
   }
 }
+
+export interface OgameResourceCost {
+  metal: number;
+  crystal: number;
+  deuterium: number;
+  energy?: number;
+  darkMatter?: number;
+}
+
+export function calculateOgameUpgradeCost(
+  baseCost: OgameResourceCost,
+  level: number,
+  growthFactor = 1,
+  quantity = 1,
+): OgameResourceCost {
+  const safeLevel = Math.max(1, Math.floor(level));
+  const safeQuantity = Math.max(1, Math.floor(quantity));
+  const safeGrowth = Math.max(1, growthFactor);
+  const multiplier = Math.pow(safeGrowth, safeLevel - 1) * safeQuantity;
+
+  return {
+    metal: Math.ceil(baseCost.metal * multiplier),
+    crystal: Math.ceil(baseCost.crystal * multiplier),
+    deuterium: Math.ceil(baseCost.deuterium * multiplier),
+    energy: Math.ceil((baseCost.energy || 0) * multiplier),
+    darkMatter: Math.ceil((baseCost.darkMatter || 0) * multiplier),
+  };
+}
+
+export function canAffordOgameCost(
+  resources: { metal?: number; crystal?: number; deuterium?: number; energy?: number; darkMatter?: number },
+  cost: OgameResourceCost,
+) {
+  return (
+    (resources.metal || 0) >= cost.metal &&
+    (resources.crystal || 0) >= cost.crystal &&
+    (resources.deuterium || 0) >= cost.deuterium &&
+    (resources.energy || 0) >= (cost.energy || 0) &&
+    (resources.darkMatter || 0) >= (cost.darkMatter || 0)
+  );
+}
+
+export function calculateOgameMineOutput(
+  buildings: { metalMine?: number; crystalMine?: number; deuteriumSynthesizer?: number; solarPlant?: number; fusionReactor?: number },
+  research: { energyTech?: number; plasmaTech?: number } = {},
+) {
+  const metalMine = Math.max(0, Math.floor(buildings.metalMine || 0));
+  const crystalMine = Math.max(0, Math.floor(buildings.crystalMine || 0));
+  const deuteriumSynthesizer = Math.max(0, Math.floor(buildings.deuteriumSynthesizer || 0));
+  const solarPlant = Math.max(0, Math.floor(buildings.solarPlant || 0));
+  const fusionReactor = Math.max(0, Math.floor(buildings.fusionReactor || 0));
+
+  const energyTech = Math.max(0, Math.floor(research.energyTech || 0));
+  const plasmaTech = Math.max(0, Math.floor(research.plasmaTech || 0));
+
+  const metalRaw = 30 * metalMine * Math.pow(1.1, metalMine);
+  const crystalRaw = 20 * crystalMine * Math.pow(1.1, crystalMine);
+  const deuteriumRaw = 10 * deuteriumSynthesizer * Math.pow(1.1, deuteriumSynthesizer);
+
+  const producedEnergy =
+    20 * solarPlant * Math.pow(1.1, solarPlant) +
+    30 * fusionReactor * Math.pow(1.05, fusionReactor) * (1 + energyTech * 0.01);
+
+  const consumedEnergy =
+    10 * metalMine * Math.pow(1.1, metalMine) +
+    10 * crystalMine * Math.pow(1.1, crystalMine) +
+    20 * deuteriumSynthesizer * Math.pow(1.1, deuteriumSynthesizer);
+
+  const energyEfficiency = consumedEnergy <= 0 ? 1 : Math.min(1, producedEnergy / consumedEnergy);
+
+  return {
+    metalPerHour: Math.floor(metalRaw * energyEfficiency * (1 + plasmaTech * 0.01)),
+    crystalPerHour: Math.floor(crystalRaw * energyEfficiency * (1 + plasmaTech * 0.0066)),
+    deuteriumPerHour: Math.floor(deuteriumRaw * energyEfficiency * (1 + plasmaTech * 0.0033)),
+    energyNet: Math.floor(producedEnergy - consumedEnergy),
+    energyEfficiency: Number(energyEfficiency.toFixed(4)),
+  };
+}
+
+export function calculateOgameFleetPower(
+  units: Record<string, number>,
+  statsByUnit: Record<string, { attack: number; shield: number; hull: number }>,
+  research: { weaponsTech?: number; shieldingTech?: number; armourTech?: number } = {},
+) {
+  const weaponMultiplier = 1 + Math.max(0, Math.floor(research.weaponsTech || 0)) * 0.1;
+  const shieldMultiplier = 1 + Math.max(0, Math.floor(research.shieldingTech || 0)) * 0.1;
+  const hullMultiplier = 1 + Math.max(0, Math.floor(research.armourTech || 0)) * 0.1;
+
+  let attack = 0;
+  let shield = 0;
+  let hull = 0;
+
+  for (const [unitId, countRaw] of Object.entries(units)) {
+    const count = Math.max(0, Math.floor(countRaw));
+    if (!count) continue;
+
+    const stats = statsByUnit[unitId];
+    if (!stats) continue;
+
+    attack += stats.attack * count;
+    shield += stats.shield * count;
+    hull += stats.hull * count;
+  }
+
+  const finalAttack = Math.round(attack * weaponMultiplier);
+  const finalShield = Math.round(shield * shieldMultiplier);
+  const finalHull = Math.round(hull * hullMultiplier);
+  const power = Math.round(finalAttack * 0.5 + finalShield * 0.3 + finalHull * 0.2);
+
+  return {
+    attack: finalAttack,
+    shield: finalShield,
+    hull: finalHull,
+    power,
+  };
+}
