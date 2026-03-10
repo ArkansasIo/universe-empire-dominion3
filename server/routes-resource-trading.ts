@@ -96,10 +96,10 @@ export function registerResourceTradingRoutes(app: Express) {
         return res.status(404).json({ error: "Player state not found" });
       }
 
-      const tradingState = (playerState.tradingState as any) || { resourceOrders: [] };
+      const travelState = (playerState.travelState as any) || { resourceOrders: [] };
 
       // Calculate market prices based on recent trades and orders
-      const allOrders = tradingState.resourceOrders || [];
+      const allOrders = travelState.resourceOrders || [];
       
       // Group by resource
       const marketData: any = {};
@@ -190,9 +190,9 @@ export function registerResourceTradingRoutes(app: Express) {
         filledQuantity: 0,
       };
 
-      const tradingState = (playerState.tradingState as any) || { resourceOrders: [] };
-      if (!tradingState.resourceOrders) {
-        tradingState.resourceOrders = [];
+      const travelState = (playerState.travelState as any) || { resourceOrders: [] };
+      if (!travelState.resourceOrders) {
+        travelState.resourceOrders = [];
       }
 
       // For sell orders, reserve the resources
@@ -202,12 +202,12 @@ export function registerResourceTradingRoutes(app: Express) {
       }
 
       // Try to match the order with existing orders
-      const matchResult = matchResourceOrders(tradingState.resourceOrders, order);
+      const matchResult = matchResourceOrders(travelState.resourceOrders, order);
       
       if (matchResult.matches.length > 0) {
         // Process matches
         for (const match of matchResult.matches) {
-          const matchedOrder = tradingState.resourceOrders.find((o: any) => o.id === match.orderId);
+          const matchedOrder = travelState.resourceOrders.find((o: any) => o.id === match.orderId);
           if (matchedOrder) {
             matchedOrder.filledQuantity = (matchedOrder.filledQuantity || 0) + match.quantity;
             matchedOrder.quantity -= match.quantity;
@@ -232,12 +232,12 @@ export function registerResourceTradingRoutes(app: Express) {
       }
 
       // Add order to registry
-      tradingState.resourceOrders.push(order);
+      travelState.resourceOrders.push(order);
 
       await db.update(playerStates)
         .set({
           resources: updatedResources,
-          tradingState: tradingState,
+          travelState: travelState,
           updatedAt: new Date(),
         })
         .where(eq(playerStates.userId, userId));
@@ -283,8 +283,8 @@ export function registerResourceTradingRoutes(app: Express) {
         return res.status(404).json({ error: "Player state not found" });
       }
 
-      const tradingState = (playerState.tradingState as any) || { resourceOrders: [] };
-      const order = tradingState.resourceOrders?.find((o: any) => o.id === orderId);
+      const travelState = (playerState.travelState as any) || { resourceOrders: [] };
+      const order = travelState.resourceOrders?.find((o: any) => o.id === orderId);
 
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
@@ -310,7 +310,7 @@ export function registerResourceTradingRoutes(app: Express) {
       await db.update(playerStates)
         .set({
           resources,
-          tradingState,
+          travelState,
           updatedAt: new Date(),
         })
         .where(eq(playerStates.userId, userId));
@@ -341,8 +341,8 @@ export function registerResourceTradingRoutes(app: Express) {
         return res.status(404).json({ error: "Player state not found" });
       }
 
-      const tradingState = (playerState.tradingState as any) || { resourceOrders: [] };
-      const myOrders = (tradingState.resourceOrders || []).filter((o: any) => o.userId === userId);
+      const travelState = (playerState.travelState as any) || { resourceOrders: [] };
+      const myOrders = (travelState.resourceOrders || []).filter((o: any) => o.userId === userId);
 
       res.json({
         orders: myOrders,
@@ -369,8 +369,8 @@ export function registerResourceTradingRoutes(app: Express) {
       let allOrders: any[] = [];
 
       for (const player of allPlayers) {
-        const tradingState = (player.tradingState as any) || { resourceOrders: [] };
-        const playerOrders = (tradingState.resourceOrders || [])
+        const travelState = (player.travelState as any) || { resourceOrders: [] };
+        const playerOrders = (travelState.resourceOrders || [])
           .filter((o: any) => o.status === RESOURCE_TRADING_CONFIG.ORDER_STATUS.OPEN && o.userId !== userId);
         allOrders.push(...playerOrders);
       }
@@ -418,10 +418,10 @@ export function registerResourceTradingRoutes(app: Express) {
         return res.status(404).json({ error: "Player state not found" });
       }
 
-      const tradingState = (playerState.tradingState as any) || { resourceOrders: [] };
+      const travelState = (playerState.travelState as any) || { resourceOrders: [] };
       
       // Get filled orders (trade history)
-      const history = (tradingState.resourceOrders || [])
+      const history = (travelState.resourceOrders || [])
         .filter((o: any) => o.status === RESOURCE_TRADING_CONFIG.ORDER_STATUS.FILLED && o.userId === userId)
         .sort((a: any, b: any) => b.createdAt - a.createdAt)
         .slice(0, 50); // Last 50 trades

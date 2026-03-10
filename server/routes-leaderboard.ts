@@ -252,7 +252,7 @@ export function registerLeaderboardRoutes(app: Express) {
       }
 
       const playerState = await db.query.playerStates.findFirst({
-        where: (ps: any) => ps.userId === userId,
+        where: eq(playerStates.userId, userId),
       });
 
       if (!playerState) {
