@@ -222,7 +222,7 @@ export class GameAssetsService {
    * Upload new asset
    */
   static async uploadAsset(
-    file: Express.Multer.File,
+    file: { originalname: string; filename: string; size: number; mimetype: string },
     category: string,
     tags: string[]
   ): Promise<GameAsset> {

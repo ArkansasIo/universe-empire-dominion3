@@ -21,5 +21,35 @@ export class MultiplayerBonusesService {
   static calculateCoopResearchBonus(participantCount: number) {
     return { speedMultiplier: 1.0, sharedXpPercent: 0.3 };
   }
+
+  static async getAllianceMemberBonuses(allianceId: string) {
+    return { allianceId, members: [], bonuses: {} };
+  }
+
+  static async contributeToPool(
+    userId: string,
+    allianceId: string,
+    metals: number,
+    credits: number
+  ) {
+    return true;
+  }
+
+  static async withdrawFromPool(
+    userId: string,
+    allianceId: string,
+    metals: number,
+    credits: number
+  ) {
+    return true;
+  }
+
+  static async getAllianceLeaderboard(limit: number = 50) {
+    return [];
+  }
+
+  static async syncAllianceBonusesToResearch(userId: string) {
+    return { synced: true };
+  }
 }
 

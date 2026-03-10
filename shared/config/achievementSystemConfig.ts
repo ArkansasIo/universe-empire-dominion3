@@ -272,7 +272,7 @@ export function calculateAchievementReward(achievement: any): {
   totalXP: number;
   totalCredits: number;
 } {
-  const tierMultiplier = ACHIEVEMENT_CONFIG.BADGE_TIERS[achievement.tier]?.multiplier || 1.0;
+  const tierMultiplier = ACHIEVEMENT_CONFIG.BADGE_TIERS[achievement.tier as keyof typeof ACHIEVEMENT_CONFIG.BADGE_TIERS]?.multiplier || 1.0;
   return {
     totalXP: (achievement.reward.xp || 0) * tierMultiplier,
     totalCredits: (achievement.reward.credits || 0) * tierMultiplier,

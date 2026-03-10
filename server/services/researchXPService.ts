@@ -15,7 +15,7 @@ import {
   PlayerResearchXP,
   ResearchDiscovery,
 } from '../../shared/config/researchXPConfig';
-import { db } from '../db';
+import { pool } from '../db';
 
 export class ResearchXPService {
   /**
@@ -27,7 +27,7 @@ export class ResearchXPService {
     sourceType: string = 'research_complete'
   ): Promise<any> {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         `SELECT research_xp FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -57,7 +57,7 @@ export class ResearchXPService {
       // Update discovery multiplier
       xpData.discoveryMultiplier = 1.0 + (xpData.currentLevel * 0.02);
 
-      await db.query(
+      await pool.query(
         `UPDATE player_states 
          SET research_xp = $1, updated_at = NOW() 
          WHERE user_id = $2`,
@@ -98,7 +98,7 @@ export class ResearchXPService {
       const xpResult = await this.addResearchXP(userId, xpGained, 'research_complete');
 
       // Check for discovery
-      const playerData = await db.query(
+      const playerData = await pool.query(
         `SELECT research_xp FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -122,7 +122,7 @@ export class ResearchXPService {
       // Increment research count
       xpData.researchesCompleted += 1;
 
-      await db.query(
+      await pool.query(
         `UPDATE player_states 
          SET research_xp = $1, updated_at = NOW() 
          WHERE user_id = $2`,
@@ -207,7 +207,7 @@ export class ResearchXPService {
    */
   static async getPlayerXPStats(userId: string): Promise<any> {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         `SELECT research_xp FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -255,7 +255,7 @@ export class ResearchXPService {
    */
   static async canDiscoverTech(userId: string, techId: string): Promise<boolean> {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         `SELECT research_xp FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -285,7 +285,7 @@ export class ResearchXPService {
    */
   static async getDiscoveries(userId: string, limit: number = 20): Promise<ResearchDiscovery[]> {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         `SELECT research_xp FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -306,7 +306,7 @@ export class ResearchXPService {
    */
   static async getXPLeaderboard(limit: number = 100): Promise<any[]> {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         `SELECT user_id, research_xp FROM player_states 
          WHERE research_xp IS NOT NULL 
          ORDER BY (research_xp->>'totalXP')::bigint DESC 

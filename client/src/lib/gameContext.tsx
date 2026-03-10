@@ -193,6 +193,7 @@ interface GameState {
   inventory: {[key: string]: number};
   buyItem: (itemId: string, cost: {metal: number, crystal: number, deuterium: number}) => void;
   sellItem: (itemId: string, value: {metal: number, crystal: number, deuterium: number}) => void;
+  processMissions: () => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -1100,7 +1101,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       },
       onError: (error: any) => {
-        addEvent("Mission Processing Error", `Failed to process missions: ${error.message}`, "error");
+        addEvent("Mission Processing Error", `Failed to process missions: ${error.message}`, "danger");
       }
     });
   };

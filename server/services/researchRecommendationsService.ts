@@ -4,7 +4,7 @@
  * @tag #research #recommendations #ai #strategy
  */
 
-import { db } from '../db';
+import { pool } from '../db';
 
 export class ResearchRecommendationsService {
   /**
@@ -12,7 +12,7 @@ export class ResearchRecommendationsService {
    */
   static async getRecommendations(userId: string, limit: number = 5): Promise<any> {
     try {
-      const playerData = await db.query(
+      const playerData = await pool.query(
         `SELECT research_queue, research_xp, resources, buildings FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -186,7 +186,7 @@ export class ResearchRecommendationsService {
    */
   static async getAvailableTechs(userId: string): Promise<any[]> {
     try {
-      const playerData = await db.query(
+      const playerData = await pool.query(
         `SELECT research_queue FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -255,7 +255,7 @@ export class ResearchRecommendationsService {
    */
   static async getResearchPath(userId: string, goalTechId: string): Promise<any> {
     try {
-      const playerData = await db.query(
+      const playerData = await pool.query(
         `SELECT research_queue FROM player_states WHERE user_id = $1`,
         [userId]
       );
@@ -325,7 +325,7 @@ export class ResearchRecommendationsService {
    */
   static async getStrategyAnalysis(userId: string): Promise<any> {
     try {
-      const playerData = await db.query(
+      const playerData = await pool.query(
         `SELECT research_queue, research_xp, resources FROM player_states WHERE user_id = $1`,
         [userId]
       );
