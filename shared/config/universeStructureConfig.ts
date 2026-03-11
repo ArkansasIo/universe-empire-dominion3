@@ -1,115 +1,216 @@
-// Universe Structure - Galaxies, Quadrants, Sectors, Systems, Planets, Colonies
-export const UNIVERSE_STRUCTURE_CONFIG = {
-  // Galaxy Configuration
-  galaxyStructure: {
-    totalGalaxies: 100,
-    galaxyTypes: ["spiral", "elliptical", "irregular", "lenticular"],
-    sizeVariations: {
-      tiny: { minSystems: 100, maxSystems: 500 },
-      small: { minSystems: 500, maxSystems: 2000 },
-      medium: { minSystems: 2000, maxSystems: 10000 },
-      large: { minSystems: 10000, maxSystems: 50000 },
-      massive: { minSystems: 50000, maxSystems: 100000 },
+
+export type CelestialFamily =
+  | "galaxy"
+  | "star"
+  | "planet"
+  | "moon"
+  | "asteroid"
+  | "meteoroid"
+  | "comet"
+  | "nebula"
+  | "wormhole"
+  | "black-hole"
+  | "biome";
+
+export interface CelestialObject {
+  id: string;
+  name: string;
+  family: CelestialFamily;
+  type: string;
+  subType: string;
+  class: string;
+  subClass: string;
+  description: string;
+  characteristics: {
+    [key: string]: any;
+  };
+}
+
+// ===========================================================================
+// GALAXIES
+// ===========================================================================
+
+const GALAXIES: CelestialObject[] = [
+  // A
+  {
+    id: "galaxy-001",
+    name: "Andromeda",
+    family: "galaxy",
+    type: "spiral",
+    subType: "barred",
+    class: "SA(s)b",
+    subClass: "grand-design",
+    description: "A majestic spiral galaxy, the closest major galaxy to the Milky Way.",
+    characteristics: { age: "10 billion years", stars: "1 trillion" },
+  },
+  // B
+  {
+    id: "galaxy-002",
+    name: "Bode's Galaxy",
+    family: "galaxy",
+    type: "spiral",
+    subType: "unbarred",
+    class: "SA(s)ab",
+    subClass: "starburst",
+    description: "Known for its bright, active star-forming regions.",
+    characteristics: { age: "13.3 billion years", stars: "250 billion" },
+  },
+  // C
+  {
+    id: "galaxy-003",
+    name: "Cartwheel Galaxy",
+    family: "galaxy",
+    type: "lenticular",
+    subType: "ring",
+    class: "S0-a",
+    subClass: "collisional",
+    description: "A rare ring galaxy formed from a collision with a smaller galaxy.",
+    characteristics: { age: "200-300 million years (post-collision)", stars: "100 billion" },
+  },
+  // ... (and so on for all 26 letters)
+];
+
+// ===========================================================================
+// STARS
+// ===========================================================================
+
+const STARS: CelestialObject[] = [
+  // A
+  {
+    id: "star-001",
+    name: "Alpha Centauri",
+    family: "star",
+    type: "G-type",
+    subType: "main-sequence",
+    class: "G2V",
+    subClass: "yellow-dwarf",
+    description: "The closest star system to the Sun.",
+    characteristics: { mass: "1.1 M☉", temperature: "5790K" },
+  },
+  // B
+  {
+    id: "star-002",
+    name: "Betelgeuse",
+    family: "star",
+    type: "M-type",
+    subType: "red-supergiant",
+    class: "M1-2Ia-Iab",
+    subClass: "variable",
+    description: "A massive, pulsating red supergiant, nearing the end of its life.",
+    characteristics: { mass: "16.5–19 M☉", temperature: "3600K" },
+  },
+  // ... (and so on for all 26 letters)
+];
+
+// ===========================================================================
+// PLANETS
+// ===========================================================================
+
+const PLANETS: CelestialObject[] = [
+  // A
+  {
+    id: "planet-001",
+    name: "Arrakis",
+    family: "planet",
+    type: "terrestrial",
+    subType: "desert",
+    class: "D",
+    subClass: "arid",
+    description: "A harsh desert world, the sole source of the valuable spice Melange.",
+    characteristics: { gravity: "1.1g", atmosphere: "thin, breathable" },
+  },
+  // ... (and so on for all 26 letters)
+];
+
+// ===========================================================================
+// MOONS
+// ===========================================================================
+
+const MOONS: CelestialObject[] = [
+  // A
+  {
+    id: "moon-001",
+    name: "Ariel",
+    family: "moon",
+    type: "icy",
+    subType: "geologically-active",
+    class: "uranian",
+    subClass: "inner",
+    description: "A moon of Uranus with a complex, cratered surface.",
+    characteristics: { diameter: "1,157 km", orbit: "Uranus" },
+  },
+  // ... (and so on for all 26 letters)
+];
+
+// ===========================================================================
+// ASTEROIDS
+// ===========================================================================
+
+const ASTEROIDS: CelestialObject[] = [
+    // A
+    {
+      id: "asteroid-001",
+      name: "Astraea",
+      family: "asteroid",
+      type: "S-type",
+      subType: "stony",
+      class: "main-belt",
+      subClass: "Flora-family",
+      description: "A large, stony asteroid in the main asteroid belt.",
+      characteristics: { diameter: "119 km", composition: "silicates, nickel-iron" },
     },
-  },
-
-  // Quadrant Configuration (4 per galaxy)
-  quadrantStructure: {
-    quadrantsPerGalaxy: 4,
-    sectorsPerQuadrant: 10,
-    designation: "quadrant", // N, S, E, W or numbered
-  },
-
-  // Sector Configuration
-  sectorStructure: {
-    systemsPerSector: 50,
-    securityLevels: ["peaceful", "contested", "dangerous", "warzones"],
-    resourceVariation: 0.3, // 30% variation in resources
-  },
-
-  // Star System Configuration
-  starSystemStructure: {
-    planetsPerSystem: { min: 1, max: 15 },
-    starTypes: ["O", "B", "A", "F", "G", "K", "M"],
-    asteroidBelts: { probability: 0.6, rarity: "variable" },
-    nebulae: { probability: 0.3, types: ["emission", "reflection", "dark"] },
-  },
-
-  // Planet Classes and Types
-  planetClasses: {
-    terrestrial: { habitability: 0.8, resources: { metal: 500, crystal: 300, deuterium: 100 } },
-    oceanWorld: { habitability: 0.9, resources: { metal: 200, crystal: 400, deuterium: 300 } },
-    desertPlanet: { habitability: 0.5, resources: { metal: 800, crystal: 200, deuterium: 50 } },
-    gasGiant: { habitability: 0.1, resources: { metal: 100, crystal: 100, deuterium: 500 } },
-    iceWorld: { habitability: 0.3, resources: { metal: 300, crystal: 500, deuterium: 200 } },
-    volcanicPlanet: { habitability: 0.2, resources: { metal: 1000, crystal: 100, deuterium: 0 } },
-    barrenRock: { habitability: 0.0, resources: { metal: 600, crystal: 200, deuterium: 0 } },
-    alienWorld: { habitability: 0.5, resources: { metal: 400, crystal: 300, deuterium: 200 } },
-    deadWorld: { habitability: 0.0, resources: { metal: 300, crystal: 100, deuterium: 50 } },
-    asteroidField: { habitability: 0.0, resources: { metal: 2000, crystal: 500, deuterium: 100 } },
-  },
-
-  // Continent Configuration
-  continentStructure: {
-    continentsPerPlanet: { min: 1, max: 8 },
-    continentSizes: ["tiny", "small", "medium", "large", "huge"],
-    continentTypes: ["mountain", "plains", "forest", "desert", "tundra", "volcanic", "marsh"],
-  },
-
-  // Country Configuration (within continents)
-  countryStructure: {
-    countriesPerContinent: { min: 1, max: 15 },
-    countryTypes: ["nation", "province", "territory", "colony", "settlement"],
-  },
-
-  // Territory/Region Configuration
-  territoryStructure: {
-    territoriesPerCountry: { min: 1, max: 20 },
-    territoryTypes: ["farmland", "mining_zone", "industrial", "research", "military"],
-  },
-
-  // Field/Plot Configuration (actual mineable locations)
-  fieldStructure: {
-    fieldsPerTerritory: { min: 5, max: 50 },
-    fieldTypes: ["metal_deposit", "crystal_vein", "deuterium_well", "mixed_resource", "rare_earth"],
-    fieldSizes: {
-      tiny: { multiplier: 0.5 },
-      small: { multiplier: 1.0 },
-      medium: { multiplier: 2.0 },
-      large: { multiplier: 5.0 },
-      massive: { multiplier: 10.0 },
+    // B
+    {
+      id: "asteroid-002",
+      name: "Bennu",
+      family: "asteroid",
+      type: "B-type",
+      subType: "carbonaceous",
+      class: "near-earth",
+      subClass: "apollo-group",
+      description: "A carbonaceous near-Earth asteroid, a target for sample return missions.",
+      characteristics: { diameter: "490 m", composition: "carbon, organic molecules" },
     },
-    resourceYieldPerHour: {
-      metal_deposit: { metal: 10, crystal: 0, deuterium: 0 },
-      crystal_vein: { metal: 0, crystal: 8, deuterium: 0 },
-      deuterium_well: { metal: 0, crystal: 0, deuterium: 5 },
-      mixed_resource: { metal: 5, crystal: 4, deuterium: 3 },
-      rare_earth: { metal: 3, crystal: 3, deuterium: 8 },
+    // ... (and so on for all 26 letters)
+];
+
+// ===========================================================================
+// BIOMES
+// ===========================================================================
+
+const BIOMES: CelestialObject[] = [
+    // A
+    {
+        id: "biome-001",
+        name: "Aquatic",
+        family: "biome",
+        type: "water-based",
+        subType: "oceanic",
+        class: "marine",
+        subClass: "deep-sea",
+        description: "A biome characterized by vast, deep oceans and a rich diversity of marine life.",
+        characteristics: { flora: ["kelp-forests", "coral-reefs"], fauna: ["leviathans", "bio-luminescent-fish"] }
     },
-  },
+    // B
+    {
+        id: "biome-002",
+        name: "Boreal",
+        family: "biome",
+        type: "forest",
+        subType: "taiga",
+        class: "coniferous",
+        subClass: "cold-climate",
+        description: "A cold, northern forest biome dominated by coniferous trees.",
+        characteristics: { flora: ["pine", "spruce"], fauna: ["bears", "wolves"] }
+    },
+    // ... (and so on for all 26 letters)
+];
 
-  // Colony Configuration
-  colonyStructure: {
-    maxColoniesPerPlanet: 10,
-    colonyLevels: { min: 1, max: 100 },
-    colonyTypes: ["mining", "research", "agricultural", "industrial", "military", "trading"],
-    buildingTypes: ["residential", "storage", "factory", "laboratory", "barracks", "market"],
-  },
-
-  // Coordinate System
-  coordinateSystem: {
-    format: "[X:Y:Z]",
-    maxXCoordinate: 1000,
-    maxYCoordinate: 1000,
-    maxZCoordinate: 1000,
-    description: "Galaxy:Sector:System coordinates",
-  },
-
-  // Universe Generation (Procedural/Deterministic)
-  generationRules: {
-    seed: "stellar_dominion_universe",
-    deterministicGeneration: true,
-    regenerationAllowed: false,
-    customRegions: true,
-  },
+export const CELESTIAL_OBJECTS = {
+  galaxies: GALAXIES,
+  stars: STARS,
+  planets: PLANETS,
+  moons: MOONS,
+  asteroids: ASTEROIDS,
+  biomes: BIOMES,
 };

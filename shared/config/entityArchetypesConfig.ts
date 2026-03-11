@@ -7,10 +7,12 @@ export type EntityFamily =
   | "civilian-unit"
   | "military-unit"
   | "government-unit"
+  | "personal-unit"
   | "item"
   | "weapon"
   | "armor"
-  | "vehicle";
+  | "vehicle"
+  | "smaug";
 
 export interface EntityArchetype {
   id: string;
@@ -159,6 +161,8 @@ const CIVILIAN_UNITS: EntityArchetype[] = [
   ["Educator", "social", "learning", "civilian", "academy-specialist"],
   ["Medic", "social", "health", "civilian", "clinic-specialist"],
   ["Transit Operator", "infrastructure", "transport", "civilian", "mobility-specialist"],
+  ["Artisan", "culture", "crafting", "civilian", "creative"],
+  ["Entertainer", "culture", "morale", "civilian", "performer"],
 ].map((v, i) => buildArchetype("civilian-unit", i + 56, v[0], v[1], v[2], v[3], v[4]));
 
 const MILITARY_UNITS: EntityArchetype[] = [
@@ -181,7 +185,25 @@ const GOVERNMENT_UNITS: EntityArchetype[] = [
   ["Policy Architect", "administration", "planning", "government", "long-range"],
   ["Intelligence Bureau", "administration", "counter-intel", "government", "analysis"],
   ["Systems Governor", "administration", "regional-rule", "government", "sector-command"],
+  ["Spymaster", "intelligence", "espionage", "government", "handler"],
+  ["Propagandist", "influence", "morale", "government", "information-warfare"],
 ].map((v, i) => buildArchetype("government-unit", i + 74, v[0], v[1], v[2], v[3], v[4]));
+
+const PERSONAL_UNITS: EntityArchetype[] = [
+  ["Commander", "command", "leadership", "personal", "tactician"],
+  ["Scientist", "research", "discovery", "personal", "analyst"],
+  ["Explorer", "exploration", "pioneer", "personal", "pathfinder"],
+  ["Engineer", "industrial", "construction", "personal", "innovator"],
+  ["Diplomat", "social", "negotiation", "personal", "ambassador"],
+  ["Operative", "stealth", "infiltration", "personal", "spectre"],
+].map((v, i) => buildArchetype("personal-unit", i + 110, v[0], v[1], v[2], v[3], v[4]));
+
+const SMAUG_UNITS: EntityArchetype[] = [
+  ["Wyrm", "smaug", "lesser-dragon", "smaug", "hatchling"],
+  ["Drake", "smaug", "dragon", "smaug", "adolescent"],
+  ["Elder Dragon", "smaug", "greater-dragon", "smaug", "ancient"],
+  ["Smaug Prime", "smaug", "celestial-dragon", "smaug", "progenitor"],
+].map((v, i) => buildArchetype("smaug", i + 120, v[0], v[1], v[2], v[3], v[4]));
 
 const ITEMS: EntityArchetype[] = [
   ["Nano Toolkit", "consumable", "repair-kit", "item", "engineering-pack"],
@@ -217,7 +239,7 @@ const VEHICLES: EntityArchetype[] = [
   ["Command APC", "ground", "command", "vehicle", "coordination"],
 ].map((v, i) => buildArchetype("vehicle", i + 97, v[0], v[1], v[2], v[3], v[4]));
 
-export const ENTITY_ARCHETYPES_90: EntityArchetype[] = [
+export const ENTITY_ARCHETYPES: EntityArchetype[] = [
   ...STARSHIPS,
   ...MOTHERSHIPS,
   ...TROOPS,
@@ -226,6 +248,8 @@ export const ENTITY_ARCHETYPES_90: EntityArchetype[] = [
   ...CIVILIAN_UNITS,
   ...MILITARY_UNITS,
   ...GOVERNMENT_UNITS,
+  ...PERSONAL_UNITS,
+  ...SMAUG_UNITS,
   ...ITEMS,
   ...WEAPONS,
   ...ARMORS,
@@ -241,6 +265,8 @@ export const ENTITY_ARCHETYPES_GROUPED = {
   civilianUnits: CIVILIAN_UNITS,
   militaryUnits: MILITARY_UNITS,
   governmentUnits: GOVERNMENT_UNITS,
+  personalUnits: PERSONAL_UNITS,
+  smaugUnits: SMAUG_UNITS,
   items: ITEMS,
   weapons: WEAPONS,
   armors: ARMORS,
@@ -248,8 +274,7 @@ export const ENTITY_ARCHETYPES_GROUPED = {
 };
 
 export const ENTITY_ARCHETYPES_META = {
-  total: ENTITY_ARCHETYPES_90.length,
-  expected: 90,
+  total: ENTITY_ARCHETYPES.length,
   byFamily: {
     starship: STARSHIPS.length,
     mothership: MOTHERSHIPS.length,
@@ -259,6 +284,8 @@ export const ENTITY_ARCHETYPES_META = {
     "civilian-unit": CIVILIAN_UNITS.length,
     "military-unit": MILITARY_UNITS.length,
     "government-unit": GOVERNMENT_UNITS.length,
+    "personal-unit": PERSONAL_UNITS.length,
+    smaug: SMAUG_UNITS.length,
     item: ITEMS.length,
     weapon: WEAPONS.length,
     armor: ARMORS.length,
