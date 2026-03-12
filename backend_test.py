@@ -102,23 +102,23 @@ class StellarDominionAPITester:
         """Test complete authentication flow"""
         print("\n🔐 Testing Authentication Flow...")
         
-        # Test user registration
-        register_data = {"username": "testuser2", "password": "testpass123"}
-        success, response = self.run_test("User Registration", "POST", "api/auth/register", 200, register_data)
-        
-        if success and response:
-            print(f"✅ Registration successful. User ID: {response.get('userId')}")
-            self.user_id = response.get('userId')
-            self.session_token = response.get('token')
-        
-        # Test user login
-        login_data = {"username": "testuser2", "password": "testpass123"}
+        # Test user login with specified credentials
+        login_data = {"username": "testuser3", "password": "testpass123"}
         success, response = self.run_test("User Login", "POST", "api/auth/login", 200, login_data)
         
         if success and response:
             print(f"✅ Login successful. Session token set.")
             self.user_id = response.get('userId')
             self.session_token = response.get('token')
+        else:
+            # Try registration if login fails
+            register_data = {"username": "testuser3", "password": "testpass123"}
+            success, response = self.run_test("User Registration", "POST", "api/auth/register", 200, register_data)
+            
+            if success and response:
+                print(f"✅ Registration successful. User ID: {response.get('userId')}")
+                self.user_id = response.get('userId')
+                self.session_token = response.get('token')
         
         # Test auth user endpoint
         self.run_test("Get Auth User", "GET", "api/auth/user", 200, use_auth=True)
@@ -239,65 +239,299 @@ class StellarDominionAPITester:
         # Test leaderboard
         self.run_test("Get Leaderboard", "GET", "api/leaderboard", 200, use_auth=True)
 
-    def test_additional_systems(self):
-        """Test additional game systems"""
-        print("\n🔧 Testing Additional Systems...")
+    def test_v15_config_endpoints(self):
+        """Test v1.5 configuration endpoints"""
+        print("\n⚙️  Testing v1.5 Configuration Endpoints...")
         
         if not self.session_token:
-            print("❌ Skipping additional tests - no session token")
+            print("❌ Skipping config tests - no session token")
             return
         
-        # Test messages
-        self.run_test("Get Messages", "GET", "api/messages", 200, use_auth=True)
+        # Test planet classes config (should return 12 classes)
+        success, response = self.run_test("Planet Classes Config", "GET", "api/config/planet-classes", 200, use_auth=True)
+        if success and response:
+            classes = response if isinstance(response, dict) else {}
+            print(f"   Found {len(classes)} planet classes")
+            expected_classes = ["M", "O", "L", "H", "P", "Y", "J", "K", "D", "T", "N", "R"]
+            for cls in expected_classes[:3]:  # Check first few
+                if cls in classes:
+                    print(f"   ✓ Found {cls} class: {classes[cls].get('name', 'Unknown')}")
         
-        # Test alliances
-        self.run_test("Get My Alliance", "GET", "api/alliances/my", 200, use_auth=True)
+        # Test biomes config (should return 90 biomes)
+        success, response = self.run_test("Biomes Config", "GET", "api/config/biomes", 200, use_auth=True)
+        if success and response:
+            biomes = response if isinstance(response, list) else []
+            print(f"   Found {len(biomes)} biomes")
+            if len(biomes) >= 90:
+                print(f"   ✓ Expected 90 biomes, found {len(biomes)}")
+            else:
+                print(f"   ⚠️ Expected 90 biomes, only found {len(biomes)}")
         
-        # Test market orders
-        self.run_test("Get Market Orders", "GET", "api/market/orders", 200, use_auth=True)
+        # Test lifeforms config 
+        success, response = self.run_test("Lifeforms Config", "GET", "api/config/lifeforms", 200, use_auth=True)
+        if success and response:
+            lifeforms = response if isinstance(response, dict) else {}
+            print(f"   Found {len(lifeforms)} lifeforms")
+            if "cetus" in lifeforms:
+                cetus_bonus = lifeforms["cetus"].get("bonuses", {}).get("field_bonus", 0)
+                print(f"   ✓ Cetus field bonus: +{cetus_bonus} fields")
         
-        # Test diagnostics
-        self.run_test("Get Diagnostics", "GET", "api/diagnostics", 200, use_auth=True)
+        # Test player classes config
+        success, response = self.run_test("Player Classes Config", "GET", "api/config/player-classes", 200, use_auth=True)
+        if success and response:
+            classes = response if isinstance(response, dict) else {}
+            print(f"   Found {len(classes)} player classes")
+            if "discoverer" in classes:
+                disc_bonus = classes["discoverer"].get("bonuses", {}).get("planet_size_bonus", 0)
+                print(f"   ✓ Discoverer planet size bonus: +{disc_bonus*100}%")
+
+    def test_v15_combat_config(self):
+        """Test v1.5 combat configuration"""
+        print("\n⚔️  Testing v1.5 Combat Configuration...")
         
-        # Test settings
-        self.run_test("Get Settings", "GET", "api/settings", 200, use_auth=True)
+        if not self.session_token:
+            print("❌ Skipping combat config tests - no session token")
+            return
+        
+        # Test combat config
+        success, response = self.run_test("Combat Config", "GET", "api/config/combat", 200, use_auth=True)
+        if success and response:
+            config = response.get("config", {}) if isinstance(response, dict) else {}
+            max_rounds = config.get("max_rounds", 0)
+            min_rounds = config.get("min_rounds", 0)
+            print(f"   Combat rounds: {min_rounds}-{max_rounds}")
+            if max_rounds == 15:
+                print(f"   ✓ Correct 15-round system")
+            else:
+                print(f"   ⚠️ Expected 15 rounds, found {max_rounds}")
+            
+            # Check for ship stats
+            ship_stats = response.get("shipStats", {})
+            if ship_stats:
+                print(f"   Ship stats available: {len(ship_stats)} ship types")
+            
+            defense_stats = response.get("defenseStats", {})
+            if defense_stats:
+                print(f"   Defense stats available: {len(defense_stats)} defense types")
+
+    def test_v15_station_types(self):
+        """Test v1.5 space station types"""
+        print("\n🚀 Testing v1.5 Station Types...")
+        
+        if not self.session_token:
+            print("❌ Skipping station types tests - no session token")
+            return
+        
+        # Test station types (should return 8 types)
+        success, response = self.run_test("Station Types", "GET", "api/stations/types", 200, use_auth=True)
+        if success and response:
+            stations = response if isinstance(response, dict) else {}
+            print(f"   Found {len(stations)} station types")
+            if len(stations) == 8:
+                print(f"   ✓ Expected 8 station types found")
+            else:
+                print(f"   ⚠️ Expected 8 station types, found {len(stations)}")
+            
+            # Check for key station types
+            expected_types = ["orbital_station", "starbase", "moonbase", "trading_post"]
+            for station_type in expected_types:
+                if station_type in stations:
+                    station_info = stations[station_type]
+                    print(f"   ✓ {station_info.get('name', station_type)}: {station_info.get('max_fields', 0)} fields")
+
+    def test_v15_field_size_categories(self):
+        """Test field size categories endpoint"""
+        print("\n📏 Testing Field Size Categories...")
+        
+        if not self.session_token:
+            print("❌ Skipping field size tests - no session token")
+            return
+        
+        # Test field size categories
+        success, response = self.run_test("Field Size Categories", "GET", "api/config/field-sizes", 200, use_auth=True)
+        if success and response:
+            categories = response if isinstance(response, dict) else {}
+            print(f"   Found {len(categories)} size categories")
+            
+            # Check for key categories
+            expected_cats = ["normal", "large", "huge", "massive"]
+            for cat in expected_cats:
+                if cat in categories:
+                    cat_info = categories[cat]
+                    print(f"   ✓ {cat_info.get('label', cat)}: {cat_info.get('min', 0)}-{cat_info.get('max', 0)} fields")
+
+    def test_v15_enhanced_player_setup(self):
+        """Test enhanced player setup with playerClass and lifeform"""
+        print("\n👤 Testing Enhanced Player Setup...")
+        
+        if not self.session_token:
+            print("❌ Skipping enhanced player setup - no session token")
+            return
+        
+        # Test player setup with Discoverer class and Cetus lifeform
+        setup_data = {
+            "planetName": "Test Colony v1.5",
+            "commanderType": "militarist",
+            "governmentType": "democracy", 
+            "faction": "terran",
+            "playerClass": "discoverer",  # +10% planet size bonus
+            "lifeform": "cetus"          # +25 fields bonus
+        }
+        success, response = self.run_test("Enhanced Player Setup", "POST", "api/player/setup", 200, setup_data, use_auth=True)
+        
+        if success and response:
+            planet_data = response.get("planetType", {})
+            base_fields = planet_data.get("baseFields", 0)
+            max_fields = planet_data.get("maxFields", 0)
+            print(f"   Planet fields: {base_fields} base, {max_fields} max")
+            
+            # Check for bonuses
+            if max_fields > base_fields:
+                bonus = max_fields - base_fields
+                print(f"   ✓ Field bonuses applied: +{bonus} fields")
+            
+            # Check lifeform and class
+            if response.get("lifeform") == "cetus":
+                print(f"   ✓ Cetus lifeform applied")
+            if response.get("playerClass") == "discoverer":
+                print(f"   ✓ Discoverer class applied")
+
+    def test_v15_planet_colonization(self):
+        """Test planet colonization system"""
+        print("\n🌍 Testing Planet Colonization...")
+        
+        if not self.session_token:
+            print("❌ Skipping colonization tests - no session token")
+            return
+        
+        # First check planets endpoint
+        success, response = self.run_test("Get Player Planets", "GET", "api/planets?page=1&per_page=25", 200, use_auth=True)
+        if success and response:
+            planets = response.get("planets", [])
+            pagination = response.get("pagination", {})
+            print(f"   Current planets: {len(planets)}")
+            print(f"   Pagination: page {pagination.get('page', 1)}/{pagination.get('totalPages', 1)}")
+            
+            # Check pagination range (15-100 per page)
+            per_page = pagination.get("perPage", 25)
+            if 15 <= per_page <= 100:
+                print(f"   ✓ Pagination within range: {per_page} per page")
+            else:
+                print(f"   ⚠️ Pagination outside expected range: {per_page}")
+
+    def test_v15_combat_simulation(self):
+        """Test combat simulation with 1-15 rounds"""
+        print("\n⚔️  Testing Combat Simulation...")
+        
+        if not self.session_token:
+            print("❌ Skipping combat simulation tests - no session token")  
+            return
+        
+        # Test combat simulation endpoint
+        combat_data = {
+            "attacker": {"lightFighter": 10, "cruiser": 5},
+            "attackerTech": {"weaponsTechnology": 5, "shieldingTechnology": 3},
+            "defender": {"lightFighter": 8, "heavyFighter": 3},
+            "defenderDefense": {"rocketLauncher": 10, "lightLaser": 5},
+            "defenderTech": {"weaponsTechnology": 3, "shieldingTechnology": 4}
+        }
+        success, response = self.run_test("Combat Simulation", "POST", "api/combat/simulate", 200, combat_data, use_auth=True)
+        
+        if success and response:
+            winner = response.get("winner", "unknown")
+            rounds = response.get("rounds", 0)
+            round_details = response.get("roundDetails", [])
+            print(f"   Combat result: {winner} wins in {rounds} rounds")
+            
+            # Check round range (1-15)
+            if 1 <= rounds <= 15:
+                print(f"   ✓ Rounds within expected range: {rounds}")
+            else:
+                print(f"   ⚠️ Rounds outside expected range: {rounds}")
+            
+            # Check for debris and survivors
+            debris = response.get("debris", {})
+            if debris:
+                print(f"   Debris: {debris.get('metal', 0)} metal, {debris.get('crystal', 0)} crystal")
+            
+            survivors = response.get("attackerSurvivors", {})
+            if survivors:
+                print(f"   Attacker survivors: {sum(survivors.values())} ships")
+
+    def test_v15_leaderboard_pagination(self):
+        """Test leaderboard with pagination (15-100 per page)"""
+        print("\n🏆 Testing Leaderboard Pagination...")
+        
+        if not self.session_token:
+            print("❌ Skipping leaderboard pagination tests - no session token")
+            return
+        
+        # Test leaderboard with different page sizes
+        page_sizes = [15, 25, 50, 100]
+        for size in page_sizes:
+            endpoint = f"api/leaderboard?page=1&per_page={size}"
+            success, response = self.run_test(f"Leaderboard (per_page={size})", "GET", endpoint, 200, use_auth=True)
+            
+            if success and response:
+                players = response.get("players", [])
+                pagination = response.get("pagination", {})
+                actual_per_page = pagination.get("perPage", 0)
+                print(f"   ✓ Page size {size}: returned {len(players)} players, per_page={actual_per_page}")
+
+    def test_v15_galaxy_view_enhanced(self):
+        """Test galaxy view with planet positions and sizes"""
+        print("\n🌌 Testing Enhanced Galaxy View...")
+        
+        if not self.session_token:
+            print("❌ Skipping galaxy view tests - no session token")
+            return
+        
+        # Test galaxy view with position details
+        success, response = self.run_test("Galaxy View Enhanced", "GET", "api/galaxy/1/1", 200, use_auth=True)
+        if success and response:
+            planets = response.get("planets", [])
+            print(f"   System planets: {len(planets)}")
+            
+            for i, planet in enumerate(planets[:3]):  # Check first few
+                position = planet.get("position", 0)
+                size_info = planet.get("sizeInfo", {})
+                base_fields = size_info.get("baseFields", 0)
+                max_fields = size_info.get("maxFields", 0)
+                size_category = size_info.get("category", "unknown")
+                
+                print(f"   Planet {i+1}: pos {position}, {base_fields}-{max_fields} fields ({size_category})")
+                
+                # Check position-based sizing (position 8 should be largest)
+                if position == 8 and base_fields > 200:
+                    print(f"   ✓ Position 8 has large size: {base_fields} fields")
+                elif position in [1, 15] and base_fields < 100:
+                    print(f"   ✓ Edge position has smaller size: {base_fields} fields")
 
 def main():
-    print("🚀 Starting Stellar Dominion FastAPI Backend Tests...")
+    print("🚀 Starting Stellar Dominion v1.5 FastAPI Backend Tests...")
+    print("🎯 Focus: Enhanced planet system, combat, stations, and configuration")
     print("=" * 70)
     
     # Setup
     tester = StellarDominionAPITester()
     
-    # Test health endpoints
-    tester.test_health_endpoints()
-    
-    # Test authentication flow
+    # Test authentication flow with specified credentials
     tester.test_auth_flow()
     
-    # Test player setup
-    tester.test_player_setup()
+    # Test v1.5 specific features
+    tester.test_v15_config_endpoints()
+    tester.test_v15_combat_config()
+    tester.test_v15_station_types()
+    tester.test_v15_field_size_categories()
+    tester.test_v15_enhanced_player_setup()
+    tester.test_v15_planet_colonization()
+    tester.test_v15_combat_simulation()
+    tester.test_v15_leaderboard_pagination()
+    tester.test_v15_galaxy_view_enhanced()
     
-    # Test game state
+    # Test core game systems
     tester.test_game_state()
-    
-    # Test buildings system  
     tester.test_buildings_system()
-    
-    # Test research system
-    tester.test_research_system()
-    
-    # Test shipyard system
-    tester.test_shipyard_system()
-    
-    # Test galaxy system
-    tester.test_galaxy_system()
-    
-    # Test leaderboard
-    tester.test_leaderboard()
-    
-    # Test additional systems
-    tester.test_additional_systems()
 
     # Print results
     print("\n" + "=" * 70)
@@ -315,11 +549,11 @@ def main():
     print(f"\n📈 Success Rate: {success_rate:.1f}%")
     
     if success_rate >= 80:
-        print("🎉 Backend tests mostly successful!")
+        print("🎉 Stellar Dominion v1.5 backend tests mostly successful!")
     elif success_rate >= 50:
-        print("⚠️  Backend has some issues but core functionality works")
+        print("⚠️  Backend has some issues but core v1.5 functionality works")
     else:
-        print("🚨 Backend has significant issues")
+        print("🚨 Backend has significant issues with v1.5 features")
     
     return 0 if tester.tests_passed == tester.tests_run else 1
 

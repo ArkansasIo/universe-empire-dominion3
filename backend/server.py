@@ -1,23 +1,33 @@
 """
-Stellar Dominion Backend - Complete Game Server
-A comprehensive 4X space strategy game backend using FastAPI and MongoDB
+Stellar Dominion Backend - Complete Game Server v2.0
+Enhanced with comprehensive planet system, combat, moons, stations, and empire management
 """
 import os
 import json
 import time
 import hashlib
 import secrets
+import random
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
+from math import floor
 
-from fastapi import FastAPI, HTTPException, Depends, Request, Response
+from fastapi import FastAPI, HTTPException, Depends, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 from bson import ObjectId
 from dotenv import load_dotenv
+
+# Import game configuration
+from game_config import (
+    PLANET_POSITION_SIZE, FIELD_SIZE_CATEGORIES, PLANET_CLASSES, PLANET_TYPES,
+    BIOMES, LIFEFORMS, PLAYER_CLASSES, MOON_CONFIG, MOON_FACILITIES,
+    SPACE_STATIONS, COMBAT_CONFIG, COMBAT_SHIP_STATS, COMBAT_DEFENSE_STATS,
+    TERRAFORMER_CONFIG, EMPIRE_LIMITS, ALLIANCE_BONUSES, calculate_max_planet_fields
+)
 
 load_dotenv()
 
@@ -32,10 +42,15 @@ db = client[DB_NAME]
 # Collections
 users_collection = db["users"]
 player_states_collection = db["player_states"]
+planets_collection = db["planets"]
+moons_collection = db["moons"]
+stations_collection = db["stations"]
 sessions_collection = db["sessions"]
 messages_collection = db["messages"]
 alliances_collection = db["alliances"]
 market_orders_collection = db["market_orders"]
+combat_reports_collection = db["combat_reports"]
+expeditions_collection = db["expeditions"]
 
 
 # ==================== GAME CONFIGURATION ====================
@@ -68,7 +83,10 @@ BUILDING_COSTS = {
     "missileSilo": {"metal": 20000, "crystal": 20000, "deuterium": 1000, "factor": 2.0},
     "naniteFactory": {"metal": 1000000, "crystal": 500000, "deuterium": 100000, "factor": 2.0},
     "terraformer": {"metal": 0, "crystal": 50000, "deuterium": 100000, "energy": 1000, "factor": 2.0},
-    "spaceDock": {"metal": 200, "crystal": 0, "deuterium": 50, "energy": 50, "factor": 5.0}
+    "spaceDock": {"metal": 200, "crystal": 0, "deuterium": 50, "energy": 50, "factor": 5.0},
+    "lunarBase": {"metal": 20000, "crystal": 40000, "deuterium": 20000, "factor": 2.0},
+    "sensorPhalanx": {"metal": 20000, "crystal": 40000, "deuterium": 20000, "factor": 2.0},
+    "jumpGate": {"metal": 2000000, "crystal": 4000000, "deuterium": 2000000, "factor": 2.0}
 }
 
 RESEARCH_COSTS = {
@@ -120,31 +138,11 @@ DEFENSE_COSTS = {
     "interplanetaryMissiles": {"metal": 12500, "crystal": 2500, "deuterium": 10000, "buildTime": 60}
 }
 
-COMMANDER_TEMPLATES = {
-    "militarist": {"attackBonus": 0.15, "defenseBonus": 0.05, "fleetSpeed": 0.1},
-    "economist": {"resourceBonus": 0.2, "tradingBonus": 0.15, "buildSpeed": 0.1},
-    "scientist": {"researchBonus": 0.25, "techUnlock": 0.1, "energyBonus": 0.05},
-    "explorer": {"expeditionBonus": 0.2, "discoveryBonus": 0.15, "fleetCapacity": 0.1},
-    "diplomat": {"allianceBonus": 0.15, "tradeBonus": 0.1, "peaceBonus": 0.2}
+MEGASTRUCTURES = {
+    "dysonSphere": {"metal": 5000000, "crystal": 3000000, "deuterium": 1000000, "energy": 100000},
+    "ringworld": {"metal": 10000000, "crystal": 5000000, "deuterium": 2000000, "energy": 200000},
+    "stellarEngine": {"metal": 8000000, "crystal": 4000000, "deuterium": 3000000, "energy": 150000}
 }
-
-GOVERNMENT_TYPES = {
-    "democracy": {"resourceBonus": 0.1, "researchBonus": 0.05, "happiness": 0.15},
-    "autocracy": {"attackBonus": 0.15, "buildSpeed": 0.1, "control": 0.2},
-    "oligarchy": {"tradingBonus": 0.2, "resourceBonus": 0.05, "influence": 0.15},
-    "technocracy": {"researchBonus": 0.2, "energyBonus": 0.1, "innovation": 0.15},
-    "theocracy": {"defenseBonus": 0.15, "happiness": 0.1, "unity": 0.2}
-}
-
-PLANET_TYPES = [
-    {"type": "Terran", "class": "M", "habitability": 0.9, "resourceMod": 1.0},
-    {"type": "Ocean", "class": "O", "habitability": 0.7, "resourceMod": 0.8},
-    {"type": "Desert", "class": "D", "habitability": 0.5, "resourceMod": 1.2},
-    {"type": "Ice", "class": "P", "habitability": 0.4, "resourceMod": 0.9},
-    {"type": "Volcanic", "class": "Y", "habitability": 0.3, "resourceMod": 1.5},
-    {"type": "Gas Giant", "class": "J", "habitability": 0.0, "resourceMod": 2.0},
-    {"type": "Barren", "class": "L", "habitability": 0.2, "resourceMod": 1.1}
-]
 
 
 # ==================== PYDANTIC MODELS ====================
@@ -162,6 +160,8 @@ class AccountSetup(BaseModel):
     commanderType: str = "militarist"
     governmentType: str = "democracy"
     faction: str = "terran"
+    playerClass: str = "collector"
+    lifeform: str = "humans"
 
 class BuildingUpgrade(BaseModel):
     buildingType: str
@@ -180,15 +180,28 @@ class DefenseBuild(BaseModel):
 
 class FleetMission(BaseModel):
     targetCoordinates: str
-    missionType: str  # attack, transport, colonize, espionage, expedition
+    missionType: str
     ships: Dict[str, int]
     resources: Optional[Dict[str, int]] = None
+
+class ColonizePlanet(BaseModel):
+    coordinates: str
+    planetName: str = "New Colony"
+
+class AttackMission(BaseModel):
+    targetPlayerId: str
+    targetPlanetId: str
+    ships: Dict[str, int]
+
+class StealPlanet(BaseModel):
+    targetPlanetId: str
+    ships: Dict[str, int]
 
 class MarketOrder(BaseModel):
     resourceType: str
     quantity: int
     pricePerUnit: float
-    orderType: str  # buy or sell
+    orderType: str
 
 class MessageSend(BaseModel):
     recipientId: str
@@ -199,6 +212,10 @@ class AllianceCreate(BaseModel):
     name: str
     tag: str
     description: str = ""
+
+class StationBuild(BaseModel):
+    stationType: str
+    planetId: str
 
 
 # ==================== HELPER FUNCTIONS ====================
@@ -216,68 +233,143 @@ def calculate_cost(base_costs: dict, level: int) -> dict:
     factor = base_costs.get("factor", 1.5)
     costs = {}
     for resource, amount in base_costs.items():
-        if resource != "factor" and resource != "buildTime":
+        if resource not in ["factor", "buildTime"]:
             costs[resource] = int(amount * (factor ** level))
     return costs
 
 def calculate_production(buildings: dict) -> dict:
     production = {"metal": 20, "crystal": 10, "deuterium": 0, "energy": 0}
-    
     for building, level in buildings.items():
         if building in RESOURCE_PRODUCTION and level > 0:
             for resource, base_prod in RESOURCE_PRODUCTION[building].items():
                 production[resource] = production.get(resource, 0) + int(base_prod * level * 1.1 ** level)
-    
     return production
 
 def calculate_empire_score(player_state: dict) -> int:
     score = 0
-    
-    # Buildings score
     buildings = player_state.get("buildings", {})
     for building, level in buildings.items():
         score += level * 100
-    
-    # Research score
     research = player_state.get("research", {})
     for tech, level in research.items():
         score += level * 200
-    
-    # Fleet score
     units = player_state.get("units", {})
     for unit, count in units.items():
         ship_data = SHIP_COSTS.get(unit, {})
         unit_value = (ship_data.get("metal", 0) + ship_data.get("crystal", 0) + ship_data.get("deuterium", 0)) // 1000
         score += count * unit_value
-    
-    # Defense score
     defense = player_state.get("defense", {})
     for def_type, count in defense.items():
         def_data = DEFENSE_COSTS.get(def_type, {})
         def_value = (def_data.get("metal", 0) + def_data.get("crystal", 0) + def_data.get("deuterium", 0)) // 1000
         score += count * def_value
-    
     return score
 
 def calculate_fleet_power(units: dict) -> int:
     power = 0
-    ship_power = {
-        "lightFighter": 50, "heavyFighter": 150, "cruiser": 400,
-        "battleship": 1000, "battlecruiser": 700, "bomber": 500,
-        "destroyer": 2000, "deathstar": 200000,
-        "smallCargo": 5, "largeCargo": 10, "colonyShip": 30,
-        "recycler": 20, "espionageProbe": 1, "solarSatellite": 1
-    }
     for ship, count in units.items():
-        power += ship_power.get(ship, 10) * count
+        stats = COMBAT_SHIP_STATS.get(ship, {"attack": 10})
+        power += stats["attack"] * count
     return power
 
 def generate_coordinates() -> str:
-    import random
     galaxy = random.randint(1, 9)
     system = random.randint(1, 499)
     position = random.randint(1, 15)
     return f"[{galaxy}:{system}:{position}]"
+
+def parse_coordinates(coords: str) -> tuple:
+    """Parse [galaxy:system:position] format"""
+    try:
+        cleaned = coords.strip("[]")
+        parts = cleaned.split(":")
+        return int(parts[0]), int(parts[1]), int(parts[2])
+    except:
+        return 1, 1, 1
+
+def generate_planet(position: int, player_class: str = "collector", lifeform: str = "humans") -> dict:
+    """Generate a planet with proper size based on position"""
+    pos_config = PLANET_POSITION_SIZE.get(position, PLANET_POSITION_SIZE[8])
+    
+    base_fields = random.randint(pos_config["min"], pos_config["max"])
+    temperature = random.randint(pos_config["temp_min"], pos_config["temp_max"])
+    
+    # Apply class bonus
+    class_bonus = PLAYER_CLASSES.get(player_class, {}).get("bonuses", {}).get("planet_size_bonus", 0)
+    if class_bonus > 0:
+        base_fields = int(base_fields * (1 + class_bonus))
+    
+    # Apply lifeform bonus
+    lf_bonus = LIFEFORMS.get(lifeform, {}).get("bonuses", {}).get("field_bonus", 0)
+    base_fields += lf_bonus
+    
+    # Select planet type and class
+    planet_class_id = random.choice(list(PLANET_CLASSES.keys()))
+    planet_class = PLANET_CLASSES[planet_class_id]
+    
+    planet_type_id = random.choice(list(PLANET_TYPES.keys()))
+    planet_type = PLANET_TYPES[planet_type_id]
+    subtype = random.choice(planet_type.get("subtypes", [{"id": "default", "name": "Standard"}]))
+    
+    # Select biome based on temperature
+    suitable_biomes = [b for b in BIOMES if b["temp_range"][0] <= temperature <= b["temp_range"][1]]
+    if not suitable_biomes:
+        suitable_biomes = BIOMES[:5]
+    biome = random.choice(suitable_biomes)
+    
+    # Calculate diameter
+    diameter = random.randint(8000, 16000)
+    
+    # Determine size category
+    size_category = "normal"
+    for cat_id, cat_data in FIELD_SIZE_CATEGORIES.items():
+        if cat_data["min"] <= base_fields <= cat_data["max"]:
+            size_category = cat_id
+            break
+    
+    return {
+        "baseFields": base_fields,
+        "currentFields": 0,
+        "maxFields": base_fields,
+        "temperature": temperature,
+        "diameter": diameter,
+        "planetClass": planet_class_id,
+        "planetClassName": planet_class["name"],
+        "planetType": planet_type_id,
+        "planetTypeName": planet_type["name"],
+        "planetSubtype": subtype["id"],
+        "planetSubtypeName": subtype["name"],
+        "biomeId": biome["id"],
+        "biomeName": biome["name"],
+        "habitability": planet_class["habitability"],
+        "resourceMod": planet_class["resource_mod"],
+        "energyMod": planet_class.get("energy_mod", 1.0),
+        "metalBonus": subtype.get("metal_bonus", 1.0),
+        "crystalBonus": subtype.get("crystal_bonus", 1.0),
+        "deuteriumBonus": subtype.get("deuterium_bonus", 1.0),
+        "sizeCategory": size_category,
+        "position": position
+    }
+
+def generate_moon(debris_amount: int = 100000) -> Optional[dict]:
+    """Generate moon based on debris from combat"""
+    chance = min(debris_amount / MOON_CONFIG["debris_per_percent"] * MOON_CONFIG["base_chance"], MOON_CONFIG["max_chance"])
+    
+    if random.random() > chance:
+        return None
+    
+    diameter = random.randint(2000, 8947)
+    base_fields = MOON_CONFIG["moon_base_fields"] + int(diameter * MOON_CONFIG["field_per_diameter_km"])
+    
+    return {
+        "diameter": diameter,
+        "baseFields": base_fields,
+        "maxFields": base_fields,
+        "currentFields": 0,
+        "temperature": random.randint(-100, -20),
+        "facilities": {facility: 0 for facility in MOON_FACILITIES.keys()},
+        "createdAt": get_timestamp()
+    }
 
 def serialize_doc(doc):
     """Convert MongoDB document to JSON-serializable format"""
@@ -302,6 +394,188 @@ def serialize_doc(doc):
     return doc
 
 
+# ==================== COMBAT SYSTEM ====================
+
+def simulate_combat(attacker_fleet: dict, attacker_tech: dict, defender_fleet: dict, defender_defense: dict, defender_tech: dict) -> dict:
+    """
+    OGame-style combat simulation with 1-15 rounds
+    """
+    battle_log = []
+    rounds = []
+    
+    # Initialize combatants
+    attacker_units = []
+    for ship_type, count in attacker_fleet.items():
+        stats = COMBAT_SHIP_STATS.get(ship_type, {"attack": 10, "shield": 10, "hull": 100})
+        for i in range(count):
+            attacker_units.append({
+                "type": ship_type,
+                "attack": stats["attack"],
+                "shield": stats["shield"],
+                "maxShield": stats["shield"],
+                "hull": stats["hull"],
+                "maxHull": stats["hull"],
+                "rapidfire": stats.get("rapidfire", {})
+            })
+    
+    defender_units = []
+    for ship_type, count in defender_fleet.items():
+        stats = COMBAT_SHIP_STATS.get(ship_type, {"attack": 10, "shield": 10, "hull": 100})
+        for i in range(count):
+            defender_units.append({
+                "type": ship_type,
+                "attack": stats["attack"],
+                "shield": stats["shield"],
+                "maxShield": stats["shield"],
+                "hull": stats["hull"],
+                "maxHull": stats["hull"],
+                "rapidfire": stats.get("rapidfire", {}),
+                "isShip": True
+            })
+    
+    for def_type, count in defender_defense.items():
+        stats = COMBAT_DEFENSE_STATS.get(def_type, {"attack": 10, "shield": 10, "hull": 100})
+        for i in range(count):
+            defender_units.append({
+                "type": def_type,
+                "attack": stats["attack"],
+                "shield": stats["shield"],
+                "maxShield": stats["shield"],
+                "hull": stats["hull"],
+                "maxHull": stats["hull"],
+                "rapidfire": {},
+                "isShip": False
+            })
+    
+    battle_log.append(f"Battle begins: {len(attacker_units)} attacking units vs {len(defender_units)} defending units")
+    
+    # Combat rounds (1-15)
+    for round_num in range(1, COMBAT_CONFIG["max_rounds"] + 1):
+        if not attacker_units or not defender_units:
+            break
+        
+        round_log = {"round": round_num, "events": []}
+        
+        # Regenerate shields
+        for unit in attacker_units + defender_units:
+            unit["shield"] = min(unit["shield"] + unit["maxShield"] * COMBAT_CONFIG["shield_regeneration"], unit["maxShield"])
+        
+        # Attacker fires
+        attacker_destroyed = 0
+        for attacker in attacker_units:
+            if not defender_units:
+                break
+            
+            target_idx = random.randint(0, len(defender_units) - 1)
+            target = defender_units[target_idx]
+            
+            damage = attacker["attack"]
+            
+            # Apply damage to shield first
+            if target["shield"] > 0:
+                shield_damage = min(damage, target["shield"])
+                target["shield"] -= shield_damage
+                damage -= shield_damage
+            
+            # Remaining damage to hull
+            if damage > 0:
+                target["hull"] -= damage
+                if target["hull"] <= 0:
+                    defender_units.pop(target_idx)
+                    attacker_destroyed += 1
+                    round_log["events"].append(f"Attacker {attacker['type']} destroyed defender {target['type']}")
+            
+            # Rapidfire
+            if attacker["rapidfire"].get(target["type"]):
+                rf_chance = 1 - 1 / attacker["rapidfire"][target["type"]]
+                while random.random() < rf_chance and defender_units:
+                    target_idx = random.randint(0, len(defender_units) - 1)
+                    target = defender_units[target_idx]
+                    target["hull"] -= attacker["attack"]
+                    if target["hull"] <= 0:
+                        defender_units.pop(target_idx)
+                        attacker_destroyed += 1
+        
+        # Defender fires
+        defender_destroyed = 0
+        for defender in defender_units:
+            if not attacker_units:
+                break
+            
+            target_idx = random.randint(0, len(attacker_units) - 1)
+            target = attacker_units[target_idx]
+            
+            damage = defender["attack"]
+            
+            if target["shield"] > 0:
+                shield_damage = min(damage, target["shield"])
+                target["shield"] -= shield_damage
+                damage -= shield_damage
+            
+            if damage > 0:
+                target["hull"] -= damage
+                if target["hull"] <= 0:
+                    attacker_units.pop(target_idx)
+                    defender_destroyed += 1
+                    round_log["events"].append(f"Defender {defender['type']} destroyed attacker {target['type']}")
+        
+        round_log["attackerRemaining"] = len(attacker_units)
+        round_log["defenderRemaining"] = len(defender_units)
+        round_log["attackerLost"] = defender_destroyed
+        round_log["defenderLost"] = attacker_destroyed
+        rounds.append(round_log)
+        
+        battle_log.append(f"Round {round_num}: Attacker lost {defender_destroyed}, Defender lost {attacker_destroyed}")
+    
+    # Determine winner
+    if not defender_units:
+        winner = "attacker"
+    elif not attacker_units:
+        winner = "defender"
+    else:
+        # Draw - compare remaining power
+        attacker_power = sum(u["hull"] for u in attacker_units)
+        defender_power = sum(u["hull"] for u in defender_units)
+        winner = "attacker" if attacker_power > defender_power else "defender"
+    
+    # Calculate debris
+    total_metal = 0
+    total_crystal = 0
+    for ship_type, count in attacker_fleet.items():
+        remaining = len([u for u in attacker_units if u["type"] == ship_type])
+        destroyed = count - remaining
+        cost = SHIP_COSTS.get(ship_type, {})
+        total_metal += int(cost.get("metal", 0) * destroyed * COMBAT_CONFIG["debris_rate"])
+        total_crystal += int(cost.get("crystal", 0) * destroyed * COMBAT_CONFIG["debris_rate"])
+    
+    for ship_type, count in defender_fleet.items():
+        remaining = len([u for u in defender_units if u["type"] == ship_type and u.get("isShip")])
+        destroyed = count - remaining
+        cost = SHIP_COSTS.get(ship_type, {})
+        total_metal += int(cost.get("metal", 0) * destroyed * COMBAT_CONFIG["debris_rate"])
+        total_crystal += int(cost.get("crystal", 0) * destroyed * COMBAT_CONFIG["debris_rate"])
+    
+    # Calculate surviving units
+    attacker_survivors = {}
+    for unit in attacker_units:
+        attacker_survivors[unit["type"]] = attacker_survivors.get(unit["type"], 0) + 1
+    
+    defender_survivors = {}
+    for unit in defender_units:
+        defender_survivors[unit["type"]] = defender_survivors.get(unit["type"], 0) + 1
+    
+    return {
+        "winner": winner,
+        "rounds": len(rounds),
+        "roundDetails": rounds,
+        "battleLog": battle_log,
+        "debris": {"metal": total_metal, "crystal": total_crystal},
+        "attackerSurvivors": attacker_survivors,
+        "defenderSurvivors": defender_survivors,
+        "moonChance": min(total_metal / MOON_CONFIG["debris_per_percent"] * MOON_CONFIG["base_chance"], MOON_CONFIG["max_chance"])
+    }
+
+
 # ==================== SESSION MANAGEMENT ====================
 
 sessions_store: Dict[str, dict] = {}
@@ -312,7 +586,6 @@ def get_session(request: Request) -> Optional[dict]:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header[7:]
-    
     if token and token in sessions_store:
         return sessions_store[token]
     return None
@@ -328,28 +601,26 @@ def require_auth(request: Request) -> dict:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    print("🚀 Stellar Dominion Server Starting...")
-    
-    # Create indexes
+    print("🚀 Stellar Dominion Server v2.0 Starting...")
     users_collection.create_index("username", unique=True)
     player_states_collection.create_index("userId")
-    sessions_collection.create_index("token", unique=True)
-    
+    planets_collection.create_index("userId")
+    planets_collection.create_index("coordinates")
+    moons_collection.create_index("planetId")
+    stations_collection.create_index("userId")
+    combat_reports_collection.create_index([("attackerId", 1), ("createdAt", -1)])
     print("✅ Database indexes created")
     print(f"📊 Connected to MongoDB: {DB_NAME}")
     yield
-    # Shutdown
     print("👋 Stellar Dominion Server Shutting Down...")
 
 app = FastAPI(
-    title="Stellar Dominion API",
-    description="A comprehensive 4X space strategy game backend",
-    version="1.0.0",
+    title="Stellar Dominion API v2.0",
+    description="A comprehensive 4X space strategy game backend with enhanced planet system",
+    version="2.0.0",
     lifespan=lifespan
 )
 
-# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -363,12 +634,10 @@ app.add_middleware(
 
 @app.post("/api/auth/register")
 async def register(data: UserRegister, response: Response):
-    # Check if user exists
     existing = users_collection.find_one({"username": data.username})
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
     
-    # Create user
     user_doc = {
         "username": data.username,
         "passwordHash": hash_password(data.password),
@@ -378,10 +647,8 @@ async def register(data: UserRegister, response: Response):
     result = users_collection.insert_one(user_doc)
     user_id = str(result.inserted_id)
     
-    # Create session
     token = generate_session_token()
     sessions_store[token] = {"userId": user_id, "username": data.username}
-    
     response.set_cookie(key="session_token", value=token, httponly=True, samesite="lax")
     
     return {"userId": user_id, "username": data.username, "token": token}
@@ -394,11 +661,8 @@ async def login(data: UserLogin, response: Response):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     user_id = str(user["_id"])
-    
-    # Create session
     token = generate_session_token()
     sessions_store[token] = {"userId": user_id, "username": data.username}
-    
     response.set_cookie(key="session_token", value=token, httponly=True, samesite="lax")
     
     return {"userId": user_id, "username": data.username, "token": token}
@@ -418,9 +682,7 @@ async def get_current_user(request: Request):
     session = get_session(request)
     if not session:
         return {"authenticated": False}
-    
     player_state = player_states_collection.find_one({"userId": session["userId"]})
-    
     return {
         "authenticated": True,
         "userId": session["userId"],
@@ -431,15 +693,11 @@ async def get_current_user(request: Request):
 
 @app.get("/api/auth/user")
 async def get_auth_user(request: Request):
-    """Endpoint for frontend auth check"""
     session = get_session(request)
     if not session:
-        # Return null/empty for unauthenticated - frontend handles this
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
     player_state = player_states_collection.find_one({"userId": session["userId"]})
     needs_setup = player_state is None or not player_state.get("setupComplete", False)
-    
     return {
         "id": session["userId"],
         "username": session["username"],
@@ -449,56 +707,68 @@ async def get_auth_user(request: Request):
     }
 
 
-# ==================== PLAYER STATE ENDPOINTS ====================
+# ==================== PLAYER STATE & SETUP ====================
 
 @app.post("/api/player/setup")
 async def setup_player(data: AccountSetup, request: Request):
     session = require_auth(request)
     user_id = session["userId"]
     
-    # Check if already setup
     existing = player_states_collection.find_one({"userId": user_id})
     if existing and existing.get("setupComplete"):
         raise HTTPException(status_code=400, detail="Account already setup")
     
-    # Generate random coordinates
-    coordinates = generate_coordinates()
+    # Generate homeworld at position 8 (optimal)
+    position = 8
+    galaxy = random.randint(1, 9)
+    system = random.randint(1, 499)
+    coordinates = f"[{galaxy}:{system}:{position}]"
     
-    # Get planet type
-    import random
-    planet_type = random.choice(PLANET_TYPES)
+    # Generate planet with class and lifeform bonuses
+    planet_data = generate_planet(position, data.playerClass, data.lifeform)
     
-    # Create commander based on type
-    commander_bonuses = COMMANDER_TEMPLATES.get(data.commanderType, COMMANDER_TEMPLATES["militarist"])
+    # Commander config
+    commander_templates = {
+        "militarist": {"attackBonus": 0.15, "defenseBonus": 0.05, "fleetSpeed": 0.1},
+        "economist": {"resourceBonus": 0.2, "tradingBonus": 0.15, "buildSpeed": 0.1},
+        "scientist": {"researchBonus": 0.25, "techUnlock": 0.1, "energyBonus": 0.05},
+        "explorer": {"expeditionBonus": 0.2, "discoveryBonus": 0.15, "fleetCapacity": 0.1},
+        "diplomat": {"allianceBonus": 0.15, "tradeBonus": 0.1, "peaceBonus": 0.2}
+    }
     commander = {
         "name": "Commander",
         "type": data.commanderType,
         "level": 1,
         "experience": 0,
-        "bonuses": commander_bonuses,
+        "bonuses": commander_templates.get(data.commanderType, commander_templates["militarist"]),
         "skills": [],
         "equipment": []
     }
     
-    # Create government
-    gov_bonuses = GOVERNMENT_TYPES.get(data.governmentType, GOVERNMENT_TYPES["democracy"])
+    # Government config
+    government_types = {
+        "democracy": {"resourceBonus": 0.1, "researchBonus": 0.05, "happiness": 0.15},
+        "autocracy": {"attackBonus": 0.15, "buildSpeed": 0.1, "control": 0.2},
+        "oligarchy": {"tradingBonus": 0.2, "resourceBonus": 0.05, "influence": 0.15},
+        "technocracy": {"researchBonus": 0.2, "energyBonus": 0.1, "innovation": 0.15},
+        "theocracy": {"defenseBonus": 0.15, "happiness": 0.1, "unity": 0.2}
+    }
     government = {
         "type": data.governmentType,
         "stability": 100,
         "approval": 75,
-        "bonuses": gov_bonuses,
+        "bonuses": government_types.get(data.governmentType, government_types["democracy"]),
         "policies": [],
         "leaders": []
     }
     
-    # Create initial player state
-    player_state = {
+    # Create planet document
+    planet_doc = {
         "userId": user_id,
-        "setupComplete": True,
-        "planetName": data.planetName,
-        "planetType": planet_type,
+        "name": data.planetName,
         "coordinates": coordinates,
-        "faction": data.faction,
+        "isHomeworld": True,
+        **planet_data,
         "resources": INITIAL_RESOURCES.copy(),
         "buildings": {
             "metalMine": 1,
@@ -507,20 +777,41 @@ async def setup_player(data: AccountSetup, request: Request):
             "solarPlant": 1,
             "roboticsFactory": 0,
             "shipyard": 0,
-            "researchLab": 0
+            "researchLab": 0,
+            "terraformer": 0
         },
-        "research": {},
         "units": {},
         "defense": {},
+        "moon": None,
+        "createdAt": get_timestamp()
+    }
+    planet_result = planets_collection.insert_one(planet_doc)
+    planet_id = str(planet_result.inserted_id)
+    
+    # Create player state
+    player_state = {
+        "userId": user_id,
+        "setupComplete": True,
+        "playerClass": data.playerClass,
+        "lifeform": data.lifeform,
+        "faction": data.faction,
         "commander": commander,
         "government": government,
+        "homeworldId": planet_id,
+        "currentPlanetId": planet_id,
+        "planets": [planet_id],
+        "moons": [],
+        "stations": [],
+        "research": {},
         "empireLevel": 1,
         "empireExperience": 0,
         "tier": 1,
         "tierExperience": 0,
         "totalTurns": 0,
         "currentTurns": 100,
-        "knownPlanets": [{"name": data.planetName, "coordinates": coordinates, "type": planet_type}],
+        "maxPlanets": EMPIRE_LIMITS["max_planets"],
+        "totalFields": planet_data["maxFields"],
+        "usedFields": 0,
         "missions": [],
         "buildQueue": [],
         "researchQueue": [],
@@ -534,7 +825,17 @@ async def setup_player(data: AccountSetup, request: Request):
     else:
         player_states_collection.insert_one(player_state)
     
-    return serialize_doc(player_state)
+    # Return combined state for frontend
+    result = serialize_doc(player_state)
+    result["planetName"] = data.planetName
+    result["coordinates"] = coordinates
+    result["planetType"] = planet_data
+    result["resources"] = INITIAL_RESOURCES.copy()
+    result["buildings"] = planet_doc["buildings"]
+    result["units"] = {}
+    result["defense"] = {}
+    
+    return result
 
 
 @app.get("/api/player/state")
@@ -546,34 +847,27 @@ async def get_player_state(request: Request):
     if not player_state:
         return {"needsSetup": True}
     
-    # Calculate current production
-    production = calculate_production(player_state.get("buildings", {}))
+    # Get current planet
+    current_planet_id = player_state.get("currentPlanetId")
+    if current_planet_id:
+        planet = planets_collection.find_one({"_id": ObjectId(current_planet_id)})
+        if planet:
+            player_state["planetName"] = planet.get("name")
+            player_state["coordinates"] = planet.get("coordinates")
+            player_state["planetType"] = {
+                "type": planet.get("planetTypeName"),
+                "class": planet.get("planetClass"),
+                "habitability": planet.get("habitability"),
+                "resourceMod": planet.get("resourceMod")
+            }
+            player_state["resources"] = planet.get("resources", INITIAL_RESOURCES.copy())
+            player_state["buildings"] = planet.get("buildings", {})
+            player_state["units"] = planet.get("units", {})
+            player_state["defense"] = planet.get("defense", {})
     
-    # Calculate scores
+    production = calculate_production(player_state.get("buildings", {}))
     empire_score = calculate_empire_score(player_state)
     fleet_power = calculate_fleet_power(player_state.get("units", {}))
-    
-    # Update resources based on time passed
-    last_update = player_state.get("lastResourceUpdate", get_timestamp())
-    if isinstance(last_update, str):
-        last_update = datetime.fromisoformat(last_update.replace("Z", "+00:00"))
-    elif isinstance(last_update, datetime) and last_update.tzinfo is None:
-        last_update = last_update.replace(tzinfo=timezone.utc)
-    
-    now = get_timestamp()
-    hours_passed = (now - last_update).total_seconds() / 3600
-    
-    if hours_passed > 0:
-        resources = player_state.get("resources", INITIAL_RESOURCES.copy())
-        for resource, rate in production.items():
-            if rate > 0:
-                resources[resource] = resources.get(resource, 0) + int(rate * hours_passed)
-        
-        player_states_collection.update_one(
-            {"userId": user_id},
-            {"$set": {"resources": resources, "lastResourceUpdate": now}}
-        )
-        player_state["resources"] = resources
     
     result = serialize_doc(player_state)
     result["production"] = production
@@ -585,7 +879,6 @@ async def get_player_state(request: Request):
 
 @app.get("/api/game/state")
 async def get_game_state(request: Request):
-    """Endpoint for frontend game state - alias for player/state"""
     session = require_auth(request)
     user_id = session["userId"]
     
@@ -593,40 +886,38 @@ async def get_game_state(request: Request):
     if not player_state:
         return {"setupComplete": False}
     
-    # Calculate current production
-    production = calculate_production(player_state.get("buildings", {}))
+    # Get current planet data
+    current_planet_id = player_state.get("currentPlanetId")
+    planet = None
+    if current_planet_id:
+        planet = planets_collection.find_one({"_id": ObjectId(current_planet_id)})
     
-    # Calculate scores
+    if planet:
+        player_state["planetName"] = planet.get("name")
+        player_state["coordinates"] = planet.get("coordinates")
+        player_state["planetType"] = {
+            "type": planet.get("planetTypeName"),
+            "class": planet.get("planetClass"),
+            "habitability": planet.get("habitability"),
+            "resourceMod": planet.get("resourceMod")
+        }
+        player_state["resources"] = planet.get("resources", INITIAL_RESOURCES.copy())
+        player_state["buildings"] = planet.get("buildings", {})
+        player_state["units"] = planet.get("units", {})
+        player_state["defense"] = planet.get("defense", {})
+        player_state["planetData"] = {
+            "baseFields": planet.get("baseFields"),
+            "maxFields": planet.get("maxFields"),
+            "currentFields": planet.get("currentFields", 0),
+            "temperature": planet.get("temperature"),
+            "diameter": planet.get("diameter"),
+            "biome": planet.get("biomeName"),
+            "sizeCategory": planet.get("sizeCategory")
+        }
+    
+    production = calculate_production(player_state.get("buildings", {}))
     empire_score = calculate_empire_score(player_state)
     fleet_power = calculate_fleet_power(player_state.get("units", {}))
-    
-    # Update resources based on time passed
-    now = get_timestamp()
-    last_update = player_state.get("lastResourceUpdate")
-    
-    hours_passed = 0
-    if last_update:
-        try:
-            if isinstance(last_update, str):
-                last_update = datetime.fromisoformat(last_update.replace("Z", "+00:00"))
-            elif isinstance(last_update, datetime):
-                if last_update.tzinfo is None:
-                    last_update = last_update.replace(tzinfo=timezone.utc)
-            hours_passed = (now - last_update).total_seconds() / 3600
-        except:
-            hours_passed = 0
-    
-    if hours_passed > 0.01:  # Update if more than 36 seconds passed
-        resources = player_state.get("resources", INITIAL_RESOURCES.copy())
-        for resource, rate in production.items():
-            if rate > 0:
-                resources[resource] = resources.get(resource, 0) + int(rate * hours_passed)
-        
-        player_states_collection.update_one(
-            {"userId": user_id},
-            {"$set": {"resources": resources, "lastResourceUpdate": now}}
-        )
-        player_state["resources"] = resources
     
     result = serialize_doc(player_state)
     result["production"] = production
@@ -636,53 +927,262 @@ async def get_game_state(request: Request):
     return result
 
 
-@app.put("/api/player/state")
-async def update_player_state(request: Request):
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    data = await request.json()
-    
-    # Remove protected fields
-    protected_fields = ["_id", "userId", "createdAt"]
-    for field in protected_fields:
-        data.pop(field, None)
-    
-    data["updatedAt"] = get_timestamp()
-    
-    result = player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": data}
-    )
-    
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    return {"success": True}
-
-
 @app.put("/api/game/state")
 async def save_game_state(request: Request):
-    """Endpoint for frontend to save game state"""
     session = require_auth(request)
     user_id = session["userId"]
-    
     data = await request.json()
     
-    # Remove protected fields
     protected_fields = ["_id", "userId", "createdAt", "id"]
     for field in protected_fields:
         data.pop(field, None)
-    
     data["updatedAt"] = get_timestamp()
     
-    result = player_states_collection.update_one(
+    player_states_collection.update_one({"userId": user_id}, {"$set": data}, upsert=True)
+    return {"success": True}
+
+
+# ==================== PLANETS ENDPOINTS ====================
+
+@app.get("/api/planets")
+async def get_player_planets(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=EMPIRE_LIMITS["min_page_size"], le=EMPIRE_LIMITS["max_page_size"])
+):
+    """Get all planets for current player with pagination"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    total = planets_collection.count_documents({"userId": user_id})
+    skip = (page - 1) * per_page
+    
+    planets = list(planets_collection.find({"userId": user_id}).skip(skip).limit(per_page))
+    
+    return {
+        "planets": [serialize_doc(p) for p in planets],
+        "pagination": {
+            "page": page,
+            "perPage": per_page,
+            "total": total,
+            "totalPages": (total + per_page - 1) // per_page
+        }
+    }
+
+
+@app.get("/api/planets/{planet_id}")
+async def get_planet(planet_id: str, request: Request):
+    """Get specific planet details"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id), "userId": user_id})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    # Get moon if exists
+    moon = moons_collection.find_one({"planetId": planet_id})
+    if moon:
+        planet["moon"] = serialize_doc(moon)
+    
+    return serialize_doc(planet)
+
+
+@app.post("/api/planets/select/{planet_id}")
+async def select_planet(planet_id: str, request: Request):
+    """Switch to a different planet"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id), "userId": user_id})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    player_states_collection.update_one(
         {"userId": user_id},
-        {"$set": data},
-        upsert=True
+        {"$set": {"currentPlanetId": planet_id, "updatedAt": get_timestamp()}}
     )
     
-    return {"success": True}
+    return {"success": True, "planetId": planet_id}
+
+
+@app.post("/api/planets/colonize")
+async def colonize_planet(data: ColonizePlanet, request: Request):
+    """Colonize a new planet"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Check planet limit
+    current_planets = len(player_state.get("planets", []))
+    max_planets = player_state.get("maxPlanets", EMPIRE_LIMITS["max_planets"])
+    
+    if current_planets >= max_planets:
+        raise HTTPException(status_code=400, detail=f"Maximum planets reached ({max_planets})")
+    
+    # Check if coordinates are available
+    existing = planets_collection.find_one({"coordinates": data.coordinates})
+    if existing:
+        raise HTTPException(status_code=400, detail="Coordinates already occupied")
+    
+    # Check for colony ship
+    current_planet_id = player_state.get("currentPlanetId")
+    current_planet = planets_collection.find_one({"_id": ObjectId(current_planet_id)})
+    
+    if not current_planet or current_planet.get("units", {}).get("colonyShip", 0) < 1:
+        raise HTTPException(status_code=400, detail="Colony ship required")
+    
+    # Parse coordinates
+    galaxy, system, position = parse_coordinates(data.coordinates)
+    
+    # Generate new planet
+    player_class = player_state.get("playerClass", "collector")
+    lifeform = player_state.get("lifeform", "humans")
+    planet_data = generate_planet(position, player_class, lifeform)
+    
+    # Create planet
+    planet_doc = {
+        "userId": user_id,
+        "name": data.planetName,
+        "coordinates": data.coordinates,
+        "isHomeworld": False,
+        **planet_data,
+        "resources": {"metal": 500, "crystal": 500, "deuterium": 0, "energy": 0},
+        "buildings": {},
+        "units": {},
+        "defense": {},
+        "moon": None,
+        "createdAt": get_timestamp()
+    }
+    result = planets_collection.insert_one(planet_doc)
+    planet_id = str(result.inserted_id)
+    
+    # Remove colony ship from current planet
+    current_planet["units"]["colonyShip"] -= 1
+    planets_collection.update_one(
+        {"_id": ObjectId(current_planet_id)},
+        {"$set": {"units": current_planet["units"]}}
+    )
+    
+    # Update player state
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {
+            "$push": {"planets": planet_id},
+            "$set": {"updatedAt": get_timestamp()},
+            "$inc": {"totalFields": planet_data["maxFields"]}
+        }
+    )
+    
+    return {"success": True, "planetId": planet_id, "planet": serialize_doc(planet_doc)}
+
+
+# ==================== MOONS ENDPOINTS ====================
+
+@app.get("/api/moons")
+async def get_player_moons(request: Request):
+    """Get all moons for current player"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Get all player planets first
+    planets = list(planets_collection.find({"userId": user_id}))
+    planet_ids = [str(p["_id"]) for p in planets]
+    
+    moons = list(moons_collection.find({"planetId": {"$in": planet_ids}}))
+    
+    return {"moons": [serialize_doc(m) for m in moons]}
+
+
+@app.get("/api/moons/{moon_id}")
+async def get_moon(moon_id: str, request: Request):
+    """Get specific moon details"""
+    session = require_auth(request)
+    
+    moon = moons_collection.find_one({"_id": ObjectId(moon_id)})
+    if not moon:
+        raise HTTPException(status_code=404, detail="Moon not found")
+    
+    return serialize_doc(moon)
+
+
+# ==================== STATIONS ENDPOINTS ====================
+
+@app.get("/api/stations")
+async def get_player_stations(request: Request):
+    """Get all space stations for current player"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    stations = list(stations_collection.find({"userId": user_id}))
+    return {"stations": [serialize_doc(s) for s in stations]}
+
+
+@app.post("/api/stations/build")
+async def build_station(data: StationBuild, request: Request):
+    """Build a new space station"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    station_type = SPACE_STATIONS.get(data.stationType)
+    if not station_type:
+        raise HTTPException(status_code=400, detail="Invalid station type")
+    
+    # Check resources
+    planet = planets_collection.find_one({"_id": ObjectId(data.planetId), "userId": user_id})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    resources = planet.get("resources", {})
+    cost = station_type["cost"]
+    
+    for resource, amount in cost.items():
+        if resources.get(resource, 0) < amount:
+            raise HTTPException(status_code=400, detail=f"Not enough {resource}")
+    
+    # Deduct resources
+    for resource, amount in cost.items():
+        resources[resource] -= amount
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(data.planetId)},
+        {"$set": {"resources": resources}}
+    )
+    
+    # Create station
+    station_doc = {
+        "userId": user_id,
+        "planetId": data.planetId,
+        "type": data.stationType,
+        "name": station_type["name"],
+        "maxFields": station_type["max_fields"],
+        "currentFields": 0,
+        "bonuses": station_type["bonuses"],
+        "buildings": {},
+        "units": {},
+        "defense": {},
+        "createdAt": get_timestamp()
+    }
+    
+    result = stations_collection.insert_one(station_doc)
+    station_id = str(result.inserted_id)
+    
+    # Update player state
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {"$push": {"stations": station_id}}
+    )
+    
+    return {"success": True, "stationId": station_id, "station": serialize_doc(station_doc)}
+
+
+@app.get("/api/stations/types")
+async def get_station_types(request: Request):
+    """Get available station types"""
+    return SPACE_STATIONS
 
 
 # ==================== BUILDINGS ENDPOINTS ====================
@@ -696,38 +1196,56 @@ async def upgrade_building(data: BuildingUpgrade, request: Request):
     if not player_state:
         raise HTTPException(status_code=404, detail="Player state not found")
     
-    buildings = player_state.get("buildings", {})
+    planet_id = data.planetId or player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id), "userId": user_id})
+    
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    buildings = planet.get("buildings", {})
     current_level = buildings.get(data.buildingType, 0)
     
-    # Get building cost
     base_cost = BUILDING_COSTS.get(data.buildingType)
     if not base_cost:
         raise HTTPException(status_code=400, detail="Invalid building type")
     
     cost = calculate_cost(base_cost, current_level)
+    resources = planet.get("resources", {})
     
-    # Check resources
-    resources = player_state.get("resources", {})
     for resource, amount in cost.items():
         if resources.get(resource, 0) < amount:
             raise HTTPException(status_code=400, detail=f"Not enough {resource}")
     
-    # Deduct resources and upgrade
     for resource, amount in cost.items():
         resources[resource] -= amount
     
     buildings[data.buildingType] = current_level + 1
     
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"buildings": buildings, "resources": resources, "updatedAt": get_timestamp()}}
+    # Update fields used
+    current_fields = planet.get("currentFields", 0) + 1
+    
+    # If terraformer, increase max fields
+    max_fields = planet.get("maxFields", 100)
+    if data.buildingType == "terraformer":
+        max_fields += TERRAFORMER_CONFIG["fields_per_level"]
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {
+            "buildings": buildings,
+            "resources": resources,
+            "currentFields": current_fields,
+            "maxFields": max_fields
+        }}
     )
     
     return {
         "success": True,
         "buildingType": data.buildingType,
         "newLevel": current_level + 1,
-        "cost": cost
+        "cost": cost,
+        "fieldsUsed": current_fields,
+        "maxFields": max_fields
     }
 
 
@@ -740,7 +1258,10 @@ async def get_building_costs(request: Request):
     if not player_state:
         raise HTTPException(status_code=404, detail="Player state not found")
     
-    buildings = player_state.get("buildings", {})
+    planet_id = player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
+    
+    buildings = planet.get("buildings", {}) if planet else {}
     costs = {}
     
     for building_type, base_cost in BUILDING_COSTS.items():
@@ -764,36 +1285,39 @@ async def start_research(data: ResearchStart, request: Request):
     if not player_state:
         raise HTTPException(status_code=404, detail="Player state not found")
     
-    # Check if research lab exists
-    buildings = player_state.get("buildings", {})
-    if buildings.get("researchLab", 0) < 1:
+    planet_id = player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
+    
+    if not planet or planet.get("buildings", {}).get("researchLab", 0) < 1:
         raise HTTPException(status_code=400, detail="Research lab required")
     
     research = player_state.get("research", {})
     current_level = research.get(data.techId, 0)
     
-    # Get research cost
     base_cost = RESEARCH_COSTS.get(data.techId)
     if not base_cost:
         raise HTTPException(status_code=400, detail="Invalid research type")
     
     cost = calculate_cost(base_cost, current_level)
+    resources = planet.get("resources", {})
     
-    # Check resources
-    resources = player_state.get("resources", {})
     for resource, amount in cost.items():
         if resources.get(resource, 0) < amount:
             raise HTTPException(status_code=400, detail=f"Not enough {resource}")
     
-    # Deduct resources and upgrade research
     for resource, amount in cost.items():
         resources[resource] -= amount
     
     research[data.techId] = current_level + 1
     
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {"resources": resources}}
+    )
+    
     player_states_collection.update_one(
         {"userId": user_id},
-        {"$set": {"research": research, "resources": resources, "updatedAt": get_timestamp()}}
+        {"$set": {"research": research, "updatedAt": get_timestamp()}}
     )
     
     return {
@@ -810,12 +1334,9 @@ async def get_available_research(request: Request):
     user_id = session["userId"]
     
     player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
+    research = player_state.get("research", {}) if player_state else {}
     
-    research = player_state.get("research", {})
     available = []
-    
     for tech_id, base_cost in RESEARCH_COSTS.items():
         current_level = research.get(tech_id, 0)
         available.append({
@@ -838,38 +1359,35 @@ async def build_ships(data: ShipBuild, request: Request):
     if not player_state:
         raise HTTPException(status_code=404, detail="Player state not found")
     
-    # Check shipyard
-    buildings = player_state.get("buildings", {})
-    if buildings.get("shipyard", 0) < 1:
+    planet_id = player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
+    
+    if not planet or planet.get("buildings", {}).get("shipyard", 0) < 1:
         raise HTTPException(status_code=400, detail="Shipyard required")
     
-    # Get ship cost
     ship_cost = SHIP_COSTS.get(data.shipType)
     if not ship_cost:
         raise HTTPException(status_code=400, detail="Invalid ship type")
     
-    # Calculate total cost
     total_cost = {}
     for resource, amount in ship_cost.items():
         if resource != "buildTime":
             total_cost[resource] = amount * data.quantity
     
-    # Check resources
-    resources = player_state.get("resources", {})
+    resources = planet.get("resources", {})
     for resource, amount in total_cost.items():
         if resources.get(resource, 0) < amount:
             raise HTTPException(status_code=400, detail=f"Not enough {resource}")
     
-    # Deduct resources and add ships
     for resource, amount in total_cost.items():
         resources[resource] -= amount
     
-    units = player_state.get("units", {})
+    units = planet.get("units", {})
     units[data.shipType] = units.get(data.shipType, 0) + data.quantity
     
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"units": units, "resources": resources, "updatedAt": get_timestamp()}}
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {"units": units, "resources": resources}}
     )
     
     return {
@@ -883,16 +1401,14 @@ async def build_ships(data: ShipBuild, request: Request):
 
 @app.get("/api/shipyard/available")
 async def get_available_ships(request: Request):
-    session = require_auth(request)
-    
     ships = []
     for ship_type, cost in SHIP_COSTS.items():
         ships.append({
             "shipType": ship_type,
             "cost": {k: v for k, v in cost.items() if k != "buildTime"},
-            "buildTime": cost.get("buildTime", 60)
+            "buildTime": cost.get("buildTime", 60),
+            "stats": COMBAT_SHIP_STATS.get(ship_type, {})
         })
-    
     return ships
 
 
@@ -907,33 +1423,35 @@ async def build_defense(data: DefenseBuild, request: Request):
     if not player_state:
         raise HTTPException(status_code=404, detail="Player state not found")
     
-    # Get defense cost
+    planet_id = player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
+    
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
     def_cost = DEFENSE_COSTS.get(data.defenseType)
     if not def_cost:
         raise HTTPException(status_code=400, detail="Invalid defense type")
     
-    # Calculate total cost
     total_cost = {}
     for resource, amount in def_cost.items():
         if resource != "buildTime":
             total_cost[resource] = amount * data.quantity
     
-    # Check resources
-    resources = player_state.get("resources", {})
+    resources = planet.get("resources", {})
     for resource, amount in total_cost.items():
         if resources.get(resource, 0) < amount:
             raise HTTPException(status_code=400, detail=f"Not enough {resource}")
     
-    # Deduct resources and add defense
     for resource, amount in total_cost.items():
         resources[resource] -= amount
     
-    defense = player_state.get("defense", {})
+    defense = planet.get("defense", {})
     defense[data.defenseType] = defense.get(data.defenseType, 0) + data.quantity
     
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"defense": defense, "resources": resources, "updatedAt": get_timestamp()}}
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {"defense": defense, "resources": resources}}
     )
     
     return {
@@ -945,194 +1463,349 @@ async def build_defense(data: DefenseBuild, request: Request):
     }
 
 
-# ==================== FLEET/MISSION ENDPOINTS ====================
+@app.get("/api/defense/available")
+async def get_available_defense(request: Request):
+    defense_list = []
+    for def_type, cost in DEFENSE_COSTS.items():
+        defense_list.append({
+            "defenseType": def_type,
+            "cost": {k: v for k, v in cost.items() if k != "buildTime"},
+            "buildTime": cost.get("buildTime", 60),
+            "stats": COMBAT_DEFENSE_STATS.get(def_type, {})
+        })
+    return defense_list
 
-@app.post("/api/fleet/mission")
-async def start_fleet_mission(data: FleetMission, request: Request):
+
+# ==================== COMBAT ENDPOINTS ====================
+
+@app.post("/api/combat/attack")
+async def attack_player(data: AttackMission, request: Request):
+    """Attack another player's planet (1-15 round combat)"""
     session = require_auth(request)
     user_id = session["userId"]
     
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
+    # Get attacker's planet
+    attacker_state = player_states_collection.find_one({"userId": user_id})
+    if not attacker_state:
+        raise HTTPException(status_code=404, detail="Player not found")
     
-    units = player_state.get("units", {})
+    attacker_planet_id = attacker_state.get("currentPlanetId")
+    attacker_planet = planets_collection.find_one({"_id": ObjectId(attacker_planet_id)})
     
-    # Verify ships are available
+    if not attacker_planet:
+        raise HTTPException(status_code=404, detail="Attacker planet not found")
+    
+    # Verify ships
+    attacker_units = attacker_planet.get("units", {})
     for ship_type, count in data.ships.items():
-        if units.get(ship_type, 0) < count:
+        if attacker_units.get(ship_type, 0) < count:
             raise HTTPException(status_code=400, detail=f"Not enough {ship_type}")
     
-    # Remove ships from fleet
-    for ship_type, count in data.ships.items():
-        units[ship_type] -= count
+    # Get defender's planet
+    defender_planet = planets_collection.find_one({"_id": ObjectId(data.targetPlanetId)})
+    if not defender_planet:
+        raise HTTPException(status_code=404, detail="Target planet not found")
     
-    # Create mission
-    mission = {
-        "id": str(ObjectId()),
-        "userId": user_id,
-        "targetCoordinates": data.targetCoordinates,
-        "missionType": data.missionType,
-        "ships": data.ships,
-        "resources": data.resources or {},
-        "status": "in_progress",
-        "startTime": get_timestamp(),
-        "arrivalTime": get_timestamp()  # Would calculate based on distance
-    }
+    if defender_planet.get("userId") == user_id:
+        raise HTTPException(status_code=400, detail="Cannot attack your own planet")
     
-    missions = player_state.get("missions", [])
-    missions.append(mission)
+    # Get technologies
+    attacker_tech = attacker_state.get("research", {})
+    defender_state = player_states_collection.find_one({"userId": defender_planet.get("userId")})
+    defender_tech = defender_state.get("research", {}) if defender_state else {}
     
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"units": units, "missions": missions, "updatedAt": get_timestamp()}}
+    # Run combat simulation
+    combat_result = simulate_combat(
+        data.ships,
+        attacker_tech,
+        defender_planet.get("units", {}),
+        defender_planet.get("defense", {}),
+        defender_tech
     )
     
-    return {"success": True, "mission": mission}
+    # Remove ships from attacker
+    for ship_type, count in data.ships.items():
+        attacker_units[ship_type] -= count
+    
+    # Return surviving ships
+    for ship_type, count in combat_result["attackerSurvivors"].items():
+        attacker_units[ship_type] = attacker_units.get(ship_type, 0) + count
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(attacker_planet_id)},
+        {"$set": {"units": attacker_units}}
+    )
+    
+    # Update defender
+    planets_collection.update_one(
+        {"_id": ObjectId(data.targetPlanetId)},
+        {"$set": {
+            "units": combat_result["defenderSurvivors"],
+            "defense": {k: v for k, v in combat_result["defenderSurvivors"].items() if k in DEFENSE_COSTS}
+        }}
+    )
+    
+    # Loot if attacker won
+    loot = {"metal": 0, "crystal": 0, "deuterium": 0}
+    if combat_result["winner"] == "attacker":
+        defender_resources = defender_planet.get("resources", {})
+        loot["metal"] = int(defender_resources.get("metal", 0) * 0.5)
+        loot["crystal"] = int(defender_resources.get("crystal", 0) * 0.5)
+        loot["deuterium"] = int(defender_resources.get("deuterium", 0) * 0.5)
+        
+        # Update defender resources
+        for resource, amount in loot.items():
+            defender_resources[resource] = defender_resources.get(resource, 0) - amount
+        
+        planets_collection.update_one(
+            {"_id": ObjectId(data.targetPlanetId)},
+            {"$set": {"resources": defender_resources}}
+        )
+        
+        # Add loot to attacker
+        attacker_resources = attacker_planet.get("resources", {})
+        for resource, amount in loot.items():
+            attacker_resources[resource] = attacker_resources.get(resource, 0) + amount
+        
+        planets_collection.update_one(
+            {"_id": ObjectId(attacker_planet_id)},
+            {"$set": {"resources": attacker_resources}}
+        )
+    
+    # Check for moon creation
+    moon_created = None
+    if combat_result["moonChance"] > 0 and random.random() < combat_result["moonChance"]:
+        moon_data = generate_moon(combat_result["debris"]["metal"] + combat_result["debris"]["crystal"])
+        if moon_data:
+            moon_data["planetId"] = data.targetPlanetId
+            moon_result = moons_collection.insert_one(moon_data)
+            moon_created = str(moon_result.inserted_id)
+            
+            planets_collection.update_one(
+                {"_id": ObjectId(data.targetPlanetId)},
+                {"$set": {"moon": moon_created}}
+            )
+    
+    # Save combat report
+    report = {
+        "attackerId": user_id,
+        "defenderId": defender_planet.get("userId"),
+        "attackerPlanetId": attacker_planet_id,
+        "defenderPlanetId": data.targetPlanetId,
+        "result": combat_result,
+        "loot": loot,
+        "moonCreated": moon_created,
+        "createdAt": get_timestamp()
+    }
+    combat_reports_collection.insert_one(report)
+    
+    return {
+        "success": True,
+        "result": combat_result,
+        "loot": loot,
+        "moonCreated": moon_created
+    }
 
 
-@app.post("/api/game/send-fleet")
-async def send_fleet(request: Request):
-    """Endpoint for frontend to send fleet on mission"""
+@app.post("/api/combat/steal-planet")
+async def steal_planet(data: StealPlanet, request: Request):
+    """Attempt to steal a planet from another player"""
     session = require_auth(request)
     user_id = session["userId"]
     
+    # Get attacker's state
+    attacker_state = player_states_collection.find_one({"userId": user_id})
+    if not attacker_state:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    attacker_planet_id = attacker_state.get("currentPlanetId")
+    attacker_planet = planets_collection.find_one({"_id": ObjectId(attacker_planet_id)})
+    
+    # Get target planet
+    target_planet = planets_collection.find_one({"_id": ObjectId(data.targetPlanetId)})
+    if not target_planet:
+        raise HTTPException(status_code=404, detail="Target planet not found")
+    
+    if target_planet.get("userId") == user_id:
+        raise HTTPException(status_code=400, detail="Cannot steal your own planet")
+    
+    if target_planet.get("isHomeworld"):
+        raise HTTPException(status_code=400, detail="Cannot steal homeworld planets")
+    
+    # Verify ships
+    attacker_units = attacker_planet.get("units", {})
+    for ship_type, count in data.ships.items():
+        if attacker_units.get(ship_type, 0) < count:
+            raise HTTPException(status_code=400, detail=f"Not enough {ship_type}")
+    
+    # Run combat
+    defender_state = player_states_collection.find_one({"userId": target_planet.get("userId")})
+    combat_result = simulate_combat(
+        data.ships,
+        attacker_state.get("research", {}),
+        target_planet.get("units", {}),
+        target_planet.get("defense", {}),
+        defender_state.get("research", {}) if defender_state else {}
+    )
+    
+    # Update attacker fleet
+    for ship_type, count in data.ships.items():
+        attacker_units[ship_type] -= count
+    for ship_type, count in combat_result["attackerSurvivors"].items():
+        attacker_units[ship_type] = attacker_units.get(ship_type, 0) + count
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(attacker_planet_id)},
+        {"$set": {"units": attacker_units}}
+    )
+    
+    planet_stolen = False
+    if combat_result["winner"] == "attacker":
+        # Transfer planet ownership
+        old_owner_id = target_planet.get("userId")
+        
+        planets_collection.update_one(
+            {"_id": ObjectId(data.targetPlanetId)},
+            {"$set": {
+                "userId": user_id,
+                "units": {},
+                "defense": {}
+            }}
+        )
+        
+        # Update player states
+        player_states_collection.update_one(
+            {"userId": user_id},
+            {"$push": {"planets": data.targetPlanetId}}
+        )
+        
+        player_states_collection.update_one(
+            {"userId": old_owner_id},
+            {"$pull": {"planets": data.targetPlanetId}}
+        )
+        
+        planet_stolen = True
+    else:
+        # Update defender losses
+        planets_collection.update_one(
+            {"_id": ObjectId(data.targetPlanetId)},
+            {"$set": {
+                "units": {k: v for k, v in combat_result["defenderSurvivors"].items() if k in SHIP_COSTS},
+                "defense": {k: v for k, v in combat_result["defenderSurvivors"].items() if k in DEFENSE_COSTS}
+            }}
+        )
+    
+    return {
+        "success": True,
+        "result": combat_result,
+        "planetStolen": planet_stolen
+    }
+
+
+@app.get("/api/combat/reports")
+async def get_combat_reports(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=15, le=100)
+):
+    """Get combat reports for player"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    total = combat_reports_collection.count_documents({
+        "$or": [{"attackerId": user_id}, {"defenderId": user_id}]
+    })
+    
+    skip = (page - 1) * per_page
+    reports = list(combat_reports_collection.find({
+        "$or": [{"attackerId": user_id}, {"defenderId": user_id}]
+    }).sort("createdAt", DESCENDING).skip(skip).limit(per_page))
+    
+    return {
+        "reports": [serialize_doc(r) for r in reports],
+        "pagination": {
+            "page": page,
+            "perPage": per_page,
+            "total": total,
+            "totalPages": (total + per_page - 1) // per_page
+        }
+    }
+
+
+@app.post("/api/combat/simulate")
+async def simulate_combat_preview(request: Request):
+    """Preview combat simulation without executing"""
+    session = require_auth(request)
     data = await request.json()
     
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    units = player_state.get("units", {})
-    ships = data.get("ships", {})
-    
-    # Verify ships are available
-    for ship_type, count in ships.items():
-        if units.get(ship_type, 0) < count:
-            raise HTTPException(status_code=400, detail=f"Not enough {ship_type}")
-    
-    # Remove ships from fleet
-    for ship_type, count in ships.items():
-        units[ship_type] -= count
-    
-    # Create mission
-    import random
-    travel_time = random.randint(60, 600)  # 1-10 minutes
-    
-    mission = {
-        "id": str(ObjectId()),
-        "type": data.get("missionType", "attack"),
-        "target": data.get("destination", "[1:1:1]"),
-        "units": ships,
-        "arrivalTime": (get_timestamp().timestamp() + travel_time) * 1000,
-        "returnTime": (get_timestamp().timestamp() + travel_time * 2) * 1000,
-        "status": "outbound"
-    }
-    
-    missions = player_state.get("missions", [])
-    missions.append(mission)
-    
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"units": units, "missions": missions, "updatedAt": get_timestamp()}}
+    result = simulate_combat(
+        data.get("attacker", {}),
+        data.get("attackerTech", {}),
+        data.get("defender", {}),
+        data.get("defenderDefense", {}),
+        data.get("defenderTech", {})
     )
     
-    return {"success": True, "mission": mission}
+    return result
 
 
-@app.post("/api/game/process-missions")
-async def process_game_missions(request: Request):
-    """Process completed missions"""
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    missions = player_state.get("missions", [])
-    units = player_state.get("units", {})
-    resources = player_state.get("resources", {})
-    
-    now = get_timestamp().timestamp() * 1000
-    completed = []
-    ongoing = []
-    
-    for mission in missions:
-        return_time = mission.get("returnTime", 0)
-        if now >= return_time:
-            # Mission complete - return ships
-            for ship_type, count in mission.get("units", {}).items():
-                units[ship_type] = units.get(ship_type, 0) + count
-            
-            # Add loot for attack missions
-            if mission.get("type") == "attack":
-                import random
-                resources["metal"] = resources.get("metal", 0) + random.randint(100, 1000)
-                resources["crystal"] = resources.get("crystal", 0) + random.randint(50, 500)
-            
-            mission["status"] = "completed"
-            mission["processed"] = True
-            completed.append(mission)
-        else:
-            ongoing.append(mission)
-    
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"units": units, "resources": resources, "missions": ongoing, "updatedAt": get_timestamp()}}
-    )
-    
-    return {"success": True, "completed": completed, "ongoing": len(ongoing)}
-
-
-@app.get("/api/fleet/missions")
-async def get_fleet_missions(request: Request):
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        return []
-    
-    return player_state.get("missions", [])
-
-
-@app.get("/api/game/missions")
-async def get_game_missions(request: Request):
-    """Alias for fleet missions endpoint"""
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        return []
-    
-    return player_state.get("missions", [])
-
-
-# ==================== GALAXY/UNIVERSE ENDPOINTS ====================
+# ==================== GALAXY ENDPOINTS ====================
 
 @app.get("/api/galaxy/{galaxy}/{system}")
 async def get_solar_system(galaxy: int, system: int, request: Request):
     session = require_auth(request)
     
-    # Generate procedural solar system
-    import random
-    random.seed(galaxy * 1000 + system)
+    if galaxy < 1 or galaxy > 9 or system < 1 or system > 499:
+        raise HTTPException(status_code=400, detail="Invalid coordinates")
     
+    # Get existing planets at this location
+    existing_planets = list(planets_collection.find({
+        "coordinates": {"$regex": f"^\\[{galaxy}:{system}:"}
+    }))
+    
+    existing_positions = {}
+    for planet in existing_planets:
+        _, _, pos = parse_coordinates(planet.get("coordinates", "[1:1:1]"))
+        existing_positions[pos] = planet
+    
+    # Generate system view
     planets = []
     for position in range(1, 16):
-        if random.random() > 0.3:  # 70% chance of planet
-            planet_type = random.choice(PLANET_TYPES)
+        coords = f"[{galaxy}:{system}:{position}]"
+        
+        if position in existing_positions:
+            planet = existing_positions[position]
             planets.append({
                 "position": position,
-                "coordinates": f"[{galaxy}:{system}:{position}]",
-                "type": planet_type["type"],
-                "class": planet_type["class"],
-                "name": f"Planet {galaxy}:{system}:{position}",
-                "owner": None,
-                "activity": None
+                "coordinates": coords,
+                "type": planet.get("planetTypeName"),
+                "class": planet.get("planetClass"),
+                "name": planet.get("name"),
+                "owner": planet.get("userId"),
+                "activity": "active" if random.random() > 0.7 else None,
+                "hasMoon": planet.get("moon") is not None,
+                "fields": planet.get("maxFields"),
+                "occupied": True
             })
+        else:
+            # Generate procedural empty planet
+            random.seed(galaxy * 100000 + system * 100 + position)
+            if random.random() > 0.3:
+                pos_config = PLANET_POSITION_SIZE.get(position, PLANET_POSITION_SIZE[8])
+                planet_class = random.choice(list(PLANET_CLASSES.keys()))
+                
+                planets.append({
+                    "position": position,
+                    "coordinates": coords,
+                    "type": PLANET_CLASSES[planet_class]["name"],
+                    "class": planet_class,
+                    "name": f"Planet {galaxy}:{system}:{position}",
+                    "owner": None,
+                    "activity": None,
+                    "hasMoon": False,
+                    "fields": random.randint(pos_config["min"], pos_config["max"]),
+                    "occupied": False
+                })
     
     return {
         "galaxy": galaxy,
@@ -1150,8 +1823,130 @@ async def get_universe_overview(request: Request):
         "systemsPerGalaxy": 499,
         "planetsPerSystem": 15,
         "totalPlayers": users_collection.count_documents({}),
-        "totalAlliances": alliances_collection.count_documents({})
+        "totalAlliances": alliances_collection.count_documents({}),
+        "totalPlanets": planets_collection.count_documents({}),
+        "totalMoons": moons_collection.count_documents({}),
+        "maxEmpireSize": EMPIRE_LIMITS["max_empire_size"]
     }
+
+
+# ==================== CONFIG ENDPOINTS ====================
+
+@app.get("/api/config/planet-classes")
+async def get_planet_classes(request: Request):
+    return PLANET_CLASSES
+
+
+@app.get("/api/config/planet-types")
+async def get_planet_types(request: Request):
+    return PLANET_TYPES
+
+
+@app.get("/api/config/biomes")
+async def get_biomes(request: Request):
+    return BIOMES
+
+
+@app.get("/api/config/lifeforms")
+async def get_lifeforms(request: Request):
+    return LIFEFORMS
+
+
+@app.get("/api/config/player-classes")
+async def get_player_classes(request: Request):
+    return PLAYER_CLASSES
+
+
+@app.get("/api/config/field-sizes")
+async def get_field_sizes(request: Request):
+    return FIELD_SIZE_CATEGORIES
+
+
+@app.get("/api/config/station-types")
+async def get_station_types_config(request: Request):
+    return SPACE_STATIONS
+
+
+@app.get("/api/config/combat")
+async def get_combat_config(request: Request):
+    return {
+        "config": COMBAT_CONFIG,
+        "shipStats": COMBAT_SHIP_STATS,
+        "defenseStats": COMBAT_DEFENSE_STATS
+    }
+
+
+# ==================== FLEET MISSION ENDPOINTS ====================
+
+@app.post("/api/fleet/mission")
+async def start_fleet_mission(data: FleetMission, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    planet_id = player_state.get("currentPlanetId")
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)})
+    
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    units = planet.get("units", {})
+    
+    for ship_type, count in data.ships.items():
+        if units.get(ship_type, 0) < count:
+            raise HTTPException(status_code=400, detail=f"Not enough {ship_type}")
+    
+    for ship_type, count in data.ships.items():
+        units[ship_type] -= count
+    
+    # Calculate travel time based on distance
+    travel_time = random.randint(300, 3600)  # 5-60 minutes
+    
+    mission = {
+        "id": str(ObjectId()),
+        "userId": user_id,
+        "sourcePlanetId": planet_id,
+        "targetCoordinates": data.targetCoordinates,
+        "missionType": data.missionType,
+        "ships": data.ships,
+        "resources": data.resources or {},
+        "status": "outbound",
+        "startTime": get_timestamp().timestamp() * 1000,
+        "arrivalTime": (get_timestamp().timestamp() + travel_time) * 1000,
+        "returnTime": (get_timestamp().timestamp() + travel_time * 2) * 1000
+    }
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {"units": units}}
+    )
+    
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {"$push": {"missions": mission}, "$set": {"updatedAt": get_timestamp()}}
+    )
+    
+    return {"success": True, "mission": mission}
+
+
+@app.get("/api/fleet/missions")
+async def get_fleet_missions(request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        return []
+    
+    return player_state.get("missions", [])
+
+
+@app.get("/api/game/missions")
+async def get_game_missions(request: Request):
+    return await get_fleet_missions(request)
 
 
 # ==================== MARKET ENDPOINTS ====================
@@ -1162,20 +1957,20 @@ async def create_market_order(data: MarketOrder, request: Request):
     user_id = session["userId"]
     
     player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
+    planet_id = player_state.get("currentPlanetId") if player_state else None
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
     
-    resources = player_state.get("resources", {})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    resources = planet.get("resources", {})
     
     if data.orderType == "sell":
-        # Check if player has enough resources
         if resources.get(data.resourceType, 0) < data.quantity:
             raise HTTPException(status_code=400, detail="Not enough resources")
-        
-        # Deduct resources
         resources[data.resourceType] -= data.quantity
-        player_states_collection.update_one(
-            {"userId": user_id},
+        planets_collection.update_one(
+            {"_id": ObjectId(planet_id)},
             {"$set": {"resources": resources}}
         )
     
@@ -1250,7 +2045,6 @@ async def get_sent_messages(request: Request):
 
 @app.get("/api/messages")
 async def get_all_messages(request: Request, limit: int = 50):
-    """Get all messages for user (inbox)"""
     session = require_auth(request)
     user_id = session["userId"]
     
@@ -1258,14 +2052,13 @@ async def get_all_messages(request: Request, limit: int = 50):
     return [serialize_doc(msg) for msg in messages]
 
 
-# ==================== ALLIANCE ENDPOINTS ====================
+# ==================== ALLIANCES ENDPOINTS ====================
 
 @app.post("/api/alliances/create")
 async def create_alliance(data: AllianceCreate, request: Request):
     session = require_auth(request)
     user_id = session["userId"]
     
-    # Check if tag exists
     existing = alliances_collection.find_one({"tag": data.tag})
     if existing:
         raise HTTPException(status_code=400, detail="Alliance tag already exists")
@@ -1302,7 +2095,6 @@ async def join_alliance(alliance_id: str, request: Request):
     if not alliance:
         raise HTTPException(status_code=404, detail="Alliance not found")
     
-    # Check if already member
     for member in alliance.get("members", []):
         if member["userId"] == user_id:
             raise HTTPException(status_code=400, detail="Already a member")
@@ -1317,7 +2109,6 @@ async def join_alliance(alliance_id: str, request: Request):
 
 @app.get("/api/alliances/my")
 async def get_my_alliance(request: Request):
-    """Get current user's alliance"""
     session = require_auth(request)
     user_id = session["userId"]
     
@@ -1331,56 +2122,131 @@ async def get_my_alliance(request: Request):
 # ==================== LEADERBOARD ENDPOINTS ====================
 
 @app.get("/api/leaderboard")
-async def get_leaderboard(request: Request, limit: int = 100):
+async def get_leaderboard(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=15, le=100),
+    sort_by: str = Query("score", enum=["score", "fleetPower", "planets", "research"])
+):
     session = require_auth(request)
     
-    # Get all player states with user info
-    pipeline = [
-        {"$lookup": {
-            "from": "users",
-            "localField": "userId",
-            "foreignField": "_id",
-            "as": "user"
-        }},
-        {"$unwind": {"path": "$user", "preserveNullAndEmptyArrays": True}},
-        {"$project": {
-            "userId": 1,
-            "username": "$user.username",
-            "planetName": 1,
-            "empireLevel": 1,
-            "tier": 1,
-            "resources": 1,
-            "buildings": 1,
-            "units": 1
-        }},
-        {"$limit": limit}
-    ]
+    # Get all players with basic info
+    players = list(player_states_collection.find({"setupComplete": True}))
     
-    players = list(player_states_collection.aggregate(pipeline))
-    
-    # Calculate scores
     leaderboard = []
     for player in players:
+        user = users_collection.find_one({"_id": ObjectId(player["userId"])})
+        
+        # Count planets
+        planet_count = len(player.get("planets", []))
+        
+        # Calculate scores
         score = calculate_empire_score(player)
-        fleet_power = calculate_fleet_power(player.get("units", {}))
+        
+        # Get fleet from all planets
+        total_fleet = {}
+        for planet_id in player.get("planets", []):
+            planet = planets_collection.find_one({"_id": ObjectId(planet_id)})
+            if planet:
+                for ship, count in planet.get("units", {}).items():
+                    total_fleet[ship] = total_fleet.get(ship, 0) + count
+        
+        fleet_power = calculate_fleet_power(total_fleet)
+        research_level = sum(player.get("research", {}).values())
+        
         leaderboard.append({
-            "userId": str(player.get("userId", player.get("_id"))),
-            "username": player.get("username", "Unknown"),
-            "planetName": player.get("planetName", "Unknown"),
+            "userId": player["userId"],
+            "username": user.get("username", "Unknown") if user else "Unknown",
+            "playerClass": player.get("playerClass", "collector"),
+            "lifeform": player.get("lifeform", "humans"),
             "empireLevel": player.get("empireLevel", 1),
             "tier": player.get("tier", 1),
             "score": score,
-            "fleetPower": fleet_power
+            "fleetPower": fleet_power,
+            "planets": planet_count,
+            "research": research_level
         })
     
-    # Sort by score
-    leaderboard.sort(key=lambda x: x["score"], reverse=True)
+    # Sort
+    if sort_by == "fleetPower":
+        leaderboard.sort(key=lambda x: x["fleetPower"], reverse=True)
+    elif sort_by == "planets":
+        leaderboard.sort(key=lambda x: x["planets"], reverse=True)
+    elif sort_by == "research":
+        leaderboard.sort(key=lambda x: x["research"], reverse=True)
+    else:
+        leaderboard.sort(key=lambda x: x["score"], reverse=True)
     
     # Add ranks
     for i, entry in enumerate(leaderboard):
         entry["rank"] = i + 1
     
-    return leaderboard
+    # Paginate
+    total = len(leaderboard)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    return {
+        "leaderboard": leaderboard[start:end],
+        "pagination": {
+            "page": page,
+            "perPage": per_page,
+            "total": total,
+            "totalPages": (total + per_page - 1) // per_page
+        }
+    }
+
+
+# ==================== MEGASTRUCTURES ENDPOINTS ====================
+
+@app.get("/api/megastructures")
+async def get_megastructures(request: Request):
+    session = require_auth(request)
+    return MEGASTRUCTURES
+
+
+@app.post("/api/megastructures/build")
+async def build_megastructure(request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    data = await request.json()
+    structure_type = data.get("type")
+    
+    if structure_type not in MEGASTRUCTURES:
+        raise HTTPException(status_code=400, detail="Invalid megastructure type")
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    planet_id = player_state.get("currentPlanetId") if player_state else None
+    planet = planets_collection.find_one({"_id": ObjectId(planet_id)}) if planet_id else None
+    
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    cost = MEGASTRUCTURES[structure_type]
+    resources = planet.get("resources", {})
+    
+    for resource, amount in cost.items():
+        if resources.get(resource, 0) < amount:
+            raise HTTPException(status_code=400, detail=f"Not enough {resource}")
+    
+    for resource, amount in cost.items():
+        resources[resource] -= amount
+    
+    megastructures = player_state.get("megastructures", {})
+    megastructures[structure_type] = megastructures.get(structure_type, 0) + 1
+    
+    planets_collection.update_one(
+        {"_id": ObjectId(planet_id)},
+        {"$set": {"resources": resources}}
+    )
+    
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {"$set": {"megastructures": megastructures}}
+    )
+    
+    return {"success": True, "type": structure_type}
 
 
 # ==================== STATUS/HEALTH ENDPOINTS ====================
@@ -1389,7 +2255,7 @@ async def get_leaderboard(request: Request, limit: int = 100):
 async def get_status():
     return {
         "status": "ok",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "serverTime": get_timestamp().isoformat(),
         "database": "connected"
     }
@@ -1405,136 +2271,29 @@ async def root_health():
     return {"status": "ok"}
 
 
-# ==================== TURN SYSTEM ENDPOINTS ====================
-
-@app.post("/api/turns/process")
-async def process_turns(request: Request):
+@app.get("/api/diagnostics")
+async def get_diagnostics(request: Request):
     session = require_auth(request)
-    user_id = session["userId"]
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    # Generate turns based on time
-    current_turns = player_state.get("currentTurns", 0)
-    total_turns = player_state.get("totalTurns", 0)
-    
-    # Add turns (6 per minute max)
-    new_turns = min(current_turns + 6, 1000)
-    
-    # Process resource production per turn
-    production = calculate_production(player_state.get("buildings", {}))
-    resources = player_state.get("resources", {})
-    
-    turns_to_process = min(new_turns, 10)  # Process up to 10 turns
-    for resource, rate in production.items():
-        resources[resource] = resources.get(resource, 0) + int(rate * turns_to_process / 60)
-    
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {
-            "currentTurns": new_turns - turns_to_process,
-            "totalTurns": total_turns + turns_to_process,
-            "resources": resources,
-            "updatedAt": get_timestamp()
-        }}
-    )
     
     return {
-        "turnsProcessed": turns_to_process,
-        "currentTurns": new_turns - turns_to_process,
-        "totalTurns": total_turns + turns_to_process,
-        "resourcesGained": {r: int(production.get(r, 0) * turns_to_process / 60) for r in resources}
+        "serverTime": get_timestamp().isoformat(),
+        "database": {
+            "status": "connected",
+            "collections": {
+                "users": users_collection.count_documents({}),
+                "playerStates": player_states_collection.count_documents({}),
+                "planets": planets_collection.count_documents({}),
+                "moons": moons_collection.count_documents({}),
+                "stations": stations_collection.count_documents({}),
+                "alliances": alliances_collection.count_documents({}),
+                "combatReports": combat_reports_collection.count_documents({}),
+                "marketOrders": market_orders_collection.count_documents({})
+            }
+        },
+        "activeSessions": len(sessions_store),
+        "version": "2.0.0"
     }
 
-
-# ==================== EXPEDITION ENDPOINTS ====================
-
-@app.post("/api/expeditions/start")
-async def start_expedition(request: Request):
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    data = await request.json()
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    units = player_state.get("units", {})
-    ships = data.get("ships", {})
-    
-    # Verify ships
-    for ship_type, count in ships.items():
-        if units.get(ship_type, 0) < count:
-            raise HTTPException(status_code=400, detail=f"Not enough {ship_type}")
-    
-    # Remove ships
-    for ship_type, count in ships.items():
-        units[ship_type] -= count
-    
-    # Create expedition
-    import random
-    expedition = {
-        "id": str(ObjectId()),
-        "type": data.get("expeditionType", "exploration"),
-        "ships": ships,
-        "status": "in_progress",
-        "startTime": get_timestamp(),
-        "duration": random.randint(30, 180),  # minutes
-        "rewards": None
-    }
-    
-    missions = player_state.get("missions", [])
-    missions.append(expedition)
-    
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"units": units, "missions": missions}}
-    )
-    
-    return {"success": True, "expedition": expedition}
-
-
-# ==================== COMBAT SIMULATION ====================
-
-@app.post("/api/combat/simulate")
-async def simulate_combat(request: Request):
-    session = require_auth(request)
-    
-    data = await request.json()
-    attacker = data.get("attacker", {})
-    defender = data.get("defender", {})
-    
-    # Simple combat simulation
-    attacker_power = calculate_fleet_power(attacker)
-    defender_power = calculate_fleet_power(defender)
-    
-    import random
-    attacker_roll = attacker_power * random.uniform(0.8, 1.2)
-    defender_roll = defender_power * random.uniform(0.8, 1.2)
-    
-    if attacker_roll > defender_roll:
-        winner = "attacker"
-        losses_percent = max(0.1, 1 - (attacker_roll / (attacker_roll + defender_roll)))
-    else:
-        winner = "defender"
-        losses_percent = max(0.1, 1 - (defender_roll / (attacker_roll + defender_roll)))
-    
-    return {
-        "winner": winner,
-        "attackerPower": attacker_power,
-        "defenderPower": defender_power,
-        "lossesPercent": losses_percent,
-        "battleLog": [
-            f"Battle started: Attacker ({attacker_power} power) vs Defender ({defender_power} power)",
-            f"Combat resolved: {winner.capitalize()} wins with {int(losses_percent * 100)}% losses"
-        ]
-    }
-
-
-# ==================== SETTINGS ENDPOINTS ====================
 
 @app.get("/api/settings")
 async def get_settings(request: Request):
@@ -1559,15 +2318,10 @@ async def update_settings(request: Request):
     user_id = session["userId"]
     
     data = await request.json()
-    
     allowed_fields = ["email", "notifications", "theme"]
     update_data = {k: v for k, v in data.items() if k in allowed_fields}
     
-    users_collection.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": update_data}
-    )
-    
+    users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
     return {"success": True}
 
 
@@ -1601,81 +2355,6 @@ async def get_ogame_ships(request: Request):
 @app.get("/api/ogame/defense")
 async def get_ogame_defense(request: Request):
     return DEFENSE_COSTS
-
-
-# ==================== DIAGNOSTICS ENDPOINTS ====================
-
-@app.get("/api/diagnostics")
-async def get_diagnostics(request: Request):
-    session = require_auth(request)
-    
-    return {
-        "serverTime": get_timestamp().isoformat(),
-        "database": {
-            "status": "connected",
-            "collections": {
-                "users": users_collection.count_documents({}),
-                "playerStates": player_states_collection.count_documents({}),
-                "alliances": alliances_collection.count_documents({}),
-                "marketOrders": market_orders_collection.count_documents({})
-            }
-        },
-        "activeSessions": len(sessions_store),
-        "version": "1.0.0"
-    }
-
-
-# ==================== MEGASTRUCTURES ENDPOINTS ====================
-
-MEGASTRUCTURES = {
-    "dysonSphere": {"metal": 5000000, "crystal": 3000000, "deuterium": 1000000, "energy": 100000},
-    "ringworld": {"metal": 10000000, "crystal": 5000000, "deuterium": 2000000, "energy": 200000},
-    "stellarEngine": {"metal": 8000000, "crystal": 4000000, "deuterium": 3000000, "energy": 150000}
-}
-
-@app.get("/api/megastructures")
-async def get_megastructures(request: Request):
-    session = require_auth(request)
-    return MEGASTRUCTURES
-
-
-@app.post("/api/megastructures/build")
-async def build_megastructure(request: Request):
-    session = require_auth(request)
-    user_id = session["userId"]
-    
-    data = await request.json()
-    structure_type = data.get("type")
-    
-    if structure_type not in MEGASTRUCTURES:
-        raise HTTPException(status_code=400, detail="Invalid megastructure type")
-    
-    player_state = player_states_collection.find_one({"userId": user_id})
-    if not player_state:
-        raise HTTPException(status_code=404, detail="Player state not found")
-    
-    cost = MEGASTRUCTURES[structure_type]
-    resources = player_state.get("resources", {})
-    
-    # Check resources
-    for resource, amount in cost.items():
-        if resources.get(resource, 0) < amount:
-            raise HTTPException(status_code=400, detail=f"Not enough {resource}")
-    
-    # Deduct resources
-    for resource, amount in cost.items():
-        resources[resource] -= amount
-    
-    # Add megastructure
-    megastructures = player_state.get("megastructures", {})
-    megastructures[structure_type] = megastructures.get(structure_type, 0) + 1
-    
-    player_states_collection.update_one(
-        {"userId": user_id},
-        {"$set": {"resources": resources, "megastructures": megastructures}}
-    )
-    
-    return {"success": True, "type": structure_type}
 
 
 # Run the application
