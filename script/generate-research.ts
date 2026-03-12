@@ -1,6 +1,22 @@
 
-import { Research, Category } from '../research';
 import * as fs from 'fs';
+
+type Category = {
+  name: string;
+  subCategories: string[];
+};
+
+type Research = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  subCategory: string;
+  class: string;
+  subClass: string;
+  type: string;
+  subType: string;
+};
 
 const categories: Category[] = [
   { name: 'Physics', subCategories: [] },

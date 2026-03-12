@@ -1,5 +1,6 @@
 export type ItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type ItemType = "weapon" | "armor" | "module" | "blueprint" | "material";
+export type CommanderEquipmentType = "weapon" | "armor" | "module";
 
 export type RaceId = "terran" | "aquarian" | "mechborn" | "lithoid" | "zypherian" | "vortexborn" | "silicate" | "ethereal";
 export type ClassId = "admiral" | "industrialist" | "scientist" | "diplomat" | "explorer" | "merchant";
@@ -43,6 +44,9 @@ export interface Item {
   type: ItemType;
   rarity: ItemRarity;
   level: number;
+  itemClass?: string;
+  itemSubClass?: string;
+  itemSubType?: string;
   stats?: {
     warfare?: number;
     logistics?: number;
@@ -65,6 +69,29 @@ export interface CommanderState {
     module: Item | null;
   };
   inventory: Item[];
+}
+
+export interface CommanderEquipmentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: CommanderEquipmentType;
+  rarity: ItemRarity;
+  level: number;
+  itemClass: string;
+  itemSubClass: string;
+  itemSubType: string;
+  craftingCost: {
+    metal: number;
+    crystal: number;
+    deuterium: number;
+  };
+  stats: {
+    warfare?: number;
+    logistics?: number;
+    science?: number;
+    engineering?: number;
+  };
 }
 
 // Data Definitions
@@ -176,6 +203,115 @@ export const SUBCLASSES: Record<SubClassId, SubClass> = {
   trader: { id: "trader", name: "Black Market Trader", description: "Knows every merchant and smuggler route in the galaxy.", bonuses: ["+40% Market Profits", "+20% Black Market Access"] },
   archaeologist: { id: "archaeologist", name: "Archaeologist", description: "Uncovers ancient secrets and civilizations.", bonuses: ["+35% Ancient Discovery Rate", "+20% Artifact Value"] }
 };
+
+const EQUIPMENT_RARITIES: ItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+
+const WEAPON_CLASSES = [
+  { key: "KINETIC", name: "Kinetic Arsenal", baseStats: { warfare: 5, engineering: 1 }, baseCost: { metal: 2200, crystal: 900, deuterium: 300 } },
+  { key: "PLASMA", name: "Plasma Arsenal", baseStats: { warfare: 6, science: 1 }, baseCost: { metal: 2600, crystal: 1400, deuterium: 500 } },
+  { key: "ION", name: "Ion Arsenal", baseStats: { warfare: 5, science: 2 }, baseCost: { metal: 2400, crystal: 1700, deuterium: 650 } },
+  { key: "RAIL", name: "Rail Arsenal", baseStats: { warfare: 7, engineering: 2 }, baseCost: { metal: 2900, crystal: 1300, deuterium: 600 } },
+  { key: "PARTICLE", name: "Particle Arsenal", baseStats: { warfare: 7, science: 2 }, baseCost: { metal: 3100, crystal: 2100, deuterium: 850 } },
+  { key: "GRAV", name: "Gravity Arsenal", baseStats: { warfare: 8, science: 3 }, baseCost: { metal: 3500, crystal: 2600, deuterium: 1200 } },
+] as const;
+
+const ARMOR_CLASSES = [
+  { key: "PLATE", name: "Plate Defense", baseStats: { warfare: 1, engineering: 5 }, baseCost: { metal: 2300, crystal: 1000, deuterium: 250 } },
+  { key: "COMPOSITE", name: "Composite Defense", baseStats: { warfare: 1, engineering: 6 }, baseCost: { metal: 2600, crystal: 1300, deuterium: 420 } },
+  { key: "NANO", name: "Nano Defense", baseStats: { engineering: 5, science: 2 }, baseCost: { metal: 2800, crystal: 1800, deuterium: 700 } },
+  { key: "REACTIVE", name: "Reactive Defense", baseStats: { warfare: 2, engineering: 6 }, baseCost: { metal: 3000, crystal: 1900, deuterium: 760 } },
+  { key: "AEGIS", name: "Aegis Defense", baseStats: { warfare: 2, science: 3, engineering: 5 }, baseCost: { metal: 3400, crystal: 2400, deuterium: 980 } },
+  { key: "PHASE", name: "Phase Defense", baseStats: { science: 4, engineering: 5 }, baseCost: { metal: 3700, crystal: 2900, deuterium: 1250 } },
+] as const;
+
+const MODULE_CLASSES = [
+  { key: "TACTICAL", name: "Tactical Module", baseStats: { warfare: 3, logistics: 2 }, baseCost: { metal: 2000, crystal: 1300, deuterium: 450 } },
+  { key: "LOGISTIC", name: "Logistic Module", baseStats: { logistics: 6, engineering: 1 }, baseCost: { metal: 1900, crystal: 1100, deuterium: 420 } },
+  { key: "SCIENCE", name: "Science Module", baseStats: { science: 6, logistics: 1 }, baseCost: { metal: 1800, crystal: 1800, deuterium: 500 } },
+  { key: "ENGINEERING", name: "Engineering Module", baseStats: { engineering: 6, warfare: 1 }, baseCost: { metal: 2200, crystal: 1600, deuterium: 520 } },
+  { key: "SENSORY", name: "Sensory Module", baseStats: { science: 4, logistics: 3 }, baseCost: { metal: 2100, crystal: 1700, deuterium: 560 } },
+  { key: "QUANTUM", name: "Quantum Module", baseStats: { science: 5, engineering: 3 }, baseCost: { metal: 2600, crystal: 2400, deuterium: 900 } },
+] as const;
+
+const EQUIPMENT_VARIANTS = [
+  { key: "ASSAULT", name: "Assault", subType: "Frontline" },
+  { key: "VANGUARD", name: "Vanguard", subType: "Shock" },
+  { key: "SENTINEL", name: "Sentinel", subType: "Guardian" },
+  { key: "RECON", name: "Recon", subType: "Pathfinder" },
+  { key: "PRIME", name: "Prime", subType: "Prototype" },
+  { key: "WARDEN", name: "Warden", subType: "Fortified" },
+  { key: "SPECTRAL", name: "Spectral", subType: "Phase" },
+  { key: "MARAUDER", name: "Marauder", subType: "Raider" },
+  { key: "AEGIS", name: "Aegis", subType: "Deflection" },
+  { key: "ZENITH", name: "Zenith", subType: "Flagship" },
+] as const;
+
+function getRarityByLevel(level: number): ItemRarity {
+  if (level >= 9) return "legendary";
+  if (level >= 7) return "epic";
+  if (level >= 5) return "rare";
+  if (level >= 3) return "uncommon";
+  return "common";
+}
+
+function createCommanderTemplates(
+  equipmentType: CommanderEquipmentType,
+  classes: ReadonlyArray<{
+    key: string;
+    name: string;
+    baseStats: { warfare?: number; logistics?: number; science?: number; engineering?: number };
+    baseCost: { metal: number; crystal: number; deuterium: number };
+  }>
+): CommanderEquipmentTemplate[] {
+  return classes.flatMap((equipmentClass, classIndex) =>
+    EQUIPMENT_VARIANTS.map((variant, variantIndex) => {
+      const level = classIndex + variantIndex + 1;
+      const rarity = getRarityByLevel(level);
+
+      return {
+        id: `${equipmentType}_${equipmentClass.key}_${variant.key}`.toLowerCase(),
+        name: `${variant.name} ${equipmentClass.name}`,
+        description: `${equipmentClass.name} tuned for ${variant.subType.toLowerCase()} operations.`,
+        type: equipmentType,
+        rarity,
+        level,
+        itemClass: equipmentClass.name,
+        itemSubClass: variant.name,
+        itemSubType: variant.subType,
+        craftingCost: {
+          metal: equipmentClass.baseCost.metal + classIndex * 500 + variantIndex * 300,
+          crystal: equipmentClass.baseCost.crystal + classIndex * 400 + variantIndex * 250,
+          deuterium: equipmentClass.baseCost.deuterium + classIndex * 180 + variantIndex * 120,
+        },
+        stats: {
+          warfare: (equipmentClass.baseStats.warfare || 0) + Math.floor(variantIndex / 2),
+          logistics: (equipmentClass.baseStats.logistics || 0) + (classIndex % 2),
+          science: (equipmentClass.baseStats.science || 0) + (variantIndex % 2),
+          engineering: (equipmentClass.baseStats.engineering || 0) + (classIndex % 3),
+        },
+      };
+    })
+  );
+}
+
+export const COMMANDER_EQUIPMENT_TEMPLATES: CommanderEquipmentTemplate[] = [
+  ...createCommanderTemplates("weapon", WEAPON_CLASSES),
+  ...createCommanderTemplates("armor", ARMOR_CLASSES),
+  ...createCommanderTemplates("module", MODULE_CLASSES),
+];
+
+export function getCommanderEquipmentTemplatesByType(type: CommanderEquipmentType): CommanderEquipmentTemplate[] {
+  return COMMANDER_EQUIPMENT_TEMPLATES.filter(template => template.type === type);
+}
+
+export function getCommanderEquipmentRarityCounts(): Record<ItemRarity, number> {
+  return EQUIPMENT_RARITIES.reduce((acc, rarity) => {
+    acc[rarity] = COMMANDER_EQUIPMENT_TEMPLATES.filter(template => template.rarity === rarity).length;
+    return acc;
+  }, {} as Record<ItemRarity, number>);
+}
+
+export const COMMANDER_EQUIPMENT_TEMPLATE_COUNT = COMMANDER_EQUIPMENT_TEMPLATES.length;
 
 
 // Mock recipes

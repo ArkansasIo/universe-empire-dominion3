@@ -24,7 +24,7 @@ A comprehensive 4X space strategy game built with React, Express, and PostgreSQL
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 20+, 22
 - PostgreSQL (Neon database via Replit)
 
 ### Installation

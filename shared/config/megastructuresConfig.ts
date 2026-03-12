@@ -10,6 +10,35 @@ import type { ProgressionStats } from './progressionSystemConfig';
 // TYPES & INTERFACES
 // ============================================================================
 
+const INFRASTRUCTURE_TYPE_FAMILIES = [
+  { id: 'habitat-ring', name: 'Habitat Ring', description: 'High-capacity orbital habitation lattices' },
+  { id: 'energy-spire', name: 'Energy Spire', description: 'Multi-star power relay and storage pillars' },
+  { id: 'logistics-hub', name: 'Logistics Hub', description: 'Interstellar freight and routing complexes' },
+  { id: 'terraform-array', name: 'Terraform Array', description: 'Planetary climate and biosphere stabilization grids' },
+  { id: 'starlift-anchor', name: 'Starlift Anchor', description: 'Massive gravity-coupled launch/arrival anchors' },
+  { id: 'quantum-grid', name: 'Quantum Grid', description: 'Entangled infrastructure coordination backbone' },
+  { id: 'orbital-arcology', name: 'Orbital Arcology', description: 'Self-contained population and industry megacities' },
+  { id: 'stellar-harvester', name: 'Stellar Harvester', description: 'Distributed stellar flux collection super-networks' },
+  { id: 'void-refinery', name: 'Void Refinery', description: 'Deep-space extraction and resource conversion yards' },
+  { id: 'transit-lattice', name: 'Transit Lattice', description: 'Long-range civilization-scale mobility corridors' },
+] as const;
+
+const INFRASTRUCTURE_SUBTYPE_VARIANTS = [
+  { id: 'alpha', label: 'Alpha', subClass: 'support' as const, size: 'huge' as const },
+  { id: 'beta', label: 'Beta', subClass: 'hybrid' as const, size: 'massive' as const },
+  { id: 'gamma', label: 'Gamma', subClass: 'terraforming' as const, size: 'planetary' as const },
+  { id: 'delta', label: 'Delta', subClass: 'defensive' as const, size: 'colossal' as const },
+  { id: 'epsilon', label: 'Epsilon', subClass: 'support' as const, size: 'solar' as const },
+  { id: 'zeta', label: 'Zeta', subClass: 'hybrid' as const, size: 'massive' as const },
+  { id: 'eta', label: 'Eta', subClass: 'experimental' as const, size: 'planetary' as const },
+  { id: 'theta', label: 'Theta', subClass: 'dimensional' as const, size: 'solar' as const },
+  { id: 'iota', label: 'Iota', subClass: 'support' as const, size: 'galactic' as const },
+] as const;
+
+type InfrastructureTypeFamilyId = (typeof INFRASTRUCTURE_TYPE_FAMILIES)[number]['id'];
+type InfrastructureSubtypeId = (typeof INFRASTRUCTURE_SUBTYPE_VARIANTS)[number]['id'];
+type InfrastructureGeneratedType = `infra-${InfrastructureTypeFamilyId}-${InfrastructureSubtypeId}`;
+
 export type MegastructureType = 
   | 'dyson-sphere' 
   | 'ringworld' 
@@ -20,7 +49,8 @@ export type MegastructureType =
   | 'matter-converter'
   | 'dimensional-gate'
   | 'stellar-engine'
-  | 'nova-cannon';
+  | 'nova-cannon'
+  | InfrastructureGeneratedType;
 
 export type MegastructureClass = 
   | 'superweapon' 
@@ -30,6 +60,44 @@ export type MegastructureClass =
   | 'defense' 
   | 'mobility' 
   | 'exotic';
+
+export const MEGASTRUCTURE_CATEGORY_METADATA: Record<MegastructureClass, { label: string; description: string; order: number }> = {
+  infrastructure: {
+    label: 'Infrastructure',
+    description: 'Large-scale energy and habitat backbone systems',
+    order: 1,
+  },
+  production: {
+    label: 'Production',
+    description: 'Industrial-scale fabrication and conversion systems',
+    order: 2,
+  },
+  research: {
+    label: 'Research',
+    description: 'Scientific acceleration and advanced discovery systems',
+    order: 3,
+  },
+  defense: {
+    label: 'Defense',
+    description: 'Fortification, shielding, and planetary protection',
+    order: 4,
+  },
+  mobility: {
+    label: 'Mobility',
+    description: 'Interstellar transit and stellar movement systems',
+    order: 5,
+  },
+  exotic: {
+    label: 'Exotic',
+    description: 'Dimensional and non-standard physics structures',
+    order: 6,
+  },
+  superweapon: {
+    label: 'Superweapon',
+    description: 'Strategic-scale offensive megastructures',
+    order: 7,
+  },
+};
 
 export type MegastructureSubClass = 
   | 'offensive' 
@@ -122,6 +190,7 @@ export interface Megastructure {
   id: string;
   name: string;
   type: MegastructureType;
+  subType?: string;
   class: MegastructureClass;
   subClass: MegastructureSubClass;
   
@@ -181,6 +250,14 @@ export interface Megastructure {
   secondaryFunctions: string[];
 }
 
+export interface MegastructureCost {
+  metal: number;
+  crystal: number;
+  deuterium: number;
+  energy: number;
+  rare: number;
+}
+
 // ============================================================================
 // MEGASTRUCTURE DEFINITIONS (10 TYPES × MULTIPLE CLASSES)
 // ============================================================================
@@ -193,12 +270,14 @@ function createMegastructureTemplate(
   subClass: MegastructureSubClass,
   size: Megastructure['size'],
   primaryFunction: string,
-  baseStats: MegastructureStats
+  baseStats: MegastructureStats,
+  subType: string = 'standard',
 ): Omit<Megastructure, 'level' | 'tier' | 'experience' | 'currentStats' | 'levelMultiplier' | 'tierMultiplier' | 'totalMultiplier' | 'coordinates' | 'sector' | 'orbitalBody' | 'isActive' | 'uptime' | 'efficiency'> {
   return {
     id,
     name,
     type,
+    subType,
     class: modelClass,
     subClass,
     description: `${name} - A ${size} megastructure of ${type} class`,
@@ -268,6 +347,60 @@ const baseAttributes: MegastructureAttributes = {
   realityStability: 90,
   quantumPotential: 85,
 };
+
+function generateInfrastructureMegastructures(): Omit<Megastructure, 'level' | 'tier' | 'experience' | 'currentStats' | 'levelMultiplier' | 'tierMultiplier' | 'totalMultiplier' | 'coordinates' | 'sector' | 'orbitalBody' | 'isActive' | 'uptime' | 'efficiency'>[] {
+  const templates: Omit<Megastructure, 'level' | 'tier' | 'experience' | 'currentStats' | 'levelMultiplier' | 'tierMultiplier' | 'totalMultiplier' | 'coordinates' | 'sector' | 'orbitalBody' | 'isActive' | 'uptime' | 'efficiency'>[] = [];
+
+  INFRASTRUCTURE_TYPE_FAMILIES.forEach((family, familyIndex) => {
+    INFRASTRUCTURE_SUBTYPE_VARIANTS.forEach((variant, variantIndex) => {
+      const levelFactor = 1 + familyIndex * 0.07;
+      const subtypeFactor = 1 + variantIndex * 0.06;
+      const totalFactor = Number((levelFactor * subtypeFactor).toFixed(3));
+      const generatedType = `infra-${family.id}-${variant.id}` as MegastructureType;
+
+      templates.push(
+        createMegastructureTemplate(
+          `infra-${family.id}-${variant.id}`,
+          `${family.name} ${variant.label}`,
+          generatedType,
+          'infrastructure',
+          variant.subClass,
+          variant.size,
+          `${family.description} (${variant.label} specialization)`,
+          {
+            power: Math.floor(640 * totalFactor),
+            efficiency: Math.min(99, Math.floor(88 + variantIndex * 1.2)),
+            resilience: Math.floor(520 * totalFactor),
+            capacity: Math.floor(4200 * totalFactor),
+            precision: Math.floor(92 * totalFactor),
+            endurance: Math.floor(560 * totalFactor),
+            output: Math.floor(760 * totalFactor),
+            control: Math.floor(840 * totalFactor),
+            offense: {
+              ...baseOffensiveStats,
+              firepower: Math.floor(baseOffensiveStats.firepower * (0.75 + familyIndex * 0.05)),
+              range: Math.floor(baseOffensiveStats.range * (1 + variantIndex * 0.02)),
+            },
+            defense: {
+              ...baseDefensiveStats,
+              armorStrength: Math.floor(baseDefensiveStats.armorStrength * (1 + familyIndex * 0.03)),
+              shieldCapacity: Math.floor(baseDefensiveStats.shieldCapacity * (1 + variantIndex * 0.08)),
+            },
+            tech: Math.floor(160 * totalFactor),
+            command: Math.floor(120 * totalFactor),
+            logistics: Math.floor(200 * totalFactor),
+            survivability: Math.floor(640 * totalFactor),
+          },
+          variant.id,
+        ),
+      );
+    });
+  });
+
+  return templates;
+}
+
+const GENERATED_INFRASTRUCTURE_MEGASTRUCTURES = generateInfrastructureMegastructures();
 
 export const MEGASTRUCTURES: Omit<Megastructure, 'level' | 'tier' | 'experience' | 'currentStats' | 'levelMultiplier' | 'tierMultiplier' | 'totalMultiplier' | 'coordinates' | 'sector' | 'orbitalBody' | 'isActive' | 'uptime' | 'efficiency'>[] = [
   // 1. DYSON SPHERE - Energy generation megastructure
@@ -539,7 +672,12 @@ export const MEGASTRUCTURES: Omit<Megastructure, 'level' | 'tier' | 'experience'
       survivability: 800,
     }
   ),
+
+  // 11-100. INFRASTRUCTURE EXPANSION - 90 generated infrastructure templates
+  ...GENERATED_INFRASTRUCTURE_MEGASTRUCTURES,
 ];
+
+export type MegastructureTemplate = (typeof MEGASTRUCTURES)[number];
 
 // ============================================================================
 // MEGASTRUCTURE LEVELS & TIERS
@@ -774,6 +912,13 @@ export function getMegastructuresByClass(modelClass: MegastructureClass): typeof
 }
 
 /**
+ * Get megastructure by subclass
+ */
+export function getMegastructuresBySubClass(subClass: MegastructureSubClass): typeof MEGASTRUCTURES {
+  return MEGASTRUCTURES.filter(m => m.subClass === subClass);
+}
+
+/**
  * Get all megastructure types
  */
 export function getAllMegastructureTypes(): MegastructureType[] {
@@ -785,6 +930,111 @@ export function getAllMegastructureTypes(): MegastructureType[] {
  */
 export function getAllMegastructureClasses(): MegastructureClass[] {
   return Array.from(new Set(MEGASTRUCTURES.map(m => m.class)));
+}
+
+/**
+ * Get all megastructure subclasses
+ */
+export function getAllMegastructureSubClasses(): MegastructureSubClass[] {
+  return Array.from(new Set(MEGASTRUCTURES.map(m => m.subClass)));
+}
+
+/**
+ * Resolve category-friendly display metadata by class.
+ */
+export function getMegastructureCategoryMeta(modelClass: MegastructureClass) {
+  return MEGASTRUCTURE_CATEGORY_METADATA[modelClass];
+}
+
+/**
+ * Calculate tier from level for a full 1-999 level / 1-99 tier progression.
+ */
+export function getMegastructureTierFromLevel(level: number, maxLevel: number = 999, maxTier: number = 99): number {
+  const clampedLevel = Math.max(1, Math.min(level, maxLevel));
+  const normalized = (clampedLevel - 1) / (maxLevel - 1);
+  return Math.min(maxTier, Math.max(1, Math.floor(normalized * (maxTier - 1)) + 1));
+}
+
+/**
+ * Calculate full construction cost for level/tier target.
+ */
+export function calculateMegastructureConstructionCost(
+  templateOrId: MegastructureTemplate | string,
+  level: number = 1,
+  tier: number = 1,
+): MegastructureCost {
+  const template = typeof templateOrId === 'string'
+    ? MEGASTRUCTURES.find(mega => mega.id === templateOrId)
+    : templateOrId;
+
+  if (!template) {
+    return { metal: 0, crystal: 0, deuterium: 0, energy: 0, rare: 0 };
+  }
+
+  const clampedLevel = Math.max(1, Math.min(level, template.progressionConfig.levels.max));
+  const clampedTier = Math.max(1, Math.min(tier, template.progressionConfig.tiers.max));
+  const levelMultiplier = Math.pow(1.08, clampedLevel - 1);
+  const tierMultiplier = Math.pow(1.2, clampedTier - 1);
+
+  const sizeMultiplierByType: Record<Megastructure['size'], number> = {
+    compact: 1,
+    huge: 1.35,
+    massive: 1.8,
+    colossal: 2.4,
+    planetary: 3.2,
+    solar: 4.5,
+    galactic: 6.5,
+  };
+
+  const sizeMultiplier = sizeMultiplierByType[template.size] ?? 1;
+  const totalMultiplier = levelMultiplier * tierMultiplier * sizeMultiplier;
+
+  return {
+    metal: Math.floor(template.resourcesCost.metal * totalMultiplier),
+    crystal: Math.floor(template.resourcesCost.crystal * totalMultiplier),
+    deuterium: Math.floor(template.resourcesCost.deuterium * totalMultiplier),
+    energy: Math.floor(template.resourcesCost.energy * totalMultiplier),
+    rare: Math.floor(template.resourcesCost.rare * totalMultiplier),
+  };
+}
+
+/**
+ * Calculate upgrade delta cost from current to target progression.
+ */
+export function calculateMegastructureUpgradeCost(
+  templateOrId: MegastructureTemplate | string,
+  currentLevel: number,
+  currentTier: number,
+  targetLevel: number,
+  targetTier: number,
+): MegastructureCost {
+  const currentCost = calculateMegastructureConstructionCost(templateOrId, currentLevel, currentTier);
+  const targetCost = calculateMegastructureConstructionCost(templateOrId, targetLevel, targetTier);
+
+  const deltaMultiplier = 0.6;
+
+  return {
+    metal: Math.max(0, Math.floor((targetCost.metal - currentCost.metal) * deltaMultiplier)),
+    crystal: Math.max(0, Math.floor((targetCost.crystal - currentCost.crystal) * deltaMultiplier)),
+    deuterium: Math.max(0, Math.floor((targetCost.deuterium - currentCost.deuterium) * deltaMultiplier)),
+    energy: Math.max(0, Math.floor((targetCost.energy - currentCost.energy) * deltaMultiplier)),
+    rare: Math.max(0, Math.floor((targetCost.rare - currentCost.rare) * deltaMultiplier)),
+  };
+}
+
+/**
+ * Build a category-indexed template map.
+ */
+export function getMegastructureCatalogByCategory() {
+  const classes = getAllMegastructureClasses().sort(
+    (left, right) => (MEGASTRUCTURE_CATEGORY_METADATA[left]?.order ?? 999) - (MEGASTRUCTURE_CATEGORY_METADATA[right]?.order ?? 999),
+  );
+
+  return classes.map(modelClass => ({
+    category: modelClass,
+    meta: getMegastructureCategoryMeta(modelClass),
+    templates: getMegastructuresByClass(modelClass),
+  }));
 }
 
 // ============================================================================
@@ -804,6 +1054,13 @@ export default {
   getStrategicValue,
   getMegastructuresByType,
   getMegastructuresByClass,
+  getMegastructuresBySubClass,
   getAllMegastructureTypes,
   getAllMegastructureClasses,
+  getAllMegastructureSubClasses,
+  getMegastructureCategoryMeta,
+  getMegastructureTierFromLevel,
+  calculateMegastructureConstructionCost,
+  calculateMegastructureUpgradeCost,
+  getMegastructureCatalogByCategory,
 };

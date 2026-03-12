@@ -3,33 +3,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MEGA_STRUCTURES, calculateConstructionCost } from "@/lib/megaStructures";
+import {
+  MEGA_STRUCTURE_CATEGORIES,
+  calculateConstructionCost,
+  getMegaStructuresByCategory,
+} from "@/lib/megaStructures";
 import { useGame } from "@/lib/gameContext";
 import { Zap, Users, Building2, TrendingUp } from "lucide-react";
 
 export default function MegaStructures() {
   const { constructMegastructure } = useGame();
 
-  const getTierColor = (tier: number) => {
+  const getCategoryColor = (category: string) => {
     const colors = {
-      1: "bg-blue-50 border-blue-200",
-      2: "bg-purple-50 border-purple-200",
-      3: "bg-orange-50 border-orange-200",
-      4: "bg-pink-50 border-pink-200",
-      5: "bg-amber-50 border-amber-200"
+      infrastructure: "bg-blue-50 border-blue-200",
+      production: "bg-orange-50 border-orange-200",
+      research: "bg-purple-50 border-purple-200",
+      defense: "bg-red-50 border-red-200",
+      mobility: "bg-cyan-50 border-cyan-200",
+      exotic: "bg-pink-50 border-pink-200",
+      superweapon: "bg-amber-50 border-amber-200",
     };
-    return colors[tier as keyof typeof colors] || "bg-slate-50 border-slate-200";
+    return colors[category as keyof typeof colors] || "bg-slate-50 border-slate-200";
   };
 
-  const getTierBadgeColor = (tier: number) => {
+  const getCategoryBadgeColor = (category: string) => {
     const colors = {
-      1: "bg-blue-100 text-blue-800",
-      2: "bg-purple-100 text-purple-800",
-      3: "bg-orange-100 text-orange-800",
-      4: "bg-pink-100 text-pink-800",
-      5: "bg-amber-100 text-amber-800"
+      infrastructure: "bg-blue-100 text-blue-800",
+      production: "bg-orange-100 text-orange-800",
+      research: "bg-purple-100 text-purple-800",
+      defense: "bg-red-100 text-red-800",
+      mobility: "bg-cyan-100 text-cyan-800",
+      exotic: "bg-pink-100 text-pink-800",
+      superweapon: "bg-amber-100 text-amber-800",
     };
-    return colors[tier as keyof typeof colors] || "bg-slate-100 text-slate-800";
+    return colors[category as keyof typeof colors] || "bg-slate-100 text-slate-800";
   };
 
   const handleConstruct = (structure: any) => {
@@ -45,25 +53,25 @@ export default function MegaStructures() {
           <p className="text-slate-600 mt-2">Cosmic engineering marvels that reshape civilization itself</p>
         </div>
 
-        {/* Tabs for different tiers */}
-        <Tabs defaultValue="tier1" className="w-full">
+        {/* Tabs for different categories */}
+        <Tabs defaultValue={MEGA_STRUCTURE_CATEGORIES[0]?.id || "infrastructure"} className="w-full">
           <TabsList className="bg-white border border-slate-200 h-auto flex-wrap w-full justify-start gap-2 p-2">
-            {[1, 2, 3, 4, 5].map(tier => (
-              <TabsTrigger key={tier} value={`tier${tier}`} className="capitalize">
-                Tier {tier}
+            {MEGA_STRUCTURE_CATEGORIES.map(category => (
+              <TabsTrigger key={category.id} value={category.id} className="capitalize">
+                {category.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
-          {[1, 2, 3, 4, 5].map(tier => (
-            <TabsContent key={tier} value={`tier${tier}`} className="space-y-4">
+          {MEGA_STRUCTURE_CATEGORIES.map(category => (
+            <TabsContent key={category.id} value={category.id} className="space-y-4">
+              <p className="text-sm text-slate-600">{category.description}</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {Object.values(MEGA_STRUCTURES)
-                  .filter(structure => structure.tier === tier)
+                {getMegaStructuresByCategory(category.id)
                   .map(structure => {
                     const cost = calculateConstructionCost(structure);
                     return (
-                      <Card key={structure.id} className={`border-2 ${getTierColor(tier)}`}>
+                      <Card key={structure.id} className={`border-2 ${getCategoryColor(category.id)}`}>
                         <CardHeader>
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
@@ -73,8 +81,8 @@ export default function MegaStructures() {
                                 <p className="text-xs text-slate-600 mt-1">{structure.type.replace(/_/g, " ").toUpperCase()}</p>
                               </div>
                             </div>
-                            <Badge className={getTierBadgeColor(tier)}>
-                              Tier {tier}
+                            <Badge className={getCategoryBadgeColor(category.id)}>
+                              Tier {structure.tier}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -204,19 +212,16 @@ export default function MegaStructures() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-700">
             <p>
-              <strong>Tier 1:</strong> Dyson Swarms - Basic stellar energy collection for early-game empires
+              <strong>Levels 1-999:</strong> Every megastructure scales continuously with level-based progression.
             </p>
             <p>
-              <strong>Tier 2:</strong> Ring Worlds - Massive habitats supporting billions of inhabitants
+              <strong>Tiers 1-99:</strong> Tier upgrades unlock large multiplier jumps and strategic breakpoints.
             </p>
             <p>
-              <strong>Tier 3:</strong> Dyson Spheres & Stellar Engines - Complete stellar control and star mobility
+              <strong>Category Systems:</strong> Infrastructure, production, research, defense, mobility, exotic, and superweapon paths.
             </p>
             <p>
-              <strong>Tier 4:</strong> Matrioshka Brains - Computational megastructures for advanced civilizations (Kardashev Type II)
-            </p>
-            <p>
-              <strong>Tier 5:</strong> Megastructure Networks - Transcendent civilizations (Kardashev Type III)
+              <strong>Unified Scaling:</strong> Construction and upgrade costs now follow shared progression formulas for all categories.
             </p>
           </CardContent>
         </Card>

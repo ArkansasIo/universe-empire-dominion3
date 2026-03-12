@@ -5,6 +5,7 @@ import { Alliance, AllianceMember, MOCK_ALLIANCES } from './allianceData';
 import { Artifact, ARTIFACTS } from './artifactData';
 import { simulateCombat, simulateEspionage, simulateSabotage, BattleReport, EspionageReport } from './gameLogic';
 import { CronJob, DEFAULT_CRON_JOBS } from './cronData';
+import { calculateConstructionCost, getMegaStructureTemplateById } from './megaStructures';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Megastructure, createMegastructure } from '@shared/config/megastructuresConfig';
 
@@ -953,16 +954,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const turnCost = 100;
     if (!spendTurns(turnCost)) return;
 
-    // Assuming cost is stored in the template, which we'd fetch from megaStructures.ts
-    // For now, let's use a mock cost
-    const mockCost = { metal: 1000000, crystal: 500000, deuterium: 250000 };
+    const template = getMegaStructureTemplateById(templateId);
+    if (!template) {
+      setCurrentTurns(prev => prev + turnCost);
+      addEvent("Construction Failed", "Megastructure template not found.", "danger");
+      return;
+    }
 
-    if (resources.metal >= mockCost.metal && resources.crystal >= mockCost.crystal && resources.deuterium >= mockCost.deuterium) {
+    const cost = calculateConstructionCost(template, template.level, template.tier);
+
+    if (
+      resources.metal >= cost.metal &&
+      resources.crystal >= cost.crystal &&
+      resources.deuterium >= cost.deuterium &&
+      resources.energy >= cost.energy
+    ) {
       setResources(prev => ({
         ...prev,
-        metal: prev.metal - mockCost.metal,
-        crystal: prev.crystal - mockCost.crystal,
-        deuterium: prev.deuterium - mockCost.deuterium,
+        metal: prev.metal - cost.metal,
+        crystal: prev.crystal - cost.crystal,
+        deuterium: prev.deuterium - cost.deuterium,
+        energy: prev.energy - cost.energy,
       }));
 
       const adjustedTime = time / (config?.gameSpeed || 1);

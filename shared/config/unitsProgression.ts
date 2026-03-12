@@ -20,7 +20,7 @@ export type UnitType =
   | 'drone'
   | 'elite-unit';
 
-export type UnitTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 15 | 20 | 25 | 30 | 50 | 99;
+export type UnitTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12 | 15 | 20 | 25 | 30 | 35 | 50 | 99;
 
 export interface UnitStats {
   attack: number;

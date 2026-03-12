@@ -110,7 +110,7 @@ export const ENTITY_ARCHETYPES_GROUPED = ENTITY_ARCHETYPES_90.reduce((acc, entit
 
 export const ENTITY_ARCHETYPES_META = {
   total: ENTITY_ARCHETYPES_90.length,
-  types: [...new Set(ENTITY_ARCHETYPES_90.map(e => e.type))],
-  classes: [...new Set(ENTITY_ARCHETYPES_90.map(e => e.class))],
-  subClasses: [...new Set(ENTITY_ARCHETYPES_90.map(e => e.subClass))],
+  types: Array.from(new Set(ENTITY_ARCHETYPES_90.map(e => e.type))),
+  classes: Array.from(new Set(ENTITY_ARCHETYPES_90.map(e => e.class))),
+  subClasses: Array.from(new Set(ENTITY_ARCHETYPES_90.map(e => e.subClass))),
 };

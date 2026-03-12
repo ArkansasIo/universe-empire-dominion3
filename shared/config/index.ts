@@ -108,6 +108,7 @@ export {
 } from './enemyRacesConfig';
 export {
   MEGASTRUCTURES,
+  MEGASTRUCTURE_CATEGORY_METADATA,
   MegastructureProgression,
   createMegastructure,
   upgradeMegastructureLevel,
@@ -119,8 +120,17 @@ export {
   getStrategicValue,
   getMegastructuresByType,
   getMegastructuresByClass,
+  getMegastructuresBySubClass,
   getAllMegastructureTypes,
   getAllMegastructureClasses,
+  getAllMegastructureSubClasses,
+  getMegastructureCategoryMeta,
+  getMegastructureTierFromLevel,
+  calculateMegastructureConstructionCost,
+  calculateMegastructureUpgradeCost,
+  getMegastructureCatalogByCategory,
+  type MegastructureCost,
+  type MegastructureTemplate,
 } from './megastructuresConfig';
 
 // Interstellar Travel & Navigation Exports

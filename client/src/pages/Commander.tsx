@@ -13,7 +13,19 @@ import {
   Box, Gem, Database, Flame, Star, Fingerprint, Dna, FlaskConical,
   Trophy, Target, Rocket, Medal, Award, Crown, Zap, Heart, History
 } from "lucide-react";
-import { Item, blueprints, RACES, CLASSES, SUBCLASSES, RaceId, ClassId, SubClassId } from "@/lib/commanderTypes";
+import {
+   Item,
+   COMMANDER_EQUIPMENT_TEMPLATES,
+   COMMANDER_EQUIPMENT_TEMPLATE_COUNT,
+   getCommanderEquipmentTemplatesByType,
+   RACES,
+   CLASSES,
+   SUBCLASSES,
+   RaceId,
+   ClassId,
+   SubClassId,
+   CommanderEquipmentType,
+} from "@/lib/commanderTypes";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -46,6 +58,11 @@ const ItemCard = ({ item, onEquip, onTemper }: { item: Item, onEquip?: (item: It
                   {item.tempering ? <span className="text-red-500">+{item.tempering}</span> : null}
                </div>
                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{item.rarity} {item.type}</div>
+               {(item.itemClass || item.itemSubClass || item.itemSubType) && (
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-indigo-500">
+                     {item.itemClass || "Unknown"} · {item.itemSubClass || "Unknown"} · {item.itemSubType || "Unknown"}
+                  </div>
+               )}
             </div>
          </div>
          {item.masterwork && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
@@ -102,9 +119,10 @@ export default function Commander() {
     return <GameLayout><div className="text-center py-12">Loading commander data...</div></GameLayout>;
   }
 
-  const [selectedRace, setSelectedRace] = useState<RaceId>(commander.race || "human");
-  const [selectedClass, setSelectedClass] = useState<ClassId>(commander.class || "warrior");
+   const [selectedRace, setSelectedRace] = useState<RaceId>(commander.race || "terran");
+   const [selectedClass, setSelectedClass] = useState<ClassId>(commander.class || "admiral");
   const [selectedSubClass, setSelectedSubClass] = useState<SubClassId | "none">(commander.subClass || "none");
+   const [selectedEquipmentType, setSelectedEquipmentType] = useState<CommanderEquipmentType>("weapon");
 
   const totalSkillPoints = skills.reduce((acc, s) => acc + s.currentLevel, 0);
   const unlockedAchievements = achievements.filter(a => a.unlocked).length;
@@ -196,12 +214,12 @@ export default function Commander() {
                          <div className="w-24 h-24 mx-auto bg-slate-100 rounded-full border-4 border-white shadow-lg flex items-center justify-center mb-2 overflow-hidden relative">
                             <User className="w-12 h-12 text-slate-400" />
                             <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] uppercase py-0.5">
-                               {RACES[commander?.race || "human"]?.name || "Unknown"}
+                               {RACES[commander?.race || "terran"]?.name || "Unknown"}
                             </div>
                          </div>
                          <h3 className="text-xl font-orbitron text-slate-900">Commander</h3>
                          <div className="flex justify-center gap-2 mt-1">
-                            <Badge variant="outline" className="border-primary text-primary">{CLASSES[commander?.class || "warrior"]?.name || "Unknown"}</Badge>
+                            <Badge variant="outline" className="border-primary text-primary">{CLASSES[commander?.class || "admiral"]?.name || "Unknown"}</Badge>
                             {commander?.subClass && <Badge variant="secondary">{SUBCLASSES[commander?.subClass]?.name || "Unknown"}</Badge>}
                          </div>
                          <div className="mt-4 px-4">
@@ -478,35 +496,47 @@ export default function Commander() {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-white border-slate-200">
                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-slate-900"><Hammer className="w-5 h-5 text-primary" /> Blueprint Crafting</CardTitle>
-                      <CardDescription>Craft new items from blueprints using resources.</CardDescription>
+                      <CardTitle className="flex items-center gap-2 text-slate-900"><Hammer className="w-5 h-5 text-primary" /> Equipment Foundry ({COMMANDER_EQUIPMENT_TEMPLATE_COUNT} Types)</CardTitle>
+                      <CardDescription>Craft commander weapons, armor, and modules with class, subclass, and subtype variants.</CardDescription>
                    </CardHeader>
                    <CardContent className="space-y-4">
-                      {blueprints.map(bp => (
-                         <div key={bp.id} className="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200">
+                      <div className="flex gap-2 mb-2">
+                         <Button variant={selectedEquipmentType === "weapon" ? "default" : "outline"} size="sm" onClick={() => setSelectedEquipmentType("weapon")}>Weapons</Button>
+                         <Button variant={selectedEquipmentType === "armor" ? "default" : "outline"} size="sm" onClick={() => setSelectedEquipmentType("armor")}>Armor</Button>
+                         <Button variant={selectedEquipmentType === "module" ? "default" : "outline"} size="sm" onClick={() => setSelectedEquipmentType("module")}>Items / Modules</Button>
+                      </div>
+                      <ScrollArea className="h-[460px] pr-2">
+                      {getCommanderEquipmentTemplatesByType(selectedEquipmentType).map(template => (
+                         <div key={template.id} className="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200 mb-3">
                             <div className="flex items-center gap-3">
                                <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center text-blue-500">
                                   <Hammer className="w-5 h-5" />
                                </div>
                                <div>
-                                  <div className="font-bold text-sm text-slate-900">{bp.name}</div>
-                                  <div className="text-xs text-slate-500">Requires: {bp.cost.metal} Metal, {bp.cost.crystal} Crystal</div>
+                                  <div className="font-bold text-sm text-slate-900">{template.name}</div>
+                                  <div className="text-xs text-slate-500">{template.itemClass} / {template.itemSubClass} / {template.itemSubType}</div>
+                                  <div className="text-xs text-slate-500">Lvl {template.level} · {template.rarity} · {template.type}</div>
+                                  <div className="text-xs text-slate-500">Requires: {template.craftingCost.metal} Metal, {template.craftingCost.crystal} Crystal, {template.craftingCost.deuterium} Deuterium</div>
                                </div>
                             </div>
                             <Button size="sm" onClick={() => {
                                const item: Item = {
-                                  id: Math.random().toString(36),
-                                  name: bp.name.replace(" Blueprint", ""),
-                                  description: "Crafted item.",
-                                  type: bp.type as any,
-                                  rarity: "common",
-                                  level: 1,
-                                  stats: { warfare: 5 }
+                                  id: `${template.id}_${Date.now()}`,
+                                  name: template.name,
+                                  description: template.description,
+                                  type: template.type,
+                                  rarity: template.rarity,
+                                  level: template.level,
+                                  itemClass: template.itemClass,
+                                  itemSubClass: template.itemSubClass,
+                                  itemSubType: template.itemSubType,
+                                  stats: template.stats
                                };
-                               craftItem(item, bp.cost);
-                            }} data-testid={`button-craft-${bp.id}`}>Craft</Button>
+                               craftItem(item, template.craftingCost);
+                            }} data-testid={`button-craft-${template.id}`}>Craft</Button>
                          </div>
                       ))}
+                      </ScrollArea>
                    </CardContent>
                 </Card>
                 

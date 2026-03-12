@@ -1,5 +1,15 @@
 
-import { Research } from './research';
+export interface Research {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  subCategory: string;
+  class: string;
+  subClass: string;
+  type: string;
+  subType: string;
+}
 
 export const researches: Research[] = [
   {

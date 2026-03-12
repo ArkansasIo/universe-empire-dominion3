@@ -26,6 +26,7 @@ export type Atmosphere =
   | 'none'
   | 'trace'
   | 'thin'
+  | 'thick'
   | 'thin-low'
   | 'thin-high'
   | 'standard'

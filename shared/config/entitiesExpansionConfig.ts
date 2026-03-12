@@ -5,112 +5,81 @@
  */
 
 // ====================
-// STARSHIP TYPES (95)
+// STARSHIP TYPES (90)
 // ====================
 
-export const STARSHIP_TYPES = {
-  // Light Fighters (15)
-  INTERCEPTOR: { name: "Interceptor", tier: 1, power: 50, defense: 30, mobility: 95, utility: 20 },
-  SCOUT: { name: "Scout", tier: 1, power: 40, defense: 25, mobility: 100, utility: 30 },
-  FIGHTER: { name: "Fighter", tier: 1, power: 55, defense: 32, mobility: 90, utility: 25 },
-  WASP: { name: "Wasp", tier: 1, power: 45, defense: 28, mobility: 98, utility: 22 },
-  DART: { name: "Dart", tier: 1, power: 48, defense: 26, mobility: 96, utility: 24 },
-  HORNET: { name: "Hornet", tier: 1, power: 52, defense: 29, mobility: 94, utility: 23 },
-  VIPER: { name: "Viper", tier: 1, power: 60, defense: 31, mobility: 92, utility: 21 },
-  RAZOR: { name: "Razor", tier: 1, power: 58, defense: 28, mobility: 97, utility: 20 },
-  SPARK: { name: "Spark", tier: 1, power: 42, defense: 27, mobility: 99, utility: 25 },
-  NEEDLE: { name: "Needle", tier: 1, power: 44, defense: 24, mobility: 101, utility: 26 },
-  PHANTOM: { name: "Phantom", tier: 1, power: 50, defense: 35, mobility: 85, utility: 28 },
-  SPECTRE: { name: "Spectre", tier: 1, power: 48, defense: 33, mobility: 88, utility: 30 },
-  WRAITH: { name: "Wraith", tier: 1, power: 46, defense: 32, mobility: 89, utility: 32 },
-  GHOST: { name: "Ghost", tier: 1, power: 43, defense: 34, mobility: 87, utility: 31 },
-  SHADE: { name: "Shade", tier: 1, power: 47, defense: 31, mobility: 91, utility: 29 },
+type StarshipTypeDefinition = {
+  name: string;
+  class: string;
+  subclass: string;
+  type: string;
+  subtype: string;
+  tier: number;
+  power: number;
+  defense: number;
+  mobility: number;
+  utility: number;
+};
 
-  // Medium Fighters (15)
-  CORVETTE: { name: "Corvette", tier: 2, power: 75, defense: 50, mobility: 80, utility: 40 },
-  FRIGATE: { name: "Frigate", tier: 2, power: 80, defense: 55, mobility: 75, utility: 45 },
-  DESTROYER: { name: "Destroyer", tier: 2, power: 85, defense: 60, mobility: 70, utility: 50 },
-  ENFORCER: { name: "Enforcer", tier: 2, power: 82, defense: 58, mobility: 72, utility: 48 },
-  GUARDIAN: { name: "Guardian", tier: 2, power: 78, defense: 62, mobility: 68, utility: 52 },
-  SENTINEL: { name: "Sentinel", tier: 2, power: 81, defense: 61, mobility: 69, utility: 51 },
-  DEFENDER: { name: "Defender", tier: 2, power: 76, defense: 65, mobility: 66, utility: 55 },
-  PROTECTOR: { name: "Protector", tier: 2, power: 74, defense: 64, mobility: 67, utility: 53 },
-  STALKER: { name: "Stalker", tier: 2, power: 79, defense: 52, mobility: 78, utility: 42 },
-  HUNTER: { name: "Hunter", tier: 2, power: 77, defense: 49, mobility: 82, utility: 38 },
-  TRACKER: { name: "Tracker", tier: 2, power: 72, defense: 47, mobility: 85, utility: 36 },
-  RANGER: { name: "Ranger", tier: 2, power: 73, defense: 48, mobility: 83, utility: 37 },
-  REAPER: { name: "Reaper", tier: 2, power: 88, defense: 56, mobility: 71, utility: 46 },
-  HARVESTER: { name: "Harvester", tier: 2, power: 83, defense: 54, mobility: 73, utility: 44 },
-  COLLECTOR: { name: "Collector", tier: 2, power: 70, defense: 51, mobility: 79, utility: 41 },
+const STARSHIP_CLASS_FAMILIES = [
+  { key: "INTERCEPTOR", name: "Interceptor", type: "Combat", tier: 1, power: 55, defense: 32, mobility: 95, utility: 24 },
+  { key: "FRIGATE", name: "Frigate", type: "Combat", tier: 2, power: 82, defense: 58, mobility: 76, utility: 42 },
+  { key: "DESTROYER", name: "Destroyer", type: "Combat", tier: 3, power: 126, defense: 84, mobility: 54, utility: 66 },
+  { key: "CRUISER", name: "Cruiser", type: "Command", tier: 4, power: 168, defense: 112, mobility: 51, utility: 98 },
+  { key: "BATTLESHIP", name: "Battleship", type: "Capital", tier: 5, power: 252, defense: 186, mobility: 35, utility: 166 },
+  { key: "CARRIER", name: "Carrier", type: "Support", tier: 5, power: 208, defense: 162, mobility: 39, utility: 226 },
+  { key: "EXPLORER", name: "Explorer", type: "Recon", tier: 3, power: 98, defense: 74, mobility: 82, utility: 142 },
+  { key: "SIEGE", name: "Siege Platform", type: "Assault", tier: 4, power: 188, defense: 126, mobility: 41, utility: 88 },
+  { key: "AUXILIARY", name: "Auxiliary Vessel", type: "Logistics", tier: 3, power: 88, defense: 78, mobility: 64, utility: 164 },
+] as const;
 
-  // Heavy Fighters (15)
-  BOMBER: { name: "Bomber", tier: 3, power: 120, defense: 75, mobility: 55, utility: 65 },
-  GUNSHIP: { name: "Gunship", tier: 3, power: 125, defense: 80, mobility: 50, utility: 70 },
-  ASSAULT_SHIP: { name: "Assault Ship", tier: 3, power: 130, defense: 85, mobility: 45, utility: 75 },
-  BATTERING_RAM: { name: "Battering Ram", tier: 3, power: 135, defense: 88, mobility: 42, utility: 78 },
-  SLEDGEHAMMER: { name: "Sledgehammer", tier: 3, power: 140, defense: 90, mobility: 40, utility: 80 },
-  WARHAMMER: { name: "Warhammer", tier: 3, power: 138, defense: 89, mobility: 43, utility: 77 },
-  STORM_SHIP: { name: "Storm Ship", tier: 3, power: 128, defense: 82, mobility: 48, utility: 72 },
-  TEMPEST: { name: "Tempest", tier: 3, power: 132, defense: 84, mobility: 46, utility: 74 },
-  CYCLONE: { name: "Cyclone", tier: 3, power: 126, defense: 81, mobility: 49, utility: 71 },
-  TYPHOON: { name: "Typhoon", tier: 3, power: 129, defense: 83, mobility: 47, utility: 73 },
-  INFERNO: { name: "Inferno", tier: 3, power: 142, defense: 87, mobility: 41, utility: 76 },
-  BLAZE: { name: "Blaze", tier: 3, power: 137, defense: 86, mobility: 44, utility: 69 },
-  VOLCANO: { name: "Volcano", tier: 3, power: 145, defense: 91, mobility: 38, utility: 82 },
-  MAGMA: { name: "Magma", tier: 3, power: 133, defense: 79, mobility: 52, utility: 68 },
-  TORRENT: { name: "Torrent", tier: 3, power: 127, defense: 76, mobility: 53, utility: 66 },
+const STARSHIP_SUBTYPE_VARIANTS = [
+  { key: "ASSAULT", name: "Assault", subtype: "Linebreaker" },
+  { key: "SKIRMISH", name: "Skirmish", subtype: "Raider" },
+  { key: "STEALTH", name: "Stealth", subtype: "Infiltration" },
+  { key: "DEFENDER", name: "Defender", subtype: "Bulwark" },
+  { key: "GUARDIAN", name: "Guardian", subtype: "Escort" },
+  { key: "RANGER", name: "Ranger", subtype: "Pathfinder" },
+  { key: "VANGUARD", name: "Vanguard", subtype: "Shock" },
+  { key: "SENTINEL", name: "Sentinel", subtype: "Ward" },
+  { key: "NEXUS", name: "Nexus", subtype: "Command-Link" },
+  { key: "PRIME", name: "Prime", subtype: "Prototype" },
+] as const;
 
-  // Cruisers (20)
-  CRUISER: { name: "Cruiser", tier: 4, power: 160, defense: 110, mobility: 55, utility: 90 },
-  BATTLECRUISER: { name: "Battlecruiser", tier: 4, power: 180, defense: 120, mobility: 50, utility: 100 },
-  HEAVY_CRUISER: { name: "Heavy Cruiser", tier: 4, power: 170, defense: 115, mobility: 52, utility: 95 },
-  LIGHT_CRUISER: { name: "Light Cruiser", tier: 4, power: 150, defense: 105, mobility: 60, utility: 85 },
-  STRIKE_CRUISER: { name: "Strike Cruiser", tier: 4, power: 165, defense: 108, mobility: 58, utility: 88 },
-  COMMAND_CRUISER: { name: "Command Cruiser", tier: 4, power: 155, defense: 112, mobility: 53, utility: 110 },
-  SCOUT_CRUISER: { name: "Scout Cruiser", tier: 4, power: 145, defense: 100, mobility: 70, utility: 80 },
-  MISSILE_CRUISER: { name: "Missile Cruiser", tier: 4, power: 175, defense: 118, mobility: 48, utility: 105 },
-  PLASMA_CRUISER: { name: "Plasma Cruiser", tier: 4, power: 172, defense: 113, mobility: 54, utility: 92 },
-  ENERGY_CRUISER: { name: "Energy Cruiser", tier: 4, power: 168, defense: 111, mobility: 56, utility: 94 },
-  LASER_CRUISER: { name: "Laser Cruiser", tier: 4, power: 162, defense: 107, mobility: 59, utility: 89 },
-  SHIELD_CRUISER: { name: "Shield Cruiser", tier: 4, power: 158, defense: 125, mobility: 48, utility: 108 },
-  ARMOR_CRUISER: { name: "Armor Cruiser", tier: 4, power: 164, defense: 122, mobility: 49, utility: 91 },
-  SPEED_CRUISER: { name: "Speed Cruiser", tier: 4, power: 152, defense: 102, mobility: 68, utility: 83 },
-  PRECISION_CRUISER: { name: "Precision Cruiser", tier: 4, power: 160, defense: 109, mobility: 57, utility: 87 },
-  CARRIER_CRUISER: { name: "Carrier Cruiser", tier: 4, power: 155, defense: 103, mobility: 51, utility: 115 },
-  RESEARCH_CRUISER: { name: "Research Cruiser", tier: 4, power: 148, defense: 104, mobility: 52, utility: 120 },
-  DIPLOMATIC_CRUISER: { name: "Diplomatic Cruiser", tier: 4, power: 140, defense: 106, mobility: 55, utility: 125 },
-  COLONIST_CRUISER: { name: "Colonist Cruiser", tier: 4, power: 145, defense: 105, mobility: 54, utility: 130 },
-  TRADE_CRUISER: { name: "Trade Cruiser", tier: 4, power: 142, defense: 101, mobility: 63, utility: 118 },
+function clampStat(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
 
-  // Battleships (15)
-  BATTLESHIP: { name: "Battleship", tier: 5, power: 250, defense: 180, mobility: 35, utility: 150 },
-  DREADNOUGHT: { name: "Dreadnought", tier: 5, power: 280, defense: 200, mobility: 30, utility: 160 },
-  SUPER_BATTLESHIP: { name: "Super Battleship", tier: 5, power: 300, defense: 220, mobility: 28, utility: 170 },
-  FLAGSHIP: { name: "Flagship", tier: 5, power: 270, defense: 190, mobility: 32, utility: 180 },
-  TITAN: { name: "Titan", tier: 5, power: 320, defense: 240, mobility: 25, utility: 200 },
-  LEVIATHAN: { name: "Leviathan", tier: 5, power: 350, defense: 260, mobility: 20, utility: 210 },
-  BEHEMOTH: { name: "Behemoth", tier: 5, power: 330, defense: 250, mobility: 22, utility: 205 },
-  COLOSSUS: { name: "Colossus", tier: 5, power: 340, defense: 255, mobility: 21, utility: 208 },
-  OMEGA: { name: "Omega", tier: 5, power: 360, defense: 270, mobility: 18, utility: 215 },
-  ALPHA: { name: "Alpha", tier: 5, power: 290, defense: 210, mobility: 29, utility: 175 },
-  NEXUS_SHIP: { name: "Nexus Ship", tier: 5, power: 260, defense: 185, mobility: 33, utility: 220 },
-  COMMAND_SHIP: { name: "Command Ship", tier: 5, power: 255, defense: 175, mobility: 36, utility: 240 },
-  FORTRESS_SHIP: { name: "Fortress Ship", tier: 5, power: 240, defense: 290, mobility: 24, utility: 160 },
-  ARSENAL_SHIP: { name: "Arsenal Ship", tier: 5, power: 310, defense: 170, mobility: 34, utility: 180 },
-  OBSERVATORY_SHIP: { name: "Observatory Ship", tier: 5, power: 200, defense: 150, mobility: 40, utility: 300 },
+function generateStarshipTypes(): Record<string, StarshipTypeDefinition> {
+  const entries = STARSHIP_CLASS_FAMILIES.flatMap((family, familyIndex) =>
+    STARSHIP_SUBTYPE_VARIANTS.map((variant, variantIndex) => {
+      const key = `${family.key}_${variant.key}`;
+      const power = Math.round(family.power + familyIndex * 5 + variantIndex * 3);
+      const defense = Math.round(family.defense + familyIndex * 4 + variantIndex * 2);
+      const mobility = clampStat(Math.round(family.mobility - familyIndex * 2 + (variantIndex % 5) * 2), 18, 110);
+      const utility = Math.round(family.utility + familyIndex * 6 + variantIndex * 5);
 
-  // Carriers (10)
-  CARRIER: { name: "Carrier", tier: 4, power: 140, defense: 130, mobility: 45, utility: 200 },
-  SUPER_CARRIER: { name: "Super Carrier", tier: 5, power: 200, defense: 160, mobility: 40, utility: 300 },
-  LIGHT_CARRIER: { name: "Light Carrier", tier: 3, power: 100, defense: 90, mobility: 60, utility: 150 },
-  HEAVY_CARRIER: { name: "Heavy Carrier", tier: 5, power: 220, defense: 180, mobility: 35, utility: 320 },
-  ASSAULT_CARRIER: { name: "Assault Carrier", tier: 5, power: 210, defense: 170, mobility: 38, utility: 280 },
-  CARRIER_STRIKE: { name: "Carrier Strike", tier: 5, power: 215, defense: 175, mobility: 37, utility: 290 },
-  STEALTH_CARRIER: { name: "Stealth Carrier", tier: 4, power: 135, defense: 115, mobility: 65, utility: 220 },
-  COMMAND_CARRIER: { name: "Command Carrier", tier: 5, power: 190, defense: 155, mobility: 42, utility: 350 },
-  RESEARCH_CARRIER: { name: "Research Carrier", tier: 4, power: 130, defense: 100, mobility: 50, utility: 280 },
-  SCIENCE_CARRIER: { name: "Science Carrier", tier: 5, power: 180, defense: 140, mobility: 44, utility: 330 },
-} as const;
+      const definition: StarshipTypeDefinition = {
+        name: `${variant.name} ${family.name}`,
+        class: family.name,
+        subclass: variant.name,
+        type: family.type,
+        subtype: variant.subtype,
+        tier: family.tier,
+        power,
+        defense,
+        mobility,
+        utility,
+      };
+
+      return [key, definition] as const;
+    })
+  );
+
+  return Object.fromEntries(entries);
+}
+
+export const STARSHIP_TYPES = generateStarshipTypes();
 
 // ====================
 // MOTHERSHIP TYPES (45)

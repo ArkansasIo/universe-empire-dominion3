@@ -65,7 +65,7 @@ export interface TechnologyNode {
   level: number;
   tier: number;
   researchCost: number;        // Science points required
-  progressionConfig: TechProgressionConfig;
+  progressionConfig?: TechProgressionConfig;
   
   // Requirements
   prerequisiteTechs: string[]; // Tech IDs that must come first
