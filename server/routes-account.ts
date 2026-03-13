@@ -14,12 +14,39 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
+async function getOptionalPlayerState(userId: string) {
+  try {
+    return await storage.getPlayerState(userId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("does not exist")) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+async function tryUpdateCommanderState(userId: string, updater: (commander: any) => any) {
+  const playerState = await getOptionalPlayerState(userId);
+  if (!playerState) {
+    return false;
+  }
+
+  const commander = { ...((playerState.commander as any) || {}) };
+
+  await storage.updatePlayerState(userId, {
+    commander: updater(commander) as any,
+  });
+
+  return true;
+}
+
 export function registerAccountRoutes(app: Express) {
   app.get("/api/account/settings", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId);
-      const playerState = await storage.getPlayerState(userId);
+      const playerState = await getOptionalPlayerState(userId);
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -63,19 +90,14 @@ export function registerAccountRoutes(app: Express) {
         updatedAt: new Date(),
       });
 
-      const playerState = await storage.getPlayerState(userId);
-      const commander = { ...((playerState?.commander as any) || {}) };
-
-      await storage.updatePlayerState(userId, {
-        commander: {
-          ...commander,
-          title: commanderTitle || commander.title || "Commander",
-          profile: {
-            ...(commander.profile || {}),
-            bioMessage,
-          },
-        } as any,
-      });
+      await tryUpdateCommanderState(userId, (commander) => ({
+        ...commander,
+        title: commanderTitle || commander.title || "Commander",
+        profile: {
+          ...(commander.profile || {}),
+          bioMessage,
+        },
+      }));
 
       res.json({
         id: user.id,
@@ -145,19 +167,14 @@ export function registerAccountRoutes(app: Express) {
   app.post("/api/account/2fa/enable", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      const playerState = await storage.getPlayerState(userId);
-      const commander = { ...((playerState?.commander as any) || {}) };
-
-      await storage.updatePlayerState(userId, {
-        commander: {
-          ...commander,
-          security: {
-            ...(commander.security || {}),
-            twoFactorEnabled: true,
-            twoFactorActivatedAt: new Date().toISOString(),
-          },
-        } as any,
-      });
+      await tryUpdateCommanderState(userId, (commander) => ({
+        ...commander,
+        security: {
+          ...(commander.security || {}),
+          twoFactorEnabled: true,
+          twoFactorActivatedAt: new Date().toISOString(),
+        },
+      }));
 
       res.json({ enabled: true });
     } catch (error) {
@@ -170,7 +187,7 @@ export function registerAccountRoutes(app: Express) {
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId);
-      const playerState = await storage.getPlayerState(userId);
+      const playerState = await getOptionalPlayerState(userId);
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
