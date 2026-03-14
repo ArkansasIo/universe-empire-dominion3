@@ -6,86 +6,99 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle, Bug, AlertCircle, Zap, Terminal, Clock } from "lucide-react";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+type IssueRecord = {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  occurrences?: number;
+  lastSeen?: string | number;
+};
+
+type WarningRecord = {
+  id: string;
+  level: string;
+  title: string;
+  message: string;
+  source: string;
+  timestamp: number;
+};
+
+type DebugRecord = {
+  timestamp: number;
+  level: string;
+  source: string;
+  message: string;
+  duration?: number;
+};
+
+type WrappedResponse<T> = {
+  success: boolean;
+  data: T;
+  count?: number;
+};
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+    ...init,
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || "Request failed");
+  }
+  return payload as T;
+}
 
 export default function Diagnostics() {
   const [selectedTab, setSelectedTab] = useState("overview");
+  const queryClient = useQueryClient();
 
-  const mockIssues = [
-    {
-      id: "issue_1",
-      title: "High Memory Usage Detected",
-      severity: "critical",
-      status: "open",
-      occurrences: 12,
-      lastSeen: "5 minutes ago",
-    },
-    {
-      id: "issue_2",
-      title: "Database Query Timeout",
-      severity: "high",
-      status: "investigating",
-      occurrences: 3,
-      lastSeen: "30 minutes ago",
-    },
-    {
-      id: "issue_3",
-      title: "API Response Degradation",
-      severity: "medium",
-      status: "open",
-      occurrences: 5,
-      lastSeen: "1 hour ago",
-    },
-  ];
+  const { data: issuesResponse } = useQuery<WrappedResponse<IssueRecord[]>>({
+    queryKey: ["diagnostics-issues"],
+    queryFn: () => fetchJson<WrappedResponse<IssueRecord[]>>("/api/diagnostics/issues"),
+    refetchInterval: 15000,
+  });
 
-  const mockWarnings = [
-    {
-      id: "warn_1",
-      level: "emergency",
-      title: "CPU Load Critical",
-      message: "Server CPU usage exceeded 90% for 2+ minutes",
-      source: "System Monitor",
-      timestamp: Date.now() - 60000,
-    },
-    {
-      id: "warn_2",
-      level: "alert",
-      title: "Disk Space Low",
-      message: "Available disk space below 15%",
-      source: "Storage Monitor",
-      timestamp: Date.now() - 300000,
-    },
-    {
-      id: "warn_3",
-      level: "caution",
-      title: "Cache Hit Rate Declining",
-      message: "Cache hit rate dropped to 65%",
-      source: "Cache Manager",
-      timestamp: Date.now() - 600000,
-    },
-  ];
+  const { data: warningsResponse } = useQuery<WrappedResponse<WarningRecord[]>>({
+    queryKey: ["diagnostics-warnings"],
+    queryFn: () => fetchJson<WrappedResponse<WarningRecord[]>>("/api/diagnostics/warnings"),
+    refetchInterval: 15000,
+  });
 
-  const mockDebugLogs = [
-    {
-      timestamp: Date.now(),
-      level: "error",
-      source: "DatabaseService",
-      message: "Connection pool exhausted",
-      duration: 245,
+  const { data: debugResponse } = useQuery<WrappedResponse<DebugRecord[]>>({
+    queryKey: ["diagnostics-debug"],
+    queryFn: () => fetchJson<WrappedResponse<DebugRecord[]>>("/api/diagnostics/debug?limit=100"),
+    refetchInterval: 10000,
+  });
+
+  const acknowledgeWarningMutation = useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/diagnostics/warnings/${id}/acknowledge`, { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diagnostics-warnings"] });
     },
-    {
-      timestamp: Date.now() - 30000,
-      level: "warn",
-      source: "AuthService",
-      message: "Brute force login attempt detected from 192.168.1.1",
+  });
+
+  const resolveIssueMutation = useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/diagnostics/issues/${id}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ notes: "Resolved from diagnostics console" }),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diagnostics-issues"] });
     },
-    {
-      timestamp: Date.now() - 60000,
-      level: "info",
-      source: "CacheService",
-      message: "Cache invalidation completed",
-      duration: 125,
-    },
-  ];
+  });
+
+  const issues = issuesResponse?.data || [];
+  const warnings = warningsResponse?.data || [];
+  const debugLogs = debugResponse?.data || [];
 
   const severityColors: Record<string, string> = {
     critical: "bg-red-100 text-red-800 border-red-300",
@@ -125,7 +138,7 @@ export default function Diagnostics() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 uppercase font-bold">Critical Issues</p>
-                  <p className="text-3xl font-bold text-red-600">3</p>
+                  <p className="text-3xl font-bold text-red-600">{issues.filter((issue) => issue.severity === "critical").length}</p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-red-500 opacity-50" />
               </div>
@@ -137,7 +150,7 @@ export default function Diagnostics() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 uppercase font-bold">Active Warnings</p>
-                  <p className="text-3xl font-bold text-orange-600">8</p>
+                  <p className="text-3xl font-bold text-orange-600">{warnings.length}</p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-orange-500 opacity-50" />
               </div>
@@ -149,7 +162,7 @@ export default function Diagnostics() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 uppercase font-bold">Debug Entries</p>
-                  <p className="text-3xl font-bold text-blue-600">1,247</p>
+                  <p className="text-3xl font-bold text-blue-600">{debugLogs.length}</p>
                 </div>
                 <Bug className="w-8 h-8 text-blue-500 opacity-50" />
               </div>
@@ -184,17 +197,18 @@ export default function Diagnostics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {mockIssues.slice(0, 2).map((issue) => (
+                    {issues.slice(0, 2).map((issue) => (
                       <div key={issue.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-start justify-between mb-1">
                           <h4 className="font-semibold text-slate-900">{issue.title}</h4>
                           <Badge className="bg-red-100 text-red-800">{issue.severity}</Badge>
                         </div>
                         <p className="text-xs text-slate-600">
-                          {issue.occurrences} occurrences • Last seen {issue.lastSeen}
+                          {issue.occurrences || 1} occurrences • Last seen {issue.lastSeen ? new Date(issue.lastSeen).toLocaleString?.() || issue.lastSeen : "recently"}
                         </p>
                       </div>
                     ))}
+                    {issues.length === 0 && <div className="text-sm text-slate-500">No active issues detected.</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -207,7 +221,7 @@ export default function Diagnostics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {mockWarnings.slice(0, 2).map((warn) => (
+                    {warnings.slice(0, 2).map((warn) => (
                       <div key={warn.id} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                         <div className="flex items-start justify-between mb-1">
                           <h4 className="font-semibold text-slate-900">{warn.title}</h4>
@@ -216,6 +230,7 @@ export default function Diagnostics() {
                         <p className="text-xs text-slate-600">{warn.source}</p>
                       </div>
                     ))}
+                    {warnings.length === 0 && <div className="text-sm text-slate-500">No active warnings.</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -232,7 +247,7 @@ export default function Diagnostics() {
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-3 pr-4">
-                    {mockIssues.map((issue) => (
+                    {issues.map((issue) => (
                       <div
                         key={issue.id}
                         className={`p-4 border rounded-lg ${severityColors[issue.severity]}`}
@@ -245,12 +260,13 @@ export default function Diagnostics() {
                             <Badge>{issue.occurrences}x</Badge>
                           </div>
                         </div>
-                        <p className="text-sm mb-3">Last seen: {issue.lastSeen}</p>
-                        <Button size="sm" variant="outline" className="w-full">
-                          View Details
+                        <p className="text-sm mb-3">Last seen: {issue.lastSeen ? new Date(issue.lastSeen).toLocaleString?.() || issue.lastSeen : "recently"}</p>
+                        <Button size="sm" variant="outline" className="w-full" onClick={() => resolveIssueMutation.mutate(issue.id)}>
+                          Resolve Issue
                         </Button>
                       </div>
                     ))}
+                    {issues.length === 0 && <div className="text-sm text-slate-500">No issues found.</div>}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -267,7 +283,7 @@ export default function Diagnostics() {
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-3 pr-4">
-                    {mockWarnings.map((warn) => (
+                    {warnings.map((warn) => (
                       <div
                         key={warn.id}
                         className={`p-4 border rounded-lg ${levelColors[warn.level]}`}
@@ -284,12 +300,13 @@ export default function Diagnostics() {
                           <span className="text-xs text-slate-600">
                             {new Date(warn.timestamp).toLocaleTimeString()}
                           </span>
-                          <Button size="sm" variant="ghost">
+                          <Button size="sm" variant="ghost" onClick={() => acknowledgeWarningMutation.mutate(warn.id)}>
                             Acknowledge
                           </Button>
                         </div>
                       </div>
                     ))}
+                    {warnings.length === 0 && <div className="text-sm text-slate-500">No warnings found.</div>}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -306,7 +323,7 @@ export default function Diagnostics() {
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-2 pr-4 font-mono text-sm">
-                    {mockDebugLogs.map((log, idx) => (
+                    {debugLogs.map((log, idx) => (
                       <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded" data-testid={`debug-log-${idx}`}>
                         <div className="flex items-start gap-3">
                           <span className={`font-bold ${logLevelColors[log.level]}`}>[{log.level.toUpperCase()}]</span>
@@ -317,6 +334,7 @@ export default function Diagnostics() {
                         {log.duration && <p className="text-xs text-slate-500 mt-1">Duration: {log.duration}ms</p>}
                       </div>
                     ))}
+                    {debugLogs.length === 0 && <div className="text-sm text-slate-500">No debug entries available.</div>}
                   </div>
                 </ScrollArea>
               </CardContent>

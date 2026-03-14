@@ -9,21 +9,39 @@ import { cn } from "@/lib/utils";
 
 interface BattleLogEntry {
   id: string;
-  type: string;
-  winner: string;
-  attackerName: string;
-  defenderName: string;
+  timestamp: string;
+  opponent: string;
+  result: "victory" | "defeat" | "draw";
+  role: "attacker" | "defender";
+  battleType: string;
   rounds: number;
-  totalAttackerDamage: number;
-  totalDefenderDamage: number;
-  loot: { metal: number; crystal: number; deuterium: number };
-  createdAt: string;
+  unitsCasualties: number;
+  plunder: { metal: number; crystal: number; deuterium: number };
+  coordinates?: string;
+}
+
+type BattleHistoryResponse = {
+  battles: BattleLogEntry[];
+  totalVictories: number;
+  totalDefeats: number;
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { credentials: "include" });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || "Request failed");
+  }
+  return payload as T;
 }
 
 export default function BattleLogs() {
-  const { data: battles = [], isLoading } = useQuery<BattleLogEntry[]>({
-    queryKey: ['/api/battles/logs'],
+  const { data, isLoading } = useQuery<BattleHistoryResponse>({
+    queryKey: ['combat-battle-history'],
+    queryFn: () => fetchJson<BattleHistoryResponse>('/api/combat/battle-history'),
   });
+
+  const battles = data?.battles || [];
 
   const typeIcons = {
     raid: <Sword className="w-4 h-4" />,
@@ -32,18 +50,16 @@ export default function BattleLogs() {
     sabotage: <AlertTriangle className="w-4 h-4" />
   };
 
-  const getWinnerColor = (winner: string) => {
-    if (winner === "attacker") return "bg-red-50 border-red-200";
-    if (winner === "defender") return "bg-green-50 border-green-200";
+  const getWinnerColor = (result: BattleLogEntry["result"]) => {
+    if (result === "victory") return "bg-green-50 border-green-200";
+    if (result === "defeat") return "bg-red-50 border-red-200";
     return "bg-slate-50 border-slate-200";
   };
 
-  const getWinnerBadge = (winner: string) => {
-    if (winner === "attacker") return <Badge className="bg-red-500">Attacker Won</Badge>;
-    if (winner === "defender") return <Badge className="bg-green-500">Defender Won</Badge>;
-    if (winner === "draw") return <Badge className="bg-slate-500">Draw</Badge>;
-    if (winner === "spy_success") return <Badge className="bg-purple-500">Spy Successful</Badge>;
-    return <Badge className="bg-slate-500">Failed</Badge>;
+  const getWinnerBadge = (result: BattleLogEntry["result"]) => {
+    if (result === "victory") return <Badge className="bg-green-500">Victory</Badge>;
+    if (result === "defeat") return <Badge className="bg-red-500">Defeat</Badge>;
+    return <Badge className="bg-slate-500">Draw</Badge>;
   };
 
   return (
@@ -76,23 +92,29 @@ export default function BattleLogs() {
               </TabsContent>
 
               <TabsContent value="attacks" className="space-y-4 mt-6">
-                {battles.filter(b => b.type === "attack").map((battle) => (
+                {battles.filter(b => b.role === "attacker").map((battle) => (
                   <BattleCard key={battle.id} battle={battle} typeIcons={typeIcons} getWinnerColor={getWinnerColor} getWinnerBadge={getWinnerBadge} />
                 ))}
               </TabsContent>
 
               <TabsContent value="raids" className="space-y-4 mt-6">
-                {battles.filter(b => b.type === "raid").map((battle) => (
+                {battles.filter(b => b.battleType === "raid").map((battle) => (
                   <BattleCard key={battle.id} battle={battle} typeIcons={typeIcons} getWinnerColor={getWinnerColor} getWinnerBadge={getWinnerBadge} />
                 ))}
               </TabsContent>
 
               <TabsContent value="defenses" className="space-y-4 mt-6">
-                <div className="text-center py-12 text-slate-500">Your defense battles will appear here.</div>
+                {battles.filter(b => b.role === "defender").length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">Your defense battles will appear here.</div>
+                ) : (
+                  battles.filter(b => b.role === "defender").map((battle) => (
+                    <BattleCard key={battle.id} battle={battle} typeIcons={typeIcons} getWinnerColor={getWinnerColor} getWinnerBadge={getWinnerBadge} />
+                  ))
+                )}
               </TabsContent>
 
               <TabsContent value="espionage" className="space-y-4 mt-6">
-                {battles.filter(b => b.type === "spy").map((battle) => (
+                {battles.filter(b => b.battleType === "spy").map((battle) => (
                   <BattleCard key={battle.id} battle={battle} typeIcons={typeIcons} getWinnerColor={getWinnerColor} getWinnerBadge={getWinnerBadge} />
                 ))}
               </TabsContent>
@@ -106,19 +128,19 @@ export default function BattleLogs() {
 
 function BattleCard({ battle, typeIcons, getWinnerColor, getWinnerBadge }: any) {
   return (
-    <Card className={cn("border cursor-pointer transition-all hover:shadow-md", getWinnerColor(battle.winner))}>
+    <Card className={cn("border cursor-pointer transition-all hover:shadow-md", getWinnerColor(battle.result))}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="text-slate-400">{typeIcons[battle.type] || typeIcons.attack}</div>
+            <div className="text-slate-400">{typeIcons[battle.battleType] || typeIcons.attack}</div>
             <div>
               <div className="font-bold text-slate-900">
-                {battle.attackerName} <span className="text-slate-400">vs</span> {battle.defenderName}
+                You <span className="text-slate-400">vs</span> {battle.opponent}
               </div>
-              <div className="text-xs text-slate-500">{formatDistanceToNow(new Date(battle.createdAt), { addSuffix: true })}</div>
+              <div className="text-xs text-slate-500">{formatDistanceToNow(new Date(battle.timestamp), { addSuffix: true })}</div>
             </div>
           </div>
-          {getWinnerBadge(battle.winner)}
+          {getWinnerBadge(battle.result)}
         </div>
 
         <div className="grid grid-cols-5 gap-4 text-sm">
@@ -127,20 +149,20 @@ function BattleCard({ battle, typeIcons, getWinnerColor, getWinnerBadge }: any) 
             <div className="font-mono font-bold text-slate-900">{battle.rounds}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 mb-1">Attacker Damage</div>
-            <div className="font-mono font-bold text-red-600">{battle.totalAttackerDamage.toLocaleString()}</div>
+            <div className="text-xs text-slate-500 mb-1">Role</div>
+            <div className="font-mono font-bold text-blue-600 capitalize">{battle.role}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 mb-1">Defender Damage</div>
-            <div className="font-mono font-bold text-green-600">{battle.totalDefenderDamage.toLocaleString()}</div>
+            <div className="text-xs text-slate-500 mb-1">Casualties</div>
+            <div className="font-mono font-bold text-red-600">{battle.unitsCasualties.toLocaleString()}</div>
           </div>
           <div>
             <div className="text-xs text-slate-500 mb-1">Loot (Metal)</div>
-            <div className="font-mono font-bold text-yellow-600">{battle.loot?.metal?.toLocaleString() || 0}</div>
+            <div className="font-mono font-bold text-yellow-600">{battle.plunder?.metal?.toLocaleString() || 0}</div>
           </div>
           <div>
             <div className="text-xs text-slate-500 mb-1">Type</div>
-            <Badge variant="outline" className="capitalize">{battle.type}</Badge>
+            <Badge variant="outline" className="capitalize">{battle.battleType}</Badge>
           </div>
         </div>
       </CardContent>

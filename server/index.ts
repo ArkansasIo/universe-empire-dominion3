@@ -154,6 +154,7 @@ import assetsRoutes from "./routes-assets";
 import ogameRoutes from "./routes-ogame";
 import friendsRoutes from "./routes-friends";
 import worldActionsRoutes from "./routes-worldactions";
+import tradesRoutes from "./routes-trades";
 import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
 
 (async () => {
@@ -209,6 +210,7 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
   app.use('/api/assets', assetsRoutes);
   app.use('/api/ogame', ogameRoutes);
   app.use('/api/friends', friendsRoutes);
+  app.use(tradesRoutes);
   app.use(worldActionsRoutes);
 
   // Error handling middleware

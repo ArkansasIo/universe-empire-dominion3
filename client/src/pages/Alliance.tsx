@@ -26,15 +26,48 @@ const diplomacyStates = [
   { id: "allied", name: "Allied", color: "text-green-600 bg-green-50 border-green-200" }
 ];
 
-const mockDiplomacy = [
-  { allianceId: "NOVA", allianceName: "Nova Empire", state: "allied", since: "2024-01-01" },
-  { allianceId: "VOID", allianceName: "Void Reavers", state: "war", since: "2024-02-15" },
-  { allianceId: "STAR", allianceName: "Starborn Legion", state: "neutral", since: "2024-01-20" }
-];
+type DiplomacyAction = "proposeAlliance" | "openTalks" | "issueWarning" | "declareWar";
 
-const mockWars = [
-  { id: 1, enemyTag: "VOID", enemyName: "Void Reavers", startDate: "2024-02-15", kills: 1234, deaths: 567, status: "active" }
-];
+type DiplomacyRelation = {
+   allianceId: string;
+   allianceName: string;
+   allianceTag: string;
+   state: "war" | "hostile" | "neutral" | "friendly" | "allied";
+   since: string;
+   updatedAt: string;
+   lastAction: string;
+};
+
+type WarRecord = {
+   id: string;
+   enemyAllianceId: string;
+   enemyTag: string;
+   enemyName: string;
+   startDate: string;
+   kills: number;
+   deaths: number;
+   status: "active" | "ended";
+   updatedAt: string;
+};
+
+type DiplomacyResponse = {
+   relations: DiplomacyRelation[];
+   count: number;
+};
+
+type WarResponse = {
+   wars: WarRecord[];
+   count: number;
+};
+
+type AllianceDirectoryEntry = {
+   id: string;
+   name: string;
+   tag: string;
+   description: string;
+   memberCount?: number;
+   activeWars?: number;
+};
 
 type GuildInfo = {
    id: string;
@@ -84,6 +117,7 @@ export default function Alliance() {
   const [searchQuery, setSearchQuery] = useState("");
   const [createName, setCreateName] = useState("");
   const [createTag, setCreateTag] = useState("");
+   const [targetAllianceTag, setTargetAllianceTag] = useState("");
    const [chatMessage, setChatMessage] = useState("");
 
    const { data: myGuild } = useQuery<GuildInfo | null>({
@@ -92,17 +126,29 @@ export default function Alliance() {
       enabled: !!alliance,
    });
 
-   const { data: guildDirectory } = useQuery<GuildInfo[]>({
-      queryKey: ["guild-directory"],
-      queryFn: () => fetchJson<GuildInfo[]>("/api/guilds"),
+   const { data: allianceDirectory } = useQuery<AllianceDirectoryEntry[]>({
+      queryKey: ["alliance-directory"],
+      queryFn: () => fetchJson<AllianceDirectoryEntry[]>("/api/alliances"),
    });
 
-   const visibleGuilds = (guildDirectory || []).filter((guild) => {
+   const visibleAlliances = (allianceDirectory || []).filter((entry) => {
       const key = searchQuery.trim().toLowerCase();
       if (!key) return true;
-      const tag = (guild.tag || "").toLowerCase();
-      const name = (guild.name || "").toLowerCase();
+      const tag = (entry.tag || "").toLowerCase();
+      const name = (entry.name || "").toLowerCase();
       return tag.includes(key) || name.includes(key);
+   });
+
+   const { data: diplomacyData } = useQuery<DiplomacyResponse>({
+      queryKey: ["alliance-diplomacy", alliance?.id],
+      queryFn: () => fetchJson<DiplomacyResponse>(`/api/alliances/${alliance!.id}/diplomacy`),
+      enabled: !!alliance?.id,
+   });
+
+   const { data: warsData } = useQuery<WarResponse>({
+      queryKey: ["alliance-wars", alliance?.id],
+      queryFn: () => fetchJson<WarResponse>(`/api/alliances/${alliance!.id}/wars`),
+      enabled: !!alliance?.id,
    });
 
    const { data: guildChat } = useQuery<GuildChatResponse>({
@@ -127,8 +173,42 @@ export default function Alliance() {
       },
    });
 
+   const diplomacyActionMutation = useMutation({
+      mutationFn: ({ action, targetTag }: { action: DiplomacyAction; targetTag: string }) =>
+         fetchJson<{ message: string }>(`/api/alliances/${alliance!.id}/diplomacy/actions`, {
+            method: "POST",
+            body: JSON.stringify({ action, targetTag }),
+         }),
+      onSuccess: (result) => {
+         setTargetAllianceTag("");
+         queryClient.invalidateQueries({ queryKey: ["alliance-diplomacy", alliance?.id] });
+         queryClient.invalidateQueries({ queryKey: ["alliance-wars", alliance?.id] });
+         queryClient.invalidateQueries({ queryKey: ["alliance-directory"] });
+         toast({ title: "Diplomacy updated", description: result.message });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Diplomatic action failed", description: error.message, variant: "destructive" });
+      },
+   });
+
   if (alliance) {
      const totalPoints = alliance.members.reduce((acc, m) => acc + m.points, 0);
+     const diplomacyRelations = diplomacyData?.relations || [];
+     const warRecords = warsData?.wars || [];
+     const activeWars = warRecords.filter((war) => war.status === "active");
+     const allianceLeader = alliance.members.find((member) => member.rank === "leader") || alliance.members[0];
+     const foundedDisplay = (alliance as any)?.createdAt ? new Date((alliance as any).createdAt).toLocaleDateString() : "Unknown";
+     const territorySystems = Math.max(1, Math.round(alliance.members.length * 1.8));
+     const allianceUpdates = [
+        ...activeWars.slice(0, 2).map((war) => ({
+           text: `War remains active against [${war.enemyTag}] ${war.enemyName}.`,
+           time: new Date(war.updatedAt || war.startDate).toLocaleDateString(),
+        })),
+        ...diplomacyRelations.slice(0, 2).map((relation) => ({
+           text: `Diplomatic status with [${relation.allianceTag}] updated to ${relation.state}.`,
+           time: new Date(relation.updatedAt).toLocaleDateString(),
+        })),
+     ].slice(0, 4);
      
      return (
         <GameLayout>
@@ -183,7 +263,7 @@ export default function Alliance() {
                       </div>
                       <div>
                         <div className="text-xs text-red-600 uppercase">Active Wars</div>
-                        <div className="text-xl font-orbitron font-bold text-red-900">{mockWars.filter(w => w.status === "active").length}</div>
+                                    <div className="text-xl font-orbitron font-bold text-red-900">{activeWars.length}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -228,15 +308,15 @@ export default function Alliance() {
                              <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                    <span className="text-slate-500">Founded</span>
-                                   <span className="font-bold text-slate-900">Jan 1, 2024</span>
+                                   <span className="font-bold text-slate-900">{foundedDisplay}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                    <span className="text-slate-500">Leader</span>
-                                   <span className="font-bold text-slate-900">Commander Alpha</span>
+                                   <span className="font-bold text-slate-900">{allianceLeader?.name || "Unknown Commander"}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                    <span className="text-slate-500">Territory</span>
-                                   <span className="font-bold text-slate-900">12 systems</span>
+                                   <span className="font-bold text-slate-900">{territorySystems} systems</span>
                                 </div>
                              </div>
                           </CardContent>
@@ -255,14 +335,19 @@ export default function Alliance() {
                                 <div className="text-xs text-slate-500 mt-2">Posted by Leader • 2 days ago</div>
                              </div>
                              <div className="space-y-2">
-                                <div className="p-3 bg-slate-50 rounded border border-slate-100">
-                                   <div className="text-sm text-slate-700">New trade route established with [NOVA]</div>
-                                   <div className="text-xs text-slate-400 mt-1">3 days ago</div>
-                                </div>
-                                <div className="p-3 bg-slate-50 rounded border border-slate-100">
-                                   <div className="text-sm text-slate-700">War declared against [VOID] - all hands on deck!</div>
-                                   <div className="text-xs text-slate-400 mt-1">1 week ago</div>
-                                </div>
+                                {allianceUpdates.length === 0 ? (
+                                   <div className="p-3 bg-slate-50 rounded border border-slate-100">
+                                      <div className="text-sm text-slate-700">No recent alliance updates.</div>
+                                      <div className="text-xs text-slate-400 mt-1">Standby for new directives.</div>
+                                   </div>
+                                ) : (
+                                   allianceUpdates.map((entry, index) => (
+                                      <div key={`${entry.text}-${index}`} className="p-3 bg-slate-50 rounded border border-slate-100">
+                                         <div className="text-sm text-slate-700">{entry.text}</div>
+                                         <div className="text-xs text-slate-400 mt-1">{entry.time}</div>
+                                      </div>
+                                   ))
+                                )}
                              </div>
                           </CardContent>
                        </Card>
@@ -313,17 +398,23 @@ export default function Alliance() {
                           </CardHeader>
                           <CardContent>
                              <div className="space-y-3">
-                                {mockDiplomacy.map(rel => {
+                                {diplomacyRelations.length === 0 && (
+                                   <div className="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded">
+                                      <Handshake className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                      <p>No diplomatic relations logged yet.</p>
+                                   </div>
+                                )}
+                                {diplomacyRelations.map(rel => {
                                    const state = diplomacyStates.find(s => s.id === rel.state);
                                    return (
                                       <div key={rel.allianceId} className={cn("flex items-center justify-between p-4 rounded border", state?.color)}>
                                          <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-white rounded border border-slate-200 flex items-center justify-center font-bold text-sm">
-                                               {rel.allianceId}
+                                               {rel.allianceTag}
                                             </div>
                                             <div>
                                                <div className="font-bold text-sm">{rel.allianceName}</div>
-                                               <div className="text-xs opacity-70">Since {rel.since}</div>
+                                               <div className="text-xs opacity-70">Since {new Date(rel.since).toLocaleDateString()}</div>
                                             </div>
                                          </div>
                                          <Badge className={cn("uppercase", rel.state === "war" && "bg-red-600", rel.state === "allied" && "bg-green-600")}>
@@ -346,19 +437,19 @@ export default function Alliance() {
                           <CardContent className="space-y-4">
                              <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-700">Target Alliance Tag</label>
-                                <Input placeholder="e.g. NOVA" className="bg-slate-50 font-mono" />
+                                <Input value={targetAllianceTag} onChange={(event) => setTargetAllianceTag(event.target.value.toUpperCase())} placeholder="e.g. NOVA" className="bg-slate-50 font-mono" />
                              </div>
                              <div className="grid grid-cols-2 gap-2">
-                                <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50" onClick={() => toast({ title: "Proposal sent", description: "Alliance proposal transmitted to target faction." })}>
+                                <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50" onClick={() => diplomacyActionMutation.mutate({ action: "proposeAlliance", targetTag: targetAllianceTag.trim() })} disabled={diplomacyActionMutation.isPending || !targetAllianceTag.trim()}>
                                    <Handshake className="w-4 h-4 mr-2" /> Propose Alliance
                                 </Button>
-                                <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50" onClick={() => toast({ title: "Diplomatic channel opened", description: "Formal talks initiated." })}>
+                                <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50" onClick={() => diplomacyActionMutation.mutate({ action: "openTalks", targetTag: targetAllianceTag.trim() })} disabled={diplomacyActionMutation.isPending || !targetAllianceTag.trim()}>
                                    <MessageSquare className="w-4 h-4 mr-2" /> Open Talks
                                 </Button>
-                                <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50" onClick={() => toast({ title: "Warning issued", description: "Strategic warning sent to target alliance." })}>
+                                <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50" onClick={() => diplomacyActionMutation.mutate({ action: "issueWarning", targetTag: targetAllianceTag.trim() })} disabled={diplomacyActionMutation.isPending || !targetAllianceTag.trim()}>
                                    <Flag className="w-4 h-4 mr-2" /> Issue Warning
                                 </Button>
-                                <Button variant="destructive" onClick={() => toast({ title: "War declaration sent", description: "Hostility state updated to active war.", variant: "destructive" })}>
+                                <Button variant="destructive" onClick={() => diplomacyActionMutation.mutate({ action: "declareWar", targetTag: targetAllianceTag.trim() })} disabled={diplomacyActionMutation.isPending || !targetAllianceTag.trim()}>
                                    <Swords className="w-4 h-4 mr-2" /> Declare War
                                 </Button>
                              </div>
@@ -376,14 +467,14 @@ export default function Alliance() {
                           <CardDescription>Current military conflicts and war statistics.</CardDescription>
                        </CardHeader>
                        <CardContent>
-                          {mockWars.length === 0 ? (
+                          {warRecords.length === 0 ? (
                              <div className="text-center py-12 text-slate-400">
                                 <Shield className="w-12 h-12 mx-auto mb-4 opacity-30" />
                                 <p>No active wars. Peace reigns... for now.</p>
                              </div>
                           ) : (
                              <div className="space-y-4">
-                                {mockWars.map(war => (
+                                {warRecords.map(war => (
                                    <div key={war.id} className="bg-red-50 border border-red-200 rounded-lg p-6">
                                       <div className="flex items-center justify-between mb-4">
                                          <div className="flex items-center gap-4">
@@ -392,10 +483,10 @@ export default function Alliance() {
                                             </div>
                                             <div>
                                                <div className="font-orbitron font-bold text-red-900">WAR: {war.enemyName}</div>
-                                               <div className="text-sm text-red-700">Started: {war.startDate}</div>
+                                               <div className="text-sm text-red-700">Started: {new Date(war.startDate).toLocaleDateString()}</div>
                                             </div>
                                          </div>
-                                         <Badge className="bg-red-600 animate-pulse">ACTIVE</Badge>
+                                         <Badge className={cn(war.status === "active" ? "bg-red-600 animate-pulse" : "bg-slate-600")}>{war.status.toUpperCase()}</Badge>
                                       </div>
                                       <div className="grid grid-cols-3 gap-4">
                                          <div className="bg-white p-3 rounded border border-red-100 text-center">
@@ -408,7 +499,7 @@ export default function Alliance() {
                                          </div>
                                          <div className="bg-white p-3 rounded border border-red-100 text-center">
                                             <div className="text-xs text-red-600 uppercase">K/D Ratio</div>
-                                            <div className="text-2xl font-mono font-bold text-slate-900">{(war.kills / war.deaths).toFixed(2)}</div>
+                                            <div className="text-2xl font-mono font-bold text-slate-900">{war.deaths > 0 ? (war.kills / war.deaths).toFixed(2) : war.kills > 0 ? "INF" : "0.00"}</div>
                                          </div>
                                       </div>
                                    </div>
@@ -511,29 +602,29 @@ export default function Alliance() {
                           className="bg-slate-50 border-slate-200"
                           data-testid="input-search-alliance"
                        />
-                       <Button onClick={() => toast({ title: "Alliance search", description: `Showing ${visibleGuilds.length} matching alliances.` })} data-testid="button-search-alliance">Search</Button>
+                       <Button onClick={() => toast({ title: "Alliance search", description: `Showing ${visibleAlliances.length} matching alliances.` })} data-testid="button-search-alliance">Search</Button>
                     </div>
 
                     <div className="space-y-4">
-                       {visibleGuilds.map((guild) => (
-                          <div key={guild.id} className="flex items-center justify-between p-4 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                       {visibleAlliances.map((entry) => (
+                          <div key={entry.id} className="flex items-center justify-between p-4 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
                              <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center font-bold text-slate-400">
-                                   {guild.tag || guild.name.slice(0, 4).toUpperCase()}
+                                   {entry.tag || entry.name.slice(0, 4).toUpperCase()}
                                 </div>
                                 <div>
-                                   <div className="font-bold text-slate-900 text-lg">[{guild.tag || "ALLY"}] {guild.name}</div>
-                                   <div className="text-sm text-slate-500">{guild.description}</div>
+                                   <div className="font-bold text-slate-900 text-lg">[{entry.tag || "ALLY"}] {entry.name}</div>
+                                   <div className="text-sm text-slate-500">{entry.description}</div>
                                    <div className="flex gap-2 mt-1">
-                                      <Badge variant="outline" className="text-[10px]">{guild.totalMembers || 0} members</Badge>
-                                      <Badge variant="outline" className="text-[10px]">Level {guild.level || 1}</Badge>
+                                      <Badge variant="outline" className="text-[10px]">{entry.memberCount || 0} members</Badge>
+                                      <Badge variant="outline" className="text-[10px]">{entry.activeWars || 0} active wars</Badge>
                                    </div>
                                 </div>
                              </div>
-                             <Button variant="outline" onClick={() => joinAlliance(guild.id)} data-testid={`button-join-${guild.id}`}>Apply</Button>
+                             <Button variant="outline" onClick={() => joinAlliance(entry.id)} data-testid={`button-join-${entry.id}`}>Apply</Button>
                           </div>
                        ))}
-                       {visibleGuilds.length === 0 && (
+                       {visibleAlliances.length === 0 && (
                           <div className="text-center text-slate-500 py-10 border border-dashed border-slate-200 rounded">No alliances matched your search.</div>
                        )}
                     </div>

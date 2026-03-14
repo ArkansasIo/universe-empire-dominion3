@@ -479,6 +479,7 @@ export function registerCombatRoutes(app: Router) {
           rounds: battle.rounds || 0,
           coordinates: isAttacker ? battle.defenderCoordinates : battle.attackerCoordinates,
           battleType: battle.type,
+          role: isAttacker ? "attacker" : "defender",
         };
       });
 

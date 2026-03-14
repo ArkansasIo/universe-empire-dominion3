@@ -696,27 +696,57 @@ const VendorProfile = ({ vendor, active, onClick }: { vendor: Vendor, active: bo
   </div>
 );
 
-const mockTradeHistory = [
-  { id: 1, type: "buy", item: "Alloy Plates", amount: 10, cost: { metal: 5000 }, date: "2 hours ago" },
-  { id: 2, type: "sell", item: "Crystal Shards", amount: 50, cost: { crystal: 2500 }, date: "5 hours ago" },
-  { id: 3, type: "buy", item: "Fusion Cells", amount: 5, cost: { deuterium: 1000 }, date: "1 day ago" }
-];
+type MarketHistoryResponse = {
+  history: Array<{
+    id: string;
+    type: string;
+    item: string;
+    amount: number;
+    cost: Record<string, number>;
+    received?: Record<string, number>;
+    date: string;
+  }>;
+  count: number;
+};
 
-const mockPriceChanges = [
-  { item: "Alloy Plates", change: 5.2, direction: "up" },
-  { item: "Crystal Shards", change: -2.1, direction: "down" },
-  { item: "Fusion Cells", change: 0, direction: "stable" },
-  { item: "Neural Matrix", change: 12.5, direction: "up" }
-];
+type MarketTrendsResponse = {
+  trends: Array<{
+    item: string;
+    change: number;
+    direction: "up" | "down" | "stable";
+    updatedAt: number;
+  }>;
+  count: number;
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { credentials: "include" });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || "Request failed");
+  }
+  return payload as T;
+}
 
 export default function Market() {
   const { resources, inventory, buyItem, sellItem } = useGame();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedVendorId, setSelectedVendorId] = useState(VENDORS[0].id);
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [exchangeAmount, setExchangeAmount] = useState("1000");
   const [exchangeFrom, setExchangeFrom] = useState("metal");
   const [exchangeTo, setExchangeTo] = useState("crystal");
+
+  const { data: marketHistory } = useQuery<MarketHistoryResponse>({
+    queryKey: ["market-history"],
+    queryFn: () => fetchJson<MarketHistoryResponse>("/api/market/history"),
+  });
+
+  const { data: marketTrends } = useQuery<MarketTrendsResponse>({
+    queryKey: ["market-price-trends"],
+    queryFn: () => fetchJson<MarketTrendsResponse>("/api/market/price-trends"),
+  });
 
   const exchangeMutation = useMutation({
     mutationFn: async () => {
@@ -740,6 +770,8 @@ export default function Market() {
         title: "Exchange complete",
         description: `Converted ${data.amount.toLocaleString()} ${data.from} into ${data.converted.toLocaleString()} ${data.to}.`,
       });
+      queryClient.invalidateQueries({ queryKey: ["market-history"] });
+      queryClient.invalidateQueries({ queryKey: ["market-price-trends"] });
     },
     onError: (error: Error) => {
       toast({ title: "Exchange failed", description: error.message, variant: "destructive" });
@@ -833,7 +865,7 @@ export default function Market() {
                 </div>
                 <div>
                   <div className="text-xs text-purple-600 uppercase">Today's Trades</div>
-                  <div className="text-xl font-orbitron font-bold text-purple-900">{mockTradeHistory.length}</div>
+                  <div className="text-xl font-orbitron font-bold text-purple-900">{marketHistory?.count ?? 0}</div>
                 </div>
               </div>
             </CardContent>
@@ -1088,14 +1120,14 @@ export default function Market() {
                     <CardDescription>Your recent market transactions.</CardDescription>
                  </CardHeader>
                  <CardContent>
-                    {mockTradeHistory.length === 0 ? (
+                      {(marketHistory?.history || []).length === 0 ? (
                        <div className="text-center py-12 text-slate-400">
                           <History className="w-12 h-12 mx-auto mb-4 opacity-30" />
                           <p>No trade history yet. Start buying or selling items!</p>
                        </div>
                     ) : (
                        <div className="space-y-3">
-                          {mockTradeHistory.map(trade => (
+                            {(marketHistory?.history || []).map(trade => (
                              <div key={trade.id} className={cn("flex items-center justify-between p-4 rounded border", trade.type === "buy" ? "bg-green-50 border-green-200" : "bg-blue-50 border-blue-200")}>
                                 <div className="flex items-center gap-4">
                                    <div className={cn("w-10 h-10 rounded flex items-center justify-center", trade.type === "buy" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")}>
@@ -1108,7 +1140,7 @@ export default function Market() {
                                 </div>
                                 <div className="text-right">
                                    <div className="font-mono text-sm font-bold">{Object.values(trade.cost)[0].toLocaleString()} {Object.keys(trade.cost)[0]}</div>
-                                   <div className="text-xs text-slate-400">{trade.date}</div>
+                                  <div className="text-xs text-slate-400">{new Date(trade.date).toLocaleString()}</div>
                                 </div>
                              </div>
                           ))}
@@ -1128,7 +1160,7 @@ export default function Market() {
                  </CardHeader>
                  <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       {mockPriceChanges.map(item => (
+                        {(marketTrends?.trends || []).map(item => (
                           <div key={item.item} className="flex items-center justify-between p-4 bg-slate-50 rounded border border-slate-200">
                              <span className="font-medium text-slate-900">{item.item}</span>
                              <div className={cn("flex items-center gap-1 font-mono", item.direction === "up" ? "text-green-600" : item.direction === "down" ? "text-red-600" : "text-slate-500")}>
@@ -1138,6 +1170,9 @@ export default function Market() {
                              </div>
                           </div>
                        ))}
+                          {(marketTrends?.trends || []).length === 0 && (
+                            <div className="text-sm text-slate-500">No price trend data yet. Complete a few exchanges to build market analytics.</div>
+                          )}
                     </div>
                  </CardContent>
               </Card>

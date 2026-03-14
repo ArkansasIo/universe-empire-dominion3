@@ -8,6 +8,27 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import './ResearchAnalyticsDashboard.css';
 
+type ResearchTechDetail = {
+  id: string;
+  class?: string;
+  tier?: string;
+};
+
+type PlayerResearchProgress = {
+  researchedTechs: string[];
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { credentials: 'include' });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || 'Request failed');
+  }
+
+  return payload as T;
+}
+
 interface ResearchStats {
   totalXP: number;
   currentLevel: number;
@@ -21,18 +42,14 @@ export const ResearchAnalyticsDashboard: React.FC = () => {
   // Fetch research stats
   const { data: xpStats, isLoading: xpLoading } = useQuery({
     queryKey: ['research-xp-stats'],
-    queryFn: async () => {
-      const response = await fetch('/api/research/xp/stats', { credentials: 'include' });
-      return response.json();
-    },
+    queryFn: () => fetchJson<any>('/api/research/xp/stats'),
   });
 
   // Fetch discoveries
   const { data: discoveries, isLoading: discoveriesLoading } = useQuery({
     queryKey: ['research-discoveries'],
     queryFn: async () => {
-      const response = await fetch('/api/research/discoveries?limit=20', { credentials: 'include' });
-      const data = await response.json();
+      const data = await fetchJson<{ discoveries: any[] }>('/api/research/discoveries?limit=20');
       return data.discoveries;
     },
   });
@@ -41,8 +58,7 @@ export const ResearchAnalyticsDashboard: React.FC = () => {
   const { data: recommendations } = useQuery({
     queryKey: ['research-recommendations'],
     queryFn: async () => {
-      const response = await fetch('/api/research/recommendations?limit=3', { credentials: 'include' });
-      const data = await response.json();
+      const data = await fetchJson<{ recommendations: any[] }>('/api/research/recommendations?limit=3');
       return data.recommendations;
     },
   });
@@ -51,10 +67,29 @@ export const ResearchAnalyticsDashboard: React.FC = () => {
   const { data: leaderboard } = useQuery({
     queryKey: ['research-xp-leaderboard'],
     queryFn: async () => {
-      const response = await fetch('/api/research/leaderboard?limit=10', { credentials: 'include' });
-      const data = await response.json();
+      const data = await fetchJson<{ leaderboard: any[] }>('/api/research/leaderboard?limit=10');
       return data.leaderboard;
     },
+  });
+
+  const { data: progress } = useQuery<PlayerResearchProgress>({
+    queryKey: ['research-player-progress'],
+    queryFn: () => fetchJson<PlayerResearchProgress>('/api/research/player/progress'),
+  });
+
+  const researchedTechIds = progress?.researchedTechs || [];
+
+  const { data: researchedTechDetails } = useQuery<ResearchTechDetail[]>({
+    queryKey: ['research-tech-details', researchedTechIds],
+    queryFn: async () => {
+      const details = await Promise.all(
+        researchedTechIds.slice(0, 75).map((techId) =>
+          fetchJson<ResearchTechDetail>(`/api/research/tech/${encodeURIComponent(techId)}`).catch(() => null)
+        )
+      );
+      return details.filter((item): item is ResearchTechDetail => Boolean(item));
+    },
+    enabled: researchedTechIds.length > 0,
   });
 
   // Calculate analytics
@@ -91,6 +126,51 @@ export const ResearchAnalyticsDashboard: React.FC = () => {
     );
     return rank === -1 ? leaderboard.length + 1 : rank + 1;
   }, [leaderboard, xpStats]);
+
+  const tierDistribution = useMemo(() => {
+    const labels = ['Basic', 'Standard', 'Advanced', 'Military'];
+    const source = researchedTechDetails || [];
+    const total = source.length || 1;
+
+    const counts = source.reduce((acc, tech) => {
+      const rawTier = String(tech.tier || '').toLowerCase();
+      const tier = rawTier.includes('military')
+        ? 'Military'
+        : rawTier.includes('advanced')
+        ? 'Advanced'
+        : rawTier.includes('standard')
+        ? 'Standard'
+        : 'Basic';
+      acc[tier] = (acc[tier] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return labels.map((label) => {
+      const count = counts[label] || 0;
+      const percentage = Math.round((count / total) * 100);
+      return { label, count, percentage };
+    });
+  }, [researchedTechDetails]);
+
+  const classDistribution = useMemo(() => {
+    const source = researchedTechDetails || [];
+    const total = source.length || 1;
+    const counts = source.reduce((acc, tech) => {
+      const key = String(tech.class || 'Other').trim() || 'Other';
+      const normalized = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+      acc[normalized] = (acc[normalized] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(counts)
+      .map(([label, count]) => ({
+        label,
+        count,
+        percentage: Math.round((count / total) * 100),
+      }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 6);
+  }, [researchedTechDetails]);
 
   if (xpLoading || !analytics) {
     return <div className="analytics-loading">Loading analytics...</div>;
@@ -198,52 +278,26 @@ export const ResearchAnalyticsDashboard: React.FC = () => {
         <div className="chart-container">
           <h3>Tier Distribution</h3>
           <div className="chart-placeholder">
-            <div className="tier-bar">
-              <div className="bar-label">Basic</div>
-              <div className="bar-fill" style={{ width: '40%' }} />
-              <div className="bar-value">40%</div>
-            </div>
-            <div className="tier-bar">
-              <div className="bar-label">Standard</div>
-              <div className="bar-fill" style={{ width: '35%' }} />
-              <div className="bar-value">35%</div>
-            </div>
-            <div className="tier-bar">
-              <div className="bar-label">Advanced</div>
-              <div className="bar-fill" style={{ width: '20%' }} />
-              <div className="bar-value">20%</div>
-            </div>
-            <div className="tier-bar">
-              <div className="bar-label">Military</div>
-              <div className="bar-fill" style={{ width: '5%' }} />
-              <div className="bar-value">5%</div>
-            </div>
+            {tierDistribution.map((entry) => (
+              <div key={entry.label} className="tier-bar">
+                <div className="bar-label">{entry.label}</div>
+                <div className="bar-fill" style={{ width: `${entry.percentage}%` }} />
+                <div className="bar-value">{entry.percentage}%</div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="chart-container">
           <h3>Research by Class</h3>
           <div className="chart-placeholder">
-            <div className="class-bar">
-              <div className="bar-label">Armor</div>
-              <div className="bar-fill" style={{ width: '25%' }} />
-              <div className="bar-value">25%</div>
-            </div>
-            <div className="class-bar">
-              <div className="bar-label">Weapons</div>
-              <div className="bar-fill" style={{ width: '25%' }} />
-              <div className="bar-value">25%</div>
-            </div>
-            <div className="class-bar">
-              <div className="bar-label">Shields</div>
-              <div className="bar-fill" style={{ width: '20%' }} />
-              <div className="bar-value">20%</div>
-            </div>
-            <div className="class-bar">
-              <div className="bar-label">Other</div>
-              <div className="bar-fill" style={{ width: '30%' }} />
-              <div className="bar-value">30%</div>
-            </div>
+            {(classDistribution.length > 0 ? classDistribution : [{ label: 'Other', count: 0, percentage: 0 }]).map((entry) => (
+              <div key={entry.label} className="class-bar">
+                <div className="bar-label">{entry.label}</div>
+                <div className="bar-fill" style={{ width: `${entry.percentage}%` }} />
+                <div className="bar-value">{entry.percentage}%</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

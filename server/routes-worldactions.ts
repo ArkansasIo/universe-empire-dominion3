@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { isAuthenticated } from "./basicAuth";
 import { db } from "./db";
+import { storage } from "./storage";
 import { playerStates } from "../shared/schema";
 import { eq } from "drizzle-orm";
 
@@ -17,6 +18,41 @@ function getExchangeRate(from: string, to: string): number {
   };
 
   return rates[`${from}:${to}`] ?? 0;
+}
+
+function getMarketHistoryKey(userId: string) {
+  return `market_exchange_history:${userId}`;
+}
+
+function getMarketPriceTrendKey() {
+  return "market_price_trends";
+}
+
+async function getMarketHistory(userId: string) {
+  const setting = await storage.getSetting(getMarketHistoryKey(userId));
+  return Array.isArray(setting?.value) ? (setting!.value as any[]) : [];
+}
+
+async function appendMarketHistory(userId: string, entry: any) {
+  const history = await getMarketHistory(userId);
+  await storage.setSetting(getMarketHistoryKey(userId), [entry, ...history].slice(0, 50), "Market exchange history", "economy");
+}
+
+async function getMarketTrends() {
+  const setting = await storage.getSetting(getMarketPriceTrendKey());
+  return Array.isArray(setting?.value) ? (setting!.value as any[]) : [];
+}
+
+async function upsertMarketTrend(item: string, change: number) {
+  const trends = await getMarketTrends();
+  const nextEntry = {
+    item,
+    change,
+    direction: change > 0 ? "up" : change < 0 ? "down" : "stable",
+    updatedAt: Date.now(),
+  };
+  const withoutCurrent = trends.filter((trend) => trend.item !== item);
+  await storage.setSetting(getMarketPriceTrendKey(), [nextEntry, ...withoutCurrent].slice(0, 20), "Market price trends", "economy");
 }
 
 router.post("/api/army/deploy", isAuthenticated, async (req, res) => {
@@ -225,6 +261,18 @@ router.post("/api/market/exchange", isAuthenticated, async (req, res) => {
       .set({ resources: updatedResources, updatedAt: new Date() })
       .where(eq(playerStates.userId, userId));
 
+    await appendMarketHistory(userId, {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: "exchange",
+      item: `${from} -> ${to}`,
+      amount,
+      cost: { [from]: amount },
+      received: { [to]: converted },
+      date: new Date().toISOString(),
+    });
+
+    await upsertMarketTrend(`${from} -> ${to}`, Number(((rate - 1) * 100).toFixed(1)));
+
     res.json({
       success: true,
       from,
@@ -238,6 +286,27 @@ router.post("/api/market/exchange", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("[market/exchange]", error);
     res.status(500).json({ error: "Failed resource exchange" });
+  }
+});
+
+router.get("/api/market/history", isAuthenticated, async (req, res) => {
+  try {
+    const userId = (req.session as any)?.userId as string;
+    const history = await getMarketHistory(userId);
+    res.json({ history, count: history.length });
+  } catch (error) {
+    console.error("[market/history]", error);
+    res.status(500).json({ error: "Failed to load market history" });
+  }
+});
+
+router.get("/api/market/price-trends", isAuthenticated, async (_req, res) => {
+  try {
+    const trends = await getMarketTrends();
+    res.json({ trends, count: trends.length });
+  } catch (error) {
+    console.error("[market/price-trends]", error);
+    res.status(500).json({ error: "Failed to load market price trends" });
   }
 });
 
