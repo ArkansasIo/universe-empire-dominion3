@@ -60,10 +60,16 @@ interface ScanResponse {
 export default function Galaxy() {
    const { toast } = useToast();
    const [, setLocation] = useLocation();
-  const [universe, setUniverse] = useState("uni1");
-  const [galaxy, setGalaxy] = useState(1);
-  const [sector, setSector] = useState(4); 
-  const [system, setSystem] = useState(102);
+   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+   const parsePositiveInt = (value: string | null, fallback: number) => {
+      const parsed = Number.parseInt(value ?? "", 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+   };
+
+   const [universe, setUniverse] = useState(searchParams.get("universe") || "uni1");
+   const [galaxy, setGalaxy] = useState(parsePositiveInt(searchParams.get("galaxy"), 1));
+   const [sector, setSector] = useState(parsePositiveInt(searchParams.get("sector"), 4)); 
+   const [system, setSystem] = useState(parsePositiveInt(searchParams.get("system"), 102));
 
   const { data: systemData, isFetching } = useQuery<SystemData>({
     queryKey: ["galaxy", universe, galaxy, sector, system],

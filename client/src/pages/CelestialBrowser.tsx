@@ -43,6 +43,7 @@ const SAMPLE_STARS = [
   {
     id: "S001",
     name: "Proxima Centauri",
+    coordinates: "1:2:18",
     class: "M",
     type: "red-giant",
     luminosity: 0.0017,
@@ -53,6 +54,7 @@ const SAMPLE_STARS = [
   {
     id: "S002",
     name: "Sol",
+    coordinates: "1:4:102",
     class: "G",
     type: "main-sequence",
     luminosity: 1.0,
@@ -221,6 +223,8 @@ export default function CelestialBrowser() {
                                     <p className="text-xs font-mono">{star.planetsCount}</p>
                                   </div>
                                 </div>
+
+                                <div className="mt-2 text-xs text-slate-500">Coordinates: {star.coordinates}</div>
                               </CardContent>
                             </Card>
                           ))}
@@ -256,8 +260,9 @@ export default function CelestialBrowser() {
                         size="sm"
                         className="w-full"
                         onClick={() => {
+                          const [galaxy = "1", sector = "1", system = "1"] = star.coordinates.split(":");
                           toast({ title: "Star selected", description: `Opening Galaxy Map for ${star.name}.` });
-                          setLocation("/galaxy");
+                          setLocation(`/galaxy?universe=uni1&galaxy=${galaxy}&sector=${sector}&system=${system}`);
                         }}
                       >
                         View Star System
