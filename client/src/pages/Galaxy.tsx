@@ -299,15 +299,15 @@ export default function Galaxy() {
                                  <>
                                                       <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => setLocation("/messages")}><MessageSquare className="w-4 h-4" /></Button>
                                                       <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50 hover:text-red-600" onClick={() => {
-                                                         setLocation("/fleet");
+                                                         setLocation(`/fleet?g=${galaxy}&s=${system}&p=${pos}&mission=attack&targetType=planet`);
                                                          toast({ title: "Attack prep", description: `Opening Fleet Command for target ${data.name}.` });
                                                       }}><ShieldAlert className="w-4 h-4" /></Button>
                                  </>
                                )}
                                {(data.type === "asteroid" || data.type === "blackhole") && (
                                                    <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-yellow-50 hover:text-yellow-600" onClick={() => {
-                                                      setLocation("/fleet");
-                                                      toast({ title: "Fleet routing", description: `Preparing expedition route to ${data.name}.` });
+                                                      setLocation(`/fleet?g=${galaxy}&s=${system}&p=${pos}&mission=espionage&targetType=debris`);
+                                                      toast({ title: "Fleet routing", description: `Targeting ${data.name} with fleet prefill.` });
                                                    }}><Rocket className="w-4 h-4" /></Button>
                                )}
                             </div>
