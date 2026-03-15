@@ -17,11 +17,12 @@ import { useEffect, useState } from "react";
 import { unitData } from "@/lib/unitData";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
 
 type FleetTab = "dispatch" | "active" | "templates" | "combat";
 
 export default function Fleet() {
-  const { units, activeMissions, dispatchFleet } = useGame();
+   const { units, activeMissions } = useGame();
    const { toast } = useToast();
 
    const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
@@ -39,6 +40,37 @@ export default function Fleet() {
    const [missionType, setMissionType] = useState<any>(allowedMissions.has(initialMission || "") ? (initialMission ?? "attack") : "attack");
    const [targetType, setTargetType] = useState(allowedTargetTypes.has(initialTargetType || "") ? (initialTargetType ?? "planet") : "planet");
    const [activeTab, setActiveTab] = useState<FleetTab>(allowedTabs.has(initialTab || "") ? (initialTab as FleetTab) : "dispatch");
+
+   const sendFleetMutation = useMutation({
+      mutationFn: async (payload: { destination: string; missionType: string; ships: { [key: string]: number } }) => {
+         const response = await fetch("/api/game/send-fleet", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+               "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+         });
+
+         const data = await response.json().catch(() => null);
+         if (!response.ok) {
+            throw new Error(data?.error || data?.message || "Failed to send fleet");
+         }
+
+         return data;
+      },
+      onSuccess: (result, variables) => {
+         setSelectedUnits({});
+         setActiveTab("active");
+         toast({
+            title: "Fleet launched",
+            description: result?.message || `${variables.missionType} mission dispatched to ${variables.destination}.`,
+         });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Launch failed", description: error.message, variant: "destructive" });
+      },
+   });
 
    useEffect(() => {
       const params = new URLSearchParams(window.location.search);
@@ -106,15 +138,27 @@ export default function Fleet() {
         return;
      }
 
-     dispatchFleet({
-        target: `${targetGalaxy}:${targetSystem}:${targetPlanet}`,
-        type: missionType,
-        units: fleetComposition,
-        arrivalTime: 10000
-     });
+     const destinationParts = [targetGalaxy, targetSystem, targetPlanet].map((value) => Number.parseInt(value, 10));
+     const hasInvalidCoordinate = destinationParts.some((value) => !Number.isFinite(value) || value <= 0);
+     if (hasInvalidCoordinate) {
+        toast({ title: "Invalid target", description: "Galaxy, system, and planet must be positive numbers.", variant: "destructive" });
+        return;
+     }
 
-     setSelectedUnits({});
-     toast({ title: "Fleet launched", description: `${missionType} mission dispatched to ${targetGalaxy}:${targetSystem}:${targetPlanet}.` });
+     if (missionType === "colonize" && ((fleetComposition.colonist || 0) + (fleetComposition.colonyShip || 0) < 1)) {
+        toast({
+           title: "Colonist required",
+           description: "Colonization missions require at least 1 colonist or colony ship.",
+           variant: "destructive",
+        });
+        return;
+     }
+
+     sendFleetMutation.mutate({
+        destination: `${destinationParts[0]}:${destinationParts[1]}:${destinationParts[2]}`,
+        missionType,
+        ships: fleetComposition,
+     });
   };
 
   const getUnitClass = (id: string) => {
@@ -412,10 +456,10 @@ export default function Fleet() {
                   <Button 
                      className="w-full bg-primary text-white hover:bg-primary/90 font-bold font-orbitron h-12 text-lg shadow-md"
                      onClick={handleDispatch}
-                     disabled={selectedShipsCount === 0}
+                     disabled={selectedShipsCount === 0 || sendFleetMutation.isPending}
                      data-testid="button-launch-fleet"
                   >
-                     <Play className="w-5 h-5 mr-2 fill-white" /> LAUNCH FLEET
+                     <Play className="w-5 h-5 mr-2 fill-white" /> {sendFleetMutation.isPending ? "LAUNCHING..." : "LAUNCH FLEET"}
                   </Button>
                 </div>
               </div>

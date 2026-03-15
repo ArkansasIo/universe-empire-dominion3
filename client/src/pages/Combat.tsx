@@ -19,6 +19,7 @@ export default function Combat() {
   const [combatType, setCombatType] = useState<"raid" | "attack" | "spy" | "sabotage">("attack");
   const [selectedUnits, setSelectedUnits] = useState<{ [key: string]: number }>({});
   const [battleResult, setBattleResult] = useState<any>(null);
+  const [attackError, setAttackError] = useState<string | null>(null);
 
   // Fetch combat stats
   const { data: combatStats, isLoading: statsLoading } = useQuery({
@@ -62,11 +63,17 @@ export default function Combat() {
       }
       return res.json();
     },
+    onMutate: () => {
+      setAttackError(null);
+    },
     onSuccess: (data) => {
       setBattleResult(data);
       setSelectedUnits({});
+      setAttackError(null);
+      toast({ title: "Attack resolved", description: `Engagement completed against ${targetId.trim()}.` });
     },
     onError: (error: any) => {
+      setAttackError(error.message || "Attack failed");
       toast({ title: "Attack failed", description: error.message, variant: "destructive" });
     },
   });
@@ -211,12 +218,20 @@ export default function Combat() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {attackError && (
+                    <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700" data-testid="combat-attack-error">
+                      {attackError}
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-bold text-slate-900 block mb-2">Target Player ID</label>
                     <Input
                       placeholder="Enter target player ID"
                       value={targetId}
-                      onChange={(e) => setTargetId(e.target.value)}
+                      onChange={(e) => {
+                        setTargetId(e.target.value);
+                        if (attackError) setAttackError(null);
+                      }}
                       className="font-mono"
                     />
                   </div>
@@ -245,6 +260,7 @@ export default function Combat() {
                                     ...prev,
                                     [unitType]: parseInt(e.target.value),
                                   }));
+                                  if (attackError) setAttackError(null);
                                 }}
                                 className="w-32 h-2 bg-slate-200 rounded cursor-pointer"
                               />
@@ -260,7 +276,7 @@ export default function Combat() {
 
                   <Button
                     onClick={() => attackMutation.mutate()}
-                    disabled={attackMutation.isPending}
+                    disabled={attackMutation.isPending || totalSelected === 0 || !targetId.trim()}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-orbitron"
                   >
                     {attackMutation.isPending ? "Battle In Progress..." : `Launch Attack (${totalSelected} units)`}

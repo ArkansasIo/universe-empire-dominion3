@@ -6,11 +6,11 @@ This checklist captures systems that are still stubbed, mocked, or UI-placeholde
 
 - [x] Persist combat history instead of mock response in `server/routes-combat.ts` (`/api/combat/battle-history` now reads from `battles`).
 - [x] Implement mining operations persistence currently marked stubbed in `server/storage.ts` (`mining_operations` table auto-created and used).
-- [ ] Replace remaining critical `alert(...)` gameplay actions with API-backed mutations for:
-  - `client/src/pages/Fleet.tsx` (templates + validation flow)
-  - `client/src/pages/Combat.tsx` (error handling UX)
-  - `client/src/pages/Colonies.tsx` (colonization action)
-  - `client/src/pages/Galaxy.tsx` (scan/message/attack/launch actions)
+- [ ] Replace remaining critical gameplay placeholders with API-backed mutations for:
+  - [x] `client/src/pages/Fleet.tsx` (mission dispatch now posts to `/api/game/send-fleet` with coordinate/colonist validation)
+  - [x] `client/src/pages/Combat.tsx` (inline error state + stricter launch validation)
+  - [x] `client/src/pages/Colonies.tsx` (colonization now queues mission via `/api/game/send-fleet`)
+  - [x] `client/src/pages/Galaxy.tsx` (scan/message/attack/launch wired to API-backed actions)
 
 ## Priority P1 — Backend systems marked as stubs
 

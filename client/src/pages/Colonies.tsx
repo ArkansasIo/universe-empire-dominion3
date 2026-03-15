@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import Navigation from "./Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 type PopulationSnapshotResponse = {
   success: boolean;
@@ -86,6 +86,43 @@ export default function Colonies() {
     queryKey: ["population-snapshot"],
     queryFn: () => fetchJson<PopulationSnapshotResponse>("/api/population/snapshot"),
     refetchInterval: 30000,
+  });
+  const colonizeMutation = useMutation({
+    mutationFn: async (slot: (typeof SOL_SYSTEM_COLONIES)[number]) => {
+      const response = await fetch("/api/game/send-fleet", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          destination: slot.coordinates,
+          missionType: "colonize",
+          ships: {
+            colonyShip: 1,
+            lightFighter: 3,
+            largeCargo: 1,
+          },
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || payload?.message || "Failed to queue colonization mission");
+      }
+
+      return payload;
+    },
+    onSuccess: (result, slot) => {
+      toast({
+        title: "Colonization mission queued",
+        description: result?.message || `Fleet launched for ${slot.name} (${slot.coordinates}).`,
+      });
+      setLocation(`/fleet?tab=active&mission=colonize&targetType=planet`);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Colonization failed", description: error.message, variant: "destructive" });
+    },
   });
   const ownedColonies = SOL_SYSTEM_COLONIES.filter(c => c.owner);
   const emptySlots = SOL_SYSTEM_COLONIES.filter(c => !c.owner);
@@ -255,13 +292,17 @@ export default function Colonies() {
                       </div>
                     </div>
 
-                    <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
-                      setSelectedColony(slot.coordinates);
-                      toast({ title: "Colonization planning", description: `${slot.name} selected. Configure a colony fleet in Fleet Command.` });
-                      const [g = "1", s = "1", p = "1"] = slot.coordinates.replace(/\[|\]/g, "").split(":");
-                      setLocation(`/fleet?g=${g}&s=${s}&p=${p}&mission=colonize&targetType=planet`);
-                    }} data-testid={`btn-colonize-${slot.id}`}>
-                      Colonize
+                    <Button
+                      size="sm"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        setSelectedColony(slot.coordinates);
+                        colonizeMutation.mutate(slot);
+                      }}
+                      disabled={colonizeMutation.isPending}
+                      data-testid={`btn-colonize-${slot.id}`}
+                    >
+                      {colonizeMutation.isPending && colonizeMutation.variables?.id === slot.id ? "Queuing..." : "Colonize"}
                     </Button>
                   </CardContent>
                 </Card>
