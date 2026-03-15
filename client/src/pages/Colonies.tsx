@@ -258,7 +258,8 @@ export default function Colonies() {
                     <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
                       setSelectedColony(slot.coordinates);
                       toast({ title: "Colonization planning", description: `${slot.name} selected. Configure a colony fleet in Fleet Command.` });
-                      setLocation("/fleet");
+                      const [g = "1", s = "1", p = "1"] = slot.coordinates.replace(/\[|\]/g, "").split(":");
+                      setLocation(`/fleet?g=${g}&s=${s}&p=${p}&mission=colonize&targetType=planet`);
                     }} data-testid={`btn-colonize-${slot.id}`}>
                       Colonize
                     </Button>

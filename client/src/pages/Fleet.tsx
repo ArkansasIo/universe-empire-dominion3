@@ -21,13 +21,19 @@ import { useToast } from "@/hooks/use-toast";
 export default function Fleet() {
   const { units, activeMissions, dispatchFleet } = useGame();
    const { toast } = useToast();
+
+   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+   const initialMission = searchParams.get("mission");
+   const initialTargetType = searchParams.get("targetType");
+   const allowedMissions = new Set(["attack", "transport", "espionage", "sabotage", "colonize", "deploy"]);
+   const allowedTargetTypes = new Set(["planet", "debris", "moon"]);
   
   const [selectedUnits, setSelectedUnits] = useState<{[key: string]: number}>({});
-  const [targetGalaxy, setTargetGalaxy] = useState("1");
-  const [targetSystem, setTargetSystem] = useState("102");
-  const [targetPlanet, setTargetPlanet] = useState("8");
-  const [missionType, setMissionType] = useState<any>("attack");
-  const [targetType, setTargetType] = useState("planet");
+   const [targetGalaxy, setTargetGalaxy] = useState(searchParams.get("g") ?? "1");
+   const [targetSystem, setTargetSystem] = useState(searchParams.get("s") ?? "102");
+   const [targetPlanet, setTargetPlanet] = useState(searchParams.get("p") ?? "8");
+   const [missionType, setMissionType] = useState<any>(allowedMissions.has(initialMission || "") ? (initialMission ?? "attack") : "attack");
+   const [targetType, setTargetType] = useState(allowedTargetTypes.has(initialTargetType || "") ? (initialTargetType ?? "planet") : "planet");
 
    const loadTemplate = (template: "attack" | "colony") => {
       if (template === "attack") {
