@@ -13,9 +13,7 @@ import { registerArtifactRoutes } from "./routes-artifacts";
 import { registerGuildRoutes } from "./routes-guilds";
 import { ServerStatusService } from "./services/serverStatusService";
 
-if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = "production";
-}
+const runtimeNodeEnv = process.env.NODE_ENV ?? "production";
 
 const app = express();
 const httpServer = createServer(app);
@@ -236,7 +234,7 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
+  if (runtimeNodeEnv === "production") {
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
@@ -335,7 +333,7 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
         console.log(colors.bright + "Main Server Info:" + colors.reset);
         console.log(`  ${statusOn} Server Status: ${colors.green}RUNNING${colors.reset}`);
         console.log(`  ${statusOn} Port: ${colors.cyan}${port}${colors.reset}`);
-        console.log(`  ${statusOn} Environment: ${colors.cyan}${process.env.NODE_ENV || 'development'}${colors.reset}`);
+        console.log(`  ${statusOn} Environment: ${colors.cyan}${runtimeNodeEnv}${colors.reset}`);
         
         console.log("\n" + colors.bright + "Database:" + colors.reset);
         console.log(`  ${statusOn} PostgreSQL: ${colors.green}CONNECTED${colors.reset}`);
