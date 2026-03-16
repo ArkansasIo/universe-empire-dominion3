@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 
+const TEMP_THEME_IMAGE = "/theme-temp.png";
+
 type FleetTab = "dispatch" | "active" | "templates" | "combat";
 
 export default function Fleet() {
@@ -469,8 +471,13 @@ export default function Fleet() {
            <TabsContent value="active" className="mt-6">
               {activeMissions.length === 0 ? (
                  <div className="text-center py-20 bg-white border border-slate-200 rounded-lg border-dashed">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                       <Rocket className="w-8 h-8 text-slate-300" />
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 overflow-hidden">
+                       <img
+                          src={SHIP_ASSETS.FIGHTERS.SCOUT.path}
+                          alt="idle fleet"
+                          className="w-9 h-9 object-contain opacity-60"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
+                       />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">No Active Missions</h3>
                     <p className="text-slate-500">Fleet command is idle. Dispatch ships to see them here.</p>

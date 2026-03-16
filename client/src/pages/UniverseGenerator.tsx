@@ -174,8 +174,13 @@ export default function UniverseGeneratorPage() {
 
                 <div className="p-4 bg-yellow-100 rounded-lg mb-6 border border-yellow-300">
                   <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
-                      <Sun className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg overflow-hidden">
+                      <img
+                        src={PLANET_ASSETS.TERRESTRIAL.VOLCANIC.path}
+                        alt="sun"
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
+                      />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-yellow-900">Sol (The Sun)</h3>
@@ -204,8 +209,13 @@ export default function UniverseGeneratorPage() {
                         data-testid={`card-sol-planet-${planet.id}`}
                       >
                         <div className="flex items-center gap-3 mb-3">
-                          <div className={`w-10 h-10 rounded-full ${getPlanetTypeColor(planet.type)} flex items-center justify-center`}>
-                            <Globe className="w-5 h-5 text-white" />
+                          <div className={`w-10 h-10 rounded-full ${getPlanetTypeColor(planet.type)} flex items-center justify-center overflow-hidden`}>
+                            <img
+                              src={PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path}
+                              alt={planet.name}
+                              className="w-6 h-6 object-contain"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{planet.name}</p>
