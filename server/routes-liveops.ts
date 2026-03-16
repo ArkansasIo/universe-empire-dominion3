@@ -172,6 +172,35 @@ async function ensureStoreRewardItemExists(storeItem: StorefrontItem) {
   return created;
 }
 
+async function ensureSeasonPassRewardItemExists(itemId: string, tier: number) {
+  const existingItem = await storage.getItemById(itemId);
+  if (existingItem) {
+    return existingItem;
+  }
+
+  const [created] = await db.insert(items).values({
+    id: itemId,
+    name: `Season Premium Crate T${tier}`,
+    description: `Premium season pass reward crate for tier ${tier}.`,
+    itemType: "bundles",
+    itemClass: "epic",
+    rarity: "epic",
+    rank: 1,
+    stats: {},
+    bonuses: {},
+    requiredLevel: 1,
+    requiredRank: 1,
+    sellPrice: 0,
+    craftPrice: 0,
+    marketPrice: 0,
+    sources: ["season_pass"],
+    isStackable: true,
+    maxStack: 999,
+  } as any).returning();
+
+  return created;
+}
+
 export function registerLiveOpsRoutes(app: Express) {
   app.get("/api/commander/talent/tree", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -259,6 +288,8 @@ export function registerLiveOpsRoutes(app: Express) {
         config: {
           seasonId: SEASON_PASS_CONFIG.seasonId,
           name: SEASON_PASS_CONFIG.name,
+          premiumUnlockCurrency: SEASON_PASS_CONFIG.premiumUnlockCurrency,
+          premiumUnlockCost: SEASON_PASS_CONFIG.premiumUnlockCost,
           maxTier: SEASON_PASS_CONFIG.maxTier,
           xpPerTier: SEASON_PASS_CONFIG.xpPerTier,
           freeRewards: SEASON_PASS_CONFIG.freeRewards,
@@ -297,6 +328,59 @@ export function registerLiveOpsRoutes(app: Express) {
     }
   });
 
+  app.post("/api/season-pass/premium/unlock", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const playerState = await storage.getPlayerState(userId);
+      if (!playerState) {
+        return res.status(404).json({ message: "Player state not found" });
+      }
+
+      const commander = { ...((playerState.commander as any) || {}) };
+      const seasonPass = resolveSeasonPassState(playerState);
+      if (seasonPass.premiumUnlocked) {
+        return res.json({ success: true, alreadyUnlocked: true, state: seasonPass });
+      }
+
+      const balance = await storage.getPlayerCurrency(userId);
+      const unlockCost = SEASON_PASS_CONFIG.premiumUnlockCost;
+      const currency = SEASON_PASS_CONFIG.premiumUnlockCurrency as "silver" | "gold" | "platinum";
+
+      if (currency === "silver" && toNumber(balance.silver, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient silver" });
+      }
+      if (currency === "gold" && toNumber(balance.gold, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient gold" });
+      }
+      if (currency === "platinum" && toNumber(balance.platinum, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient platinum" });
+      }
+
+      await storage.addCurrency(
+        userId,
+        currency === "silver" ? -unlockCost : 0,
+        currency === "gold" ? -unlockCost : 0,
+        currency === "platinum" ? -unlockCost : 0,
+        "season_pass_premium_unlock",
+      );
+
+      commander.seasonPass = {
+        ...((commander.seasonPass as any) || {}),
+        seasonId: SEASON_PASS_CONFIG.seasonId,
+        xp: seasonPass.xp,
+        claimedFree: seasonPass.claimedFree,
+        claimedPremium: seasonPass.claimedPremium,
+        premiumUnlocked: true,
+      };
+
+      await storage.updatePlayerState(userId, { commander } as any);
+      return res.json({ success: true, premiumUnlocked: true });
+    } catch (error) {
+      console.error("Failed to unlock season pass premium:", error);
+      return res.status(500).json({ message: "Failed to unlock season pass premium" });
+    }
+  });
+
   app.post("/api/season-pass/claim", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
@@ -310,6 +394,10 @@ export function registerLiveOpsRoutes(app: Express) {
 
       const commander = { ...((playerState.commander as any) || {}) };
       const seasonPass = resolveSeasonPassState(playerState);
+
+      if (premium && !seasonPass.premiumUnlocked) {
+        return res.status(403).json({ message: "Premium track is locked" });
+      }
 
       if (tier > seasonPass.currentTier) {
         return res.status(400).json({ message: "Tier is not unlocked yet" });
@@ -340,6 +428,8 @@ export function registerLiveOpsRoutes(app: Express) {
         const rewardItem = STOREFRONT_ITEMS.find((item) => item.grantItemId === reward.itemId);
         if (rewardItem) {
           await ensureStoreRewardItemExists(rewardItem);
+        } else {
+          await ensureSeasonPassRewardItemExists(reward.itemId, tier);
         }
         await storage.addItemToInventory(userId, reward.itemId, reward.quantity || 1);
       }

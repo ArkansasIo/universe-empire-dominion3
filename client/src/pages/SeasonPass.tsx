@@ -22,6 +22,8 @@ interface SeasonPassOverview {
   config: {
     seasonId: string;
     name: string;
+    premiumUnlockCurrency: "silver" | "gold" | "platinum";
+    premiumUnlockCost: number;
     maxTier: number;
     xpPerTier: number;
     freeRewards: SeasonPassReward[];
@@ -81,6 +83,20 @@ export default function SeasonPass() {
     },
     onError: (error: any) => {
       toast({ title: "Claim failed", description: error?.message || "Unknown error", variant: "destructive" });
+    },
+  });
+
+  const unlockPremiumMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/season-pass/premium/unlock");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/season-pass/overview"] });
+      toast({ title: "Premium Unlocked", description: "Premium season track is now active." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Unlock failed", description: error?.message || "Unknown error", variant: "destructive" });
     },
   });
 
@@ -174,10 +190,32 @@ export default function SeasonPass() {
           </TabsContent>
 
           <TabsContent value="premium" className="mt-4">
+            <Card className="bg-white border-slate-200 mb-4">
+              <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Premium Track Access</div>
+                  <div className="text-sm text-slate-600">
+                    {season?.premiumUnlocked
+                      ? "Premium track unlocked for this season."
+                      : `Unlock premium for ${config?.premiumUnlockCost || 0} ${config?.premiumUnlockCurrency || "platinum"}.`}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant={season?.premiumUnlocked ? "secondary" : "default"}
+                  disabled={Boolean(season?.premiumUnlocked) || unlockPremiumMutation.isPending}
+                  onClick={() => unlockPremiumMutation.mutate()}
+                >
+                  {season?.premiumUnlocked ? "Unlocked" : "Unlock Premium"}
+                </Button>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(config?.premiumRewards || []).map((reward) => {
                 const claimed = Boolean(season?.claimedPremium?.includes(reward.tier));
                 const unlocked = (season?.currentTier || 1) >= reward.tier;
+                const premiumActive = Boolean(season?.premiumUnlocked);
                 return (
                   <Card key={`premium-${reward.tier}`} className="bg-white border-slate-200">
                     <CardHeader className="pb-2">
@@ -192,10 +230,10 @@ export default function SeasonPass() {
                         className="w-full"
                         size="sm"
                         variant={claimed ? "secondary" : "default"}
-                        disabled={!unlocked || claimed || claimMutation.isPending}
+                        disabled={!premiumActive || !unlocked || claimed || claimMutation.isPending}
                         onClick={() => claimMutation.mutate({ tier: reward.tier, premium: true })}
                       >
-                        {claimed ? "Claimed" : unlocked ? "Claim Reward" : "Locked"}
+                        {claimed ? "Claimed" : !premiumActive ? "Premium Locked" : unlocked ? "Claim Reward" : "Locked"}
                       </Button>
                     </CardContent>
                   </Card>
