@@ -32,16 +32,6 @@ export default function CivilizationManagement() {
   const [selectedJobId, setSelectedJobId] = useState('');
   const [assignCount, setAssignCount] = useState(5);
 
-  if (stateLoading || systemsLoading || jobsLoading) {
-    return (
-      <GameLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-lg">Loading civilization management...</div>
-        </div>
-      </GameLayout>
-    );
-  }
-
   const summary = stateData?.data;
   const currentAssignments: WorkforceAssignment[] = assignments || [];
   const systemList: CivilizationSubsystem[] = subsystems || [];
@@ -61,6 +51,16 @@ export default function CivilizationManagement() {
       })
       .slice(0, 30);
   }, [jobList, jobSearch]);
+
+  if (stateLoading || systemsLoading || jobsLoading) {
+    return (
+      <GameLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">Loading civilization management...</div>
+        </div>
+      </GameLayout>
+    );
+  }
 
   const subsystemStates: Array<{ systemId: string; level: number }> =
     summary?.state?.subsystemStates || [];
