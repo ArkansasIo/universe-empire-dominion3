@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, CheckCircle2, Zap } from "lucide-react";
+import { BookOpen, CheckCircle2, Compass, Zap } from "lucide-react";
 
 interface StoryCampaignData {
   currentAct: number;
@@ -61,6 +61,15 @@ export default function StoryMode() {
     },
   });
 
+  const { data: allMissions = [] } = useQuery<StoryMission[]>({
+    queryKey: ["story-missions-all-acts"],
+    queryFn: async () => {
+      const res = await fetch("/api/story/missions", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load all story missions");
+      return res.json();
+    },
+  });
+
   const completeMissionMutation = useMutation({
     mutationFn: async (missionId: string) => {
       const res = await apiRequest("POST", `/api/story/missions/${missionId}/complete`);
@@ -84,6 +93,28 @@ export default function StoryMode() {
     5: "bg-red-600",
     6: "bg-red-800",
   };
+
+  const selectedActMissions = allMissions.filter((mission) => mission.act === selectedAct);
+  const selectedActCompleted = selectedActMissions.filter((mission) => mission.isCompleted).length;
+  const selectedActTotal = selectedActMissions.length;
+
+  const actProgressByAct = allMissions.reduce<Record<number, { total: number; completed: number }>>((acc, mission) => {
+    if (!acc[mission.act]) {
+      acc[mission.act] = { total: 0, completed: 0 };
+    }
+    acc[mission.act].total += 1;
+    if (mission.isCompleted) {
+      acc[mission.act].completed += 1;
+    }
+    return acc;
+  }, {});
+
+  const sortedSelectedActMissions = [...selectedActMissions].sort((left, right) => {
+    if (left.chapter !== right.chapter) return left.chapter - right.chapter;
+    if (left.missionType !== right.missionType) return left.missionType === "main" ? -1 : 1;
+    return left.title.localeCompare(right.title);
+  });
+  const nextRecommendedMission = sortedSelectedActMissions.find((mission) => !mission.isCompleted) || null;
 
   return (
     <GameLayout>
@@ -124,6 +155,10 @@ export default function StoryMode() {
         {/* Acts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {(campaign?.actDefinitions || []).map((actDef) => (
+            (() => {
+              const actProgress = actProgressByAct[actDef.act] || { total: 0, completed: 0 };
+              const isActComplete = actProgress.total > 0 && actProgress.completed === actProgress.total;
+              return (
             <Card
               key={actDef.act}
               onClick={() => setSelectedAct(actDef.act)}
@@ -137,11 +172,21 @@ export default function StoryMode() {
                 <CardDescription>{actDef.synopsis}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge className={difficultyColors[Math.min(actDef.act, 6)]}>
-                  Difficulty {Math.min(10, actDef.act + 2)}
-                </Badge>
+                <div className="flex items-center justify-between">
+                  <Badge className={difficultyColors[Math.min(actDef.act, 6)]}>
+                    Difficulty {Math.min(10, actDef.act + 2)}
+                  </Badge>
+                  <Badge variant="outline" className={isActComplete ? "border-green-300 text-green-700" : "border-slate-300 text-slate-600"}>
+                    {actProgress.completed}/{actProgress.total || 0}
+                  </Badge>
+                </div>
+                <div className="mt-2 text-xs text-slate-600">
+                  {isActComplete ? "Act Complete" : "In Progress"}
+                </div>
               </CardContent>
             </Card>
+              );
+            })()
           ))}
         </div>
 
@@ -157,6 +202,25 @@ export default function StoryMode() {
                 </TabsList>
               </Tabs>
             </div>
+            <Card className="bg-white border-slate-200 mb-4">
+              <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-primary" /> Next Recommended Mission
+                  </div>
+                  {nextRecommendedMission ? (
+                    <div className="text-sm text-slate-600">
+                      {nextRecommendedMission.title} · Chapter {nextRecommendedMission.chapter} · {nextRecommendedMission.missionType}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-green-700">All missions in this act are completed.</div>
+                  )}
+                </div>
+                <Badge variant="outline" className="w-fit">
+                  {selectedActCompleted}/{selectedActTotal} Completed
+                </Badge>
+              </CardContent>
+            </Card>
             <div className="grid gap-4">
               {missions.map((mission: any) => (
                 <Card key={mission.id} className="bg-white border-slate-200">
