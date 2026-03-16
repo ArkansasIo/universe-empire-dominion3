@@ -23,6 +23,7 @@ import {
   Gauge
 } from "lucide-react";
 import { useState } from "react";
+import { PLANET_ASSETS } from "@shared/config";
 import { 
   generateSystem, 
   generateGalaxy, 
@@ -37,6 +38,8 @@ import {
   UniverseGenerator,
   DEFAULT_UNIVERSE_SEED
 } from "@/lib/universeSeed";
+
+const TEMP_THEME_IMAGE = "/theme-temp.png";
 
 function getHabitabilityColor(habitability: Habitability | undefined): string {
   switch (habitability) {
@@ -263,8 +266,13 @@ export default function UniverseGeneratorPage() {
                           data-testid={`card-sol-moon-${moon.id}`}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center">
-                              <Moon className="w-3 h-3 text-white" />
+                            <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={PLANET_ASSETS.TERRESTRIAL.ICE.path}
+                                alt="moon"
+                                className="w-4 h-4 object-contain"
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
+                              />
                             </div>
                             <p className="font-bold text-sm text-slate-900">{moon.name}</p>
                           </div>
@@ -290,8 +298,13 @@ export default function UniverseGeneratorPage() {
                       data-testid={`card-sol-dwarf-${dwarf.id}`}
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-purple-400 flex items-center justify-center">
-                          <Globe className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 rounded-full bg-purple-400 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={PLANET_ASSETS.GAS_GIANTS.NEPTUNE_CLASS.path}
+                            alt="dwarf"
+                            className="w-5 h-5 object-contain"
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
+                          />
                         </div>
                         <p className="font-bold text-sm text-purple-900">{dwarf.name}</p>
                       </div>
