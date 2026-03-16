@@ -326,7 +326,7 @@ export default function Settings() {
          const downloadUrl = URL.createObjectURL(blob);
          const link = document.createElement("a");
          link.href = downloadUrl;
-         link.download = `stellar-dominion-account-${exportData.user?.username || "export"}.json`;
+         link.download = `universee-mpires-dominions-account-${exportData.user?.username || "export"}.json`;
          document.body.appendChild(link);
          link.click();
          link.remove();

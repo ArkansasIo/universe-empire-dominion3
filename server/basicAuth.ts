@@ -4,6 +4,9 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { logger } from "./logger";
 import crypto from "crypto";
+import { db } from "./db";
+import { adminUsers, users } from "../shared/schema";
+import { eq } from "drizzle-orm";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -40,6 +43,65 @@ function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
+async function resolveAdminStatus(userId: string): Promise<{ isAdmin: boolean; adminRole: string | null }> {
+  if (!userId) {
+    return { isAdmin: false, adminRole: null };
+  }
+
+  const [adminRecord] = await db
+    .select({ role: adminUsers.role })
+    .from(adminUsers)
+    .where(eq(adminUsers.userId, userId))
+    .limit(1);
+
+  return {
+    isAdmin: Boolean(adminRecord),
+    adminRole: adminRecord?.role || null,
+  };
+}
+
+async function ensureBootstrapAdminAccount() {
+  try {
+    const bootstrapUsername = (process.env.ADMIN_BOOTSTRAP_USERNAME || "admin").trim();
+    const bootstrapEmail = (process.env.ADMIN_BOOTSTRAP_EMAIL || "admin@universee.game").trim();
+    const bootstrapPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD || "Admin@12345";
+    const bootstrapRole = (process.env.ADMIN_BOOTSTRAP_ROLE || "founder").trim();
+
+    if (!bootstrapUsername || !bootstrapEmail || !bootstrapPassword) {
+      logger.warn("AUTH", "Bootstrap admin account skipped due to missing credentials");
+      return;
+    }
+
+    let bootstrapUser = await storage.getUserByUsername(bootstrapUsername);
+    if (!bootstrapUser) {
+      bootstrapUser = await storage.createUser({
+        username: bootstrapUsername,
+        email: bootstrapEmail,
+        firstName: "Admin",
+        passwordHash: hashPassword(bootstrapPassword),
+      });
+      logger.info("AUTH", `Bootstrap admin user created: ${bootstrapUsername}`);
+    }
+
+    const [adminRecord] = await db
+      .select({ id: adminUsers.id })
+      .from(adminUsers)
+      .where(eq(adminUsers.userId, bootstrapUser.id))
+      .limit(1);
+
+    if (!adminRecord) {
+      await db.insert(adminUsers).values({
+        userId: bootstrapUser.id,
+        role: bootstrapRole,
+        permissions: ["all_access", "administrate", "manage", "moderate", "view_only"],
+      });
+      logger.info("AUTH", `Bootstrap admin role granted: ${bootstrapUsername} (${bootstrapRole})`);
+    }
+  } catch (error) {
+    logger.error("AUTH", "Failed to ensure bootstrap admin account", {}, error);
+  }
+}
+
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   
@@ -57,6 +119,8 @@ export async function setupAuth(app: Express) {
   });
   
   app.use(getSession());
+
+  await ensureBootstrapAdminAccount();
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -197,14 +261,15 @@ export async function setupAuth(app: Express) {
       if (userId) {
         const user = await storage.getUser(userId);
         if (user) {
+          const adminStatus = await resolveAdminStatus(user.id);
           logger.info("AUTH", `Session auth successful for userId: ${userId}`);
           return res.status(200).json({ 
             id: user.id, 
             username: user.username || "",
             email: user.email,
             firstName: user.firstName,
-            isAdmin: false,
-            adminRole: null
+            isAdmin: adminStatus.isAdmin,
+            adminRole: adminStatus.adminRole
           });
         }
       }
@@ -221,6 +286,7 @@ export async function setupAuth(app: Express) {
             const user = await storage.getUserByUsername(username);
             if (user && user.passwordHash && verifyPassword(password, user.passwordHash)) {
               (req.session as any).userId = user.id;
+              const adminStatus = await resolveAdminStatus(user.id);
               logger.info("AUTH", `Basic auth successful for user: ${username}`);
               
               // Explicitly save session to persist it
@@ -234,8 +300,8 @@ export async function setupAuth(app: Express) {
                   username: user.username || "",
                   email: user.email,
                   firstName: user.firstName,
-                  isAdmin: false,
-                  adminRole: null
+                  isAdmin: adminStatus.isAdmin,
+                  adminRole: adminStatus.adminRole
                 });
               });
             }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,12 +29,23 @@ interface StorefrontItem {
 interface StoreCatalogResponse {
   items: StorefrontItem[];
   categories: StoreCategory[];
+  featured?: StorefrontItem[];
+  byCategory?: Record<string, StorefrontItem[]>;
 }
 
 interface CurrencyBalance {
   silver: number;
   gold: number;
   platinum: number;
+}
+
+interface CheckoutPreviewResponse {
+  item: StorefrontItem;
+  quantity: number;
+  totalCost: number;
+  totalGrantQuantity: number;
+  affordable: boolean;
+  balance: CurrencyBalance;
 }
 
 const currencyColor: Record<StoreCurrency, string> = {
@@ -47,6 +58,7 @@ export default function Storefront() {
   const { toast } = useToast();
   const [category, setCategory] = useState<"all" | StoreCategory>("all");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedItemId, setSelectedItemId] = useState<string>("");
 
   const getQuantityForItem = (itemId: string) => quantities[itemId] || 1;
   const setItemQuantity = (itemId: string, nextQuantity: number) => {
@@ -92,6 +104,29 @@ export default function Storefront() {
     return entries.filter((entry) => entry.category === category);
   }, [catalog?.items, category]);
 
+  useEffect(() => {
+    if (!selectedItemId && visibleItems.length > 0) {
+      setSelectedItemId(visibleItems[0].id);
+    }
+  }, [selectedItemId, visibleItems]);
+
+  const selectedQuantity = selectedItemId ? getQuantityForItem(selectedItemId) : 1;
+
+  const { data: checkoutPreview, isLoading: previewLoading } = useQuery<CheckoutPreviewResponse>({
+    queryKey: ["/api/storefront/preview-checkout", selectedItemId, selectedQuantity],
+    enabled: Boolean(selectedItemId),
+    queryFn: async () => {
+      const res = await fetch("/api/storefront/preview-checkout", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: selectedItemId, quantity: selectedQuantity }),
+      });
+      if (!res.ok) throw new Error("Failed to load checkout preview");
+      return res.json();
+    },
+  });
+
   return (
     <GameLayout>
       <div className="space-y-6">
@@ -104,6 +139,9 @@ export default function Storefront() {
             </Link>
             <Link href="/season-pass">
               <Button variant="outline" size="sm">Open Season Pass</Button>
+            </Link>
+            <Link href="/battle-pass">
+              <Button variant="outline" size="sm">Open Battle Pass</Button>
             </Link>
           </div>
         </div>
@@ -139,6 +177,47 @@ export default function Storefront() {
           </TabsList>
         </Tabs>
 
+        <Card className="bg-white border-slate-200">
+          <CardHeader>
+            <CardTitle>Checkout Preview</CardTitle>
+            <CardDescription>Review totals and affordability before confirming a purchase.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {previewLoading ? (
+              <div className="text-sm text-slate-500">Loading checkout preview...</div>
+            ) : checkoutPreview ? (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                  <div className="text-xs uppercase text-slate-500">Item</div>
+                  <div className="text-sm font-semibold text-slate-900">{checkoutPreview.item.name}</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                  <div className="text-xs uppercase text-slate-500">Quantity</div>
+                  <div className="text-lg font-orbitron text-slate-900">{checkoutPreview.quantity}</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                  <div className="text-xs uppercase text-slate-500">Total Cost</div>
+                  <div className={`text-lg font-orbitron ${currencyColor[checkoutPreview.item.currency]}`}>
+                    {checkoutPreview.totalCost.toLocaleString()} {checkoutPreview.item.currency}
+                  </div>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                  <div className="text-xs uppercase text-slate-500">Total Grant</div>
+                  <div className="text-lg font-orbitron text-slate-900">{checkoutPreview.totalGrantQuantity.toLocaleString()}</div>
+                </div>
+                <div className={`rounded p-3 border ${checkoutPreview.affordable ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+                  <div className={`text-xs uppercase ${checkoutPreview.affordable ? "text-emerald-700" : "text-rose-700"}`}>Affordability</div>
+                  <div className={`text-lg font-orbitron ${checkoutPreview.affordable ? "text-emerald-900" : "text-rose-900"}`}>
+                    {checkoutPreview.affordable ? "Ready" : "Insufficient"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-slate-500">Select an item to preview checkout.</div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleItems.map((item) => {
             const quantity = getQuantityForItem(item.id);
@@ -146,7 +225,7 @@ export default function Storefront() {
             const totalGrant = item.grantQuantity * quantity;
             const canAfford = (balance?.[item.currency] || 0) >= totalCost;
             return (
-              <Card key={item.id} className="bg-white border-slate-200">
+              <Card key={item.id} className={`bg-white ${selectedItemId === item.id ? "border-primary" : "border-slate-200"}`}>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center justify-between">
                     <span>{item.name}</span>
@@ -211,6 +290,13 @@ export default function Storefront() {
                     onClick={() => purchaseMutation.mutate({ itemId: item.id, quantity })}
                   >
                     {canAfford ? `Purchase x${quantity}` : "Insufficient Funds"}
+                  </Button>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => setSelectedItemId(item.id)}
+                  >
+                    Preview Checkout
                   </Button>
                 </CardContent>
               </Card>

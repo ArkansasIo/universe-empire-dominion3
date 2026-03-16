@@ -111,7 +111,29 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4 pb-16 relative overflow-hidden">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-24 pb-16 relative overflow-hidden">
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-sm z-30">
+        <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Rocket className="w-5 h-5 text-primary" />
+            <span className="font-orbitron font-bold text-sm text-slate-900 tracking-wide">Universe-Empires-Dominions</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Link href="/forums">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Forums</Button>
+            </Link>
+            <Link href="/about">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">About</Button>
+            </Link>
+            <Link href="/terms">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Terms</Button>
+            </Link>
+            <Link href="/privacy">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Privacy</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
       {error?.includes("Database is temporarily") && (
         <div className="fixed top-4 right-4 z-50 max-w-sm">
           <div className="bg-yellow-900 border-2 border-yellow-500 text-yellow-100 px-4 py-3 rounded-lg shadow-xl">
@@ -130,12 +152,12 @@ export default function Auth() {
           <div className="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
              <img
                src={MENU_ASSETS.NAVIGATION.EXPLORATION.path}
-               alt="stellar dominion"
+               alt="Universe-Empires-Dominions"
                className="w-10 h-10 object-contain"
                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
              />
           </div>
-          <CardTitle className="text-4xl font-orbitron font-bold tracking-wider text-slate-900">STELLAR DOMINION</CardTitle>
+          <CardTitle className="text-4xl font-orbitron font-bold tracking-wider text-slate-900">Universe-Empires-Dominions</CardTitle>
           <CardDescription className="text-slate-700 font-rajdhani text-lg font-medium mt-2">⚡ Command your fleet. Conquer the stars.</CardDescription>
         </CardHeader>
         
@@ -386,7 +408,7 @@ export default function Auth() {
         <CardFooter className="flex flex-col items-center gap-4 pb-6 border-t border-slate-300 pt-6">
            <Link href="/about">
              <Button variant="ghost" className="text-slate-700 hover:text-slate-900 transition-colors" data-testid="button-about">
-               <Info className="w-4 h-4 mr-2" /> About Stellar Dominion
+               <Info className="w-4 h-4 mr-2" /> About Universe-Empires-Dominions
              </Button>
            </Link>
            <div className="flex items-center gap-4 text-xs text-slate-600">
@@ -403,7 +425,7 @@ export default function Auth() {
 
       <div className="fixed bottom-0 inset-x-0 border-t border-slate-300 bg-white/95 backdrop-blur-sm z-20">
         <div className="max-w-4xl mx-auto px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-600">
-          <span className="font-semibold text-slate-700">Stellar Dominion</span>
+          <span className="font-semibold text-slate-700">Universe-Empires-Dominions</span>
           <span>•</span>
           <span>Version {GAME_VERSION}</span>
           <span>•</span>

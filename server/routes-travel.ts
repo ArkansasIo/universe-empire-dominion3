@@ -16,7 +16,15 @@ import {
   getResourceRichPlanets,
   ALL_PLANET_TYPES,
   PLANET_STATISTICS,
+  STARFLEET_BIOME_CATALOG_90,
+  STARFLEET_BIOME_CATALOG_META,
+  getBiomeById,
+  getBiomesByEnvironment,
+  getBiomesByLetter,
+  getBiomesByRarity,
   type Coordinates,
+  type BiomeEnvironmentType,
+  type BiomeRarity,
 } from "@shared/config";
 import { storage } from "./storage";
 
@@ -147,6 +155,66 @@ export function registerTravelRoutes(app: any) {
     if (!planet) return res.status(404).json({ message: "Planet type not found" });
 
     res.json({ planet });
+  });
+
+  // Starfleet-inspired biome catalog
+  app.get('/api/biomes/catalog', (_req: Request, res: Response) => {
+    res.json({
+      meta: STARFLEET_BIOME_CATALOG_META,
+      biomes: STARFLEET_BIOME_CATALOG_90,
+    });
+  });
+
+  app.get('/api/biomes/catalog/:id', (req: Request, res: Response) => {
+    const biome = getBiomeById(req.params.id);
+    if (!biome) {
+      return res.status(404).json({ message: 'Biome not found' });
+    }
+
+    res.json({ biome });
+  });
+
+  app.get('/api/biomes/environment/:environment', (req: Request, res: Response) => {
+    const environment = req.params.environment as BiomeEnvironmentType;
+    const allowed: BiomeEnvironmentType[] = ['planet', 'moon', 'colony', 'space-station', 'starbase', 'moon-base'];
+
+    if (!allowed.includes(environment)) {
+      return res.status(400).json({ message: 'Invalid biome environment type' });
+    }
+
+    res.json({
+      environment,
+      count: getBiomesByEnvironment(environment).length,
+      biomes: getBiomesByEnvironment(environment),
+    });
+  });
+
+  app.get('/api/biomes/letter/:letter', (req: Request, res: Response) => {
+    const letter = String(req.params.letter || '').toUpperCase();
+    if (!/^[A-Z]$/.test(letter)) {
+      return res.status(400).json({ message: 'Letter must be A-Z' });
+    }
+
+    res.json({
+      letter,
+      count: getBiomesByLetter(letter).length,
+      biomes: getBiomesByLetter(letter),
+    });
+  });
+
+  app.get('/api/biomes/rarity/:rarity', (req: Request, res: Response) => {
+    const rarity = req.params.rarity as BiomeRarity;
+    const allowed: BiomeRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+
+    if (!allowed.includes(rarity)) {
+      return res.status(400).json({ message: 'Invalid rarity. Use common|uncommon|rare|epic|legendary' });
+    }
+
+    res.json({
+      rarity,
+      count: getBiomesByRarity(rarity).length,
+      biomes: getBiomesByRarity(rarity),
+    });
   });
 
   // Player travel profile

@@ -21,6 +21,24 @@ export interface SeasonPassReward {
   quantity?: number;
 }
 
+export interface BattlePassMissionTemplate {
+  id: string;
+  title: string;
+  missionType: 'daily' | 'weekly' | 'seasonal';
+  objectiveType: 'battle' | 'research' | 'economy' | 'exploration' | 'construction';
+  objectiveTarget: number;
+  xpReward: number;
+}
+
+export interface BattlePassReward {
+  tier: number;
+  rewardType: 'currency' | 'item';
+  currency?: StoreCurrency;
+  amount?: number;
+  itemId?: string;
+  quantity?: number;
+}
+
 export interface StoryMissionTemplate {
   missionCode: string;
   act: number;
@@ -267,6 +285,176 @@ export const SEASON_PASS_CONFIG = {
     };
   }),
 };
+
+export const BATTLE_PASS_CONFIG = {
+  battlePassId: 'battlepass-omega-01',
+  name: 'Warfront Omega',
+  seasonAlignment: SEASON_PASS_CONFIG.seasonId,
+  maxTier: 90,
+  xpPerTier: 900,
+  unlockTracks: {
+    premium: {
+      currency: 'gold' as const,
+      cost: 1100,
+    },
+    elite: {
+      currency: 'platinum' as const,
+      cost: 30,
+    },
+  },
+  freeRewards: Array.from({ length: 90 }, (_, index): BattlePassReward => {
+    const tier = index + 1;
+    if (tier % 15 === 0) {
+      return {
+        tier,
+        rewardType: 'item',
+        itemId: `battle-free-cache-${tier}`,
+        quantity: 1,
+      };
+    }
+
+    return {
+      tier,
+      rewardType: 'currency',
+      currency: 'silver',
+      amount: 1200 + tier * 135,
+    };
+  }),
+  premiumRewards: Array.from({ length: 90 }, (_, index): BattlePassReward => {
+    const tier = index + 1;
+    if (tier % 10 === 0) {
+      return {
+        tier,
+        rewardType: 'item',
+        itemId: `battle-premium-cache-${tier}`,
+        quantity: 1,
+      };
+    }
+
+    return {
+      tier,
+      rewardType: 'currency',
+      currency: 'gold',
+      amount: 18 + tier,
+    };
+  }),
+  eliteRewards: Array.from({ length: 90 }, (_, index): BattlePassReward => {
+    const tier = index + 1;
+    if (tier % 6 === 0) {
+      return {
+        tier,
+        rewardType: 'item',
+        itemId: `battle-elite-cache-${tier}`,
+        quantity: 1,
+      };
+    }
+
+    return {
+      tier,
+      rewardType: 'currency',
+      currency: 'gold',
+      amount: 32 + tier,
+    };
+  }),
+} as const;
+
+export const BATTLE_PASS_MISSIONS: BattlePassMissionTemplate[] = [
+  ...Array.from({ length: 10 }, (_, index): BattlePassMissionTemplate => ({
+    id: `battle-daily-${index + 1}`,
+    title: `Daily Sortie ${index + 1}`,
+    missionType: 'daily',
+    objectiveType: 'battle',
+    objectiveTarget: 1 + index,
+    xpReward: 120 + index * 20,
+  })),
+  ...Array.from({ length: 10 }, (_, index): BattlePassMissionTemplate => ({
+    id: `battle-weekly-${index + 1}`,
+    title: `Weekly Campaign ${index + 1}`,
+    missionType: 'weekly',
+    objectiveType: 'construction',
+    objectiveTarget: 4 + index,
+    xpReward: 520 + index * 35,
+  })),
+  ...Array.from({ length: 10 }, (_, index): BattlePassMissionTemplate => ({
+    id: `battle-seasonal-${index + 1}`,
+    title: `Season Directive ${index + 1}`,
+    missionType: 'seasonal',
+    objectiveType: index % 2 === 0 ? 'research' : 'exploration',
+    objectiveTarget: 8 + index,
+    xpReward: 980 + index * 65,
+  })),
+];
+
+export function getStoreItemsByCategory(category: StorefrontItem['category']): StorefrontItem[] {
+  return STOREFRONT_ITEMS.filter((item) => item.category === category);
+}
+
+export function getStoreFeaturedItems(limit = 6): StorefrontItem[] {
+  return [...STOREFRONT_ITEMS]
+    .sort((left, right) => right.price - left.price)
+    .slice(0, Math.max(1, limit));
+}
+
+export function calculateStorePurchaseTotals(itemId: string, quantity: number) {
+  const item = STOREFRONT_ITEMS.find((entry) => entry.id === itemId);
+  if (!item || quantity <= 0) {
+    return null;
+  }
+
+  const safeQuantity = Math.max(1, Math.floor(quantity));
+  return {
+    item,
+    quantity: safeQuantity,
+    totalCost: item.price * safeQuantity,
+    totalGrantQuantity: item.grantQuantity * safeQuantity,
+  };
+}
+
+export function getSeasonPassTrackReward(tier: number, track: 'free' | 'gold' | 'platinum'): SeasonPassReward | undefined {
+  const rewards =
+    track === 'free'
+      ? SEASON_PASS_CONFIG.freeRewards
+      : track === 'gold'
+        ? SEASON_PASS_CONFIG.goldRewards
+        : SEASON_PASS_CONFIG.platinumRewards;
+  return rewards.find((entry) => entry.tier === tier);
+}
+
+export function getSeasonPassTierProgress(xp: number) {
+  const safeXp = Math.max(0, Math.floor(xp));
+  const currentTier = Math.min(SEASON_PASS_CONFIG.maxTier, Math.floor(safeXp / SEASON_PASS_CONFIG.xpPerTier) + 1);
+  const xpIntoTier = safeXp % SEASON_PASS_CONFIG.xpPerTier;
+  return {
+    xp: safeXp,
+    currentTier,
+    xpIntoTier,
+    xpForNextTier: SEASON_PASS_CONFIG.xpPerTier,
+    completionRatio: Number((xpIntoTier / SEASON_PASS_CONFIG.xpPerTier).toFixed(4)),
+  };
+}
+
+export function getBattlePassTrackReward(tier: number, track: 'free' | 'premium' | 'elite'): BattlePassReward | undefined {
+  const rewards =
+    track === 'free'
+      ? BATTLE_PASS_CONFIG.freeRewards
+      : track === 'premium'
+        ? BATTLE_PASS_CONFIG.premiumRewards
+        : BATTLE_PASS_CONFIG.eliteRewards;
+  return rewards.find((entry) => entry.tier === tier);
+}
+
+export function getBattlePassTierProgress(xp: number) {
+  const safeXp = Math.max(0, Math.floor(xp));
+  const currentTier = Math.min(BATTLE_PASS_CONFIG.maxTier, Math.floor(safeXp / BATTLE_PASS_CONFIG.xpPerTier) + 1);
+  const xpIntoTier = safeXp % BATTLE_PASS_CONFIG.xpPerTier;
+  return {
+    xp: safeXp,
+    currentTier,
+    xpIntoTier,
+    xpForNextTier: BATTLE_PASS_CONFIG.xpPerTier,
+    completionRatio: Number((xpIntoTier / BATTLE_PASS_CONFIG.xpPerTier).toFixed(4)),
+  };
+}
 
 export const STORY_ACTS: StoryActDefinition[] = ACT_THEMES.map((theme, index) => ({
   act: index + 1,

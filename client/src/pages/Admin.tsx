@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { ShieldAlert, Users, Activity, Server, Database, Ban, Lock, Eye, Terminal, RefreshCw, AlertTriangle } from "lucide-react";
+import { ShieldAlert, Users, Activity, Server, Database, Ban, Lock, Eye, Terminal, RefreshCw, AlertTriangle, UserCog, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -61,6 +61,44 @@ type AdminUserDetailResponse = {
    };
 };
 
+type AdminSettings = {
+   maintenanceMode: boolean;
+   peaceMode: boolean;
+   resourceRate: number;
+   gameSpeed: number;
+   fleetSpeed: number;
+   allowNewRegistrations: boolean;
+   adminBroadcastEnabled: boolean;
+};
+
+type AdminSettingsResponse = {
+   settings: AdminSettings;
+};
+
+type AdminAccountsResponse = {
+   accounts: Array<{
+      id: string;
+      userId: string;
+      role: string;
+      permissions: string[];
+      createdAt: string;
+      username: string;
+      email: string;
+   }>;
+};
+
+type AdminOperationsResponse = {
+   operations: Array<{
+      id: string;
+      type: "backup_snapshot" | "reset_universe" | "restart_server";
+      status: "queued" | "completed";
+      requestedBy: string;
+      requestedAt: number;
+      completedAt?: number;
+      notes?: string;
+   }>;
+};
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
    const response = await fetch(url, {
       credentials: "include",
@@ -84,6 +122,8 @@ export default function Admin() {
    const { toast } = useToast();
    const queryClient = useQueryClient();
    const [search, setSearch] = useState("");
+   const [adminIdentifier, setAdminIdentifier] = useState("");
+   const [adminRoleInput, setAdminRoleInput] = useState("moderator");
   
    const { data: usersData } = useQuery<AdminUsersResponse>({
       queryKey: ["admin-users"],
@@ -100,6 +140,24 @@ export default function Admin() {
    const { data: auditData } = useQuery<AdminAuditResponse>({
       queryKey: ["admin-audit"],
       queryFn: () => fetchJson<AdminAuditResponse>("/api/admin/audit"),
+      refetchInterval: 15000,
+   });
+
+   const { data: settingsData } = useQuery<AdminSettingsResponse>({
+      queryKey: ["admin-settings"],
+      queryFn: () => fetchJson<AdminSettingsResponse>("/api/admin/settings"),
+      refetchInterval: 20000,
+   });
+
+   const { data: accountsData } = useQuery<AdminAccountsResponse>({
+      queryKey: ["admin-accounts"],
+      queryFn: () => fetchJson<AdminAccountsResponse>("/api/admin/accounts"),
+      refetchInterval: 20000,
+   });
+
+   const { data: operationsData } = useQuery<AdminOperationsResponse>({
+      queryKey: ["admin-operations"],
+      queryFn: () => fetchJson<AdminOperationsResponse>("/api/admin/operations"),
       refetchInterval: 15000,
    });
 
@@ -147,6 +205,90 @@ export default function Admin() {
       },
       onError: (error: Error) => {
          toast({ title: "Unable to load user details", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const patchSettingsMutation = useMutation({
+      mutationFn: (nextSettings: Partial<AdminSettings>) =>
+         fetchJson<AdminSettingsResponse>("/api/admin/settings", {
+            method: "PATCH",
+            body: JSON.stringify(nextSettings),
+         }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Admin settings saved", description: "Live admin settings updated." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Settings update failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const createAdminAccountMutation = useMutation({
+      mutationFn: ({ identifier, role }: { identifier: string; role: string }) =>
+         fetchJson("/api/admin/accounts", {
+            method: "POST",
+            body: JSON.stringify({ identifier, role }),
+         }),
+      onSuccess: () => {
+         setAdminIdentifier("");
+         queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Admin account created", description: "User promoted successfully." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Failed to create admin account", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const removeAdminAccountMutation = useMutation({
+      mutationFn: (userId: string) =>
+         fetchJson(`/api/admin/accounts/${userId}`, {
+            method: "DELETE",
+         }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Admin account removed", description: "Admin privileges revoked." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Failed to remove admin account", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const queueBackupMutation = useMutation({
+      mutationFn: () => fetchJson("/api/admin/operations/backup", { method: "POST" }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["admin-operations"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Backup created", description: "Snapshot operation completed." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Backup failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const queueRestartMutation = useMutation({
+      mutationFn: () => fetchJson("/api/admin/operations/restart", { method: "POST" }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["admin-operations"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Restart queued", description: "Server restart request has been queued." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Restart request failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const queueResetMutation = useMutation({
+      mutationFn: () => fetchJson("/api/admin/operations/reset-universe", { method: "POST", body: JSON.stringify({ confirmText: "RESET" }) }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["admin-operations"] });
+         queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+         toast({ title: "Universe reset queued", description: "Reset operation has been queued." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Reset request failed", description: error.message, variant: "destructive" });
       },
    });
 
@@ -378,7 +520,7 @@ export default function Admin() {
                              <div className="text-sm text-red-700">Disconnects all non-admin users and locks login.</div>
                           </div>
                        </div>
-                       <Switch checked={config.maintenanceMode} onCheckedChange={(v) => updateConfig({ maintenanceMode: v })} />
+                       <Switch checked={Boolean(settingsData?.settings.maintenanceMode)} onCheckedChange={(v) => patchSettingsMutation.mutate({ maintenanceMode: v })} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -387,11 +529,11 @@ export default function Admin() {
                           <div className="space-y-4">
                              <div className="flex justify-between items-center">
                                 <label className="text-sm font-medium">Resource Generation</label>
-                                <Input type="number" className="w-20 h-8" value={config.resourceRate} onChange={(e) => updateConfig({ resourceRate: parseInt(e.target.value) })} />
+                                <Input type="number" className="w-20 h-8" value={settingsData?.settings.resourceRate || 1} onChange={(e) => patchSettingsMutation.mutate({ resourceRate: parseInt(e.target.value) || 1 })} />
                              </div>
                              <div className="flex justify-between items-center">
                                 <label className="text-sm font-medium">Build Speed</label>
-                                <Input type="number" className="w-20 h-8" value={config.gameSpeed} onChange={(e) => updateConfig({ gameSpeed: parseInt(e.target.value) })} />
+                                <Input type="number" className="w-20 h-8" value={settingsData?.settings.gameSpeed || 1} onChange={(e) => patchSettingsMutation.mutate({ gameSpeed: parseInt(e.target.value) || 1 })} />
                              </div>
                           </div>
                        </div>
@@ -401,12 +543,80 @@ export default function Admin() {
                           <div className="space-y-4">
                              <div className="flex justify-between items-center">
                                 <label className="text-sm font-medium">Fleet Speed</label>
-                                <Input type="number" className="w-20 h-8" value={config.fleetSpeed} onChange={(e) => updateConfig({ fleetSpeed: parseInt(e.target.value) })} />
+                                <Input type="number" className="w-20 h-8" value={settingsData?.settings.fleetSpeed || 1} onChange={(e) => patchSettingsMutation.mutate({ fleetSpeed: parseInt(e.target.value) || 1 })} />
                              </div>
                              <div className="flex justify-between items-center">
                                 <label className="text-sm font-medium">Force Peace Mode</label>
-                                <Switch checked={config.peaceMode} onCheckedChange={(v) => updateConfig({ peaceMode: v })} />
+                                <Switch checked={Boolean(settingsData?.settings.peaceMode)} onCheckedChange={(v) => patchSettingsMutation.mutate({ peaceMode: v })} />
                              </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                       <div className="space-y-4">
+                          <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2">Admin Accounts</h3>
+                          <div className="flex items-center gap-2">
+                             <Input
+                                placeholder="Username or email"
+                                value={adminIdentifier}
+                                onChange={(event) => setAdminIdentifier(event.target.value)}
+                             />
+                             <Input
+                                className="w-36"
+                                placeholder="role"
+                                value={adminRoleInput}
+                                onChange={(event) => setAdminRoleInput(event.target.value)}
+                             />
+                             <Button
+                                onClick={() => createAdminAccountMutation.mutate({ identifier: adminIdentifier.trim(), role: adminRoleInput.trim() || "moderator" })}
+                                disabled={createAdminAccountMutation.isPending || !adminIdentifier.trim()}
+                             >
+                                <UserCog className="w-4 h-4 mr-2" /> Add
+                             </Button>
+                          </div>
+
+                          <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                             {(accountsData?.accounts || []).map((account) => (
+                                <div key={account.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded p-2">
+                                   <div>
+                                      <div className="text-sm font-semibold text-slate-900">{account.username}</div>
+                                      <div className="text-xs text-slate-500">{account.email} • {account.role}</div>
+                                   </div>
+                                   <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-red-600 hover:text-red-700"
+                                      onClick={() => removeAdminAccountMutation.mutate(account.userId)}
+                                      disabled={removeAdminAccountMutation.isPending}
+                                   >
+                                      <Trash2 className="w-4 h-4" />
+                                   </Button>
+                                </div>
+                             ))}
+                             {(accountsData?.accounts || []).length === 0 && (
+                                <div className="text-xs text-slate-500">No admin accounts found.</div>
+                             )}
+                          </div>
+                       </div>
+
+                       <div className="space-y-4">
+                          <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2">Operations</h3>
+                          <div className="flex flex-wrap gap-2">
+                             <Button variant="outline" onClick={() => queueBackupMutation.mutate()} disabled={queueBackupMutation.isPending}>Create Backup</Button>
+                             <Button variant="outline" onClick={() => queueRestartMutation.mutate()} disabled={queueRestartMutation.isPending}>Queue Restart</Button>
+                             <Button variant="destructive" onClick={() => queueResetMutation.mutate()} disabled={queueResetMutation.isPending}>Queue Reset</Button>
+                          </div>
+                          <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                             {(operationsData?.operations || []).map((operation) => (
+                                <div key={operation.id} className="bg-slate-50 border border-slate-200 rounded p-2">
+                                   <div className="text-sm font-semibold text-slate-900">{operation.type}</div>
+                                   <div className="text-xs text-slate-500">{operation.status} • {new Date(operation.requestedAt).toLocaleString()}</div>
+                                </div>
+                             ))}
+                             {(operationsData?.operations || []).length === 0 && (
+                                <div className="text-xs text-slate-500">No operations queued yet.</div>
+                             )}
                           </div>
                        </div>
                     </div>

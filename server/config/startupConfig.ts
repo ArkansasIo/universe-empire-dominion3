@@ -2,7 +2,7 @@
 export const STARTUP_CONFIG = {
   // Application initialization
   app: {
-    name: 'Stellar Dominion',
+    name: 'Universe-Empires-Dominions',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development',
     debug: process.env.DEBUG === 'true',

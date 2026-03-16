@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Activity, Thermometer, Ruler, User, Shield, Crosshair, Send, AlertTriangle, 
   Info, CheckCircle, AlertCircle, Box, Gem, Database, Zap, TrendingUp, 
@@ -17,8 +18,72 @@ import { getPlanetDetails } from "@/lib/planetUtils";
 import Navigation from "./Navigation";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
+
+interface SeasonPassProgressResponse {
+  success: boolean;
+  state: {
+    currentTier: number;
+    xp: number;
+    xpIntoTier: number;
+    xpForNextTier: number;
+    completionRatio: number;
+  };
+}
+
+interface BattlePassOverviewResponse {
+  state: {
+    currentTier: number;
+    xp: number;
+    xpIntoTier: number;
+    xpForNextTier: number;
+    completionRatio: number;
+    premiumUnlocked: boolean;
+    eliteUnlocked: boolean;
+  };
+}
+
+interface PopulationSnapshotResponse {
+  success: boolean;
+  snapshot: {
+    frameTier: number;
+    frame: {
+      name: string;
+    };
+    population: {
+      current: number;
+      capacity: number;
+      utilization: number;
+      happiness: number;
+      estimatedGrowthPerHour: number;
+    };
+    food: {
+      pressure: "surplus" | "stable" | "strained" | "critical";
+      netPerHour: number;
+      hoursToDepletion: number | null;
+    };
+    water: {
+      pressure: "surplus" | "stable" | "strained" | "critical";
+      netPerHour: number;
+      hoursToDepletion: number | null;
+    };
+    civilizationSystems: {
+      projectedProductivity: number;
+      foodDemandFromJobsPerHour: number;
+      waterDemandFromJobsPerHour: number;
+    };
+  };
+}
+
+function pressureBadgeClass(pressure: "surplus" | "stable" | "strained" | "critical"): string {
+  if (pressure === "surplus") return "text-emerald-700 border-emerald-300";
+  if (pressure === "stable") return "text-blue-700 border-blue-300";
+  if (pressure === "strained") return "text-amber-700 border-amber-300";
+  return "text-red-700 border-red-300";
+}
 
 function getPlanetImagePath(planetClass: string): string {
   const c = planetClass.toUpperCase();
@@ -34,6 +99,7 @@ function getPlanetImagePath(planetClass: string): string {
 }
 
 export default function Overview() {
+  const { toast } = useToast();
   const { 
     planetName, resources, buildings, events, coordinates, username, 
     queue, activeMissions, research, units, messages, alliance
@@ -135,6 +201,62 @@ export default function Overview() {
       href: "/fleet",
     },
   ];
+
+  const { data: seasonProgress } = useQuery<SeasonPassProgressResponse>({
+    queryKey: ["/api/season-pass/progression"],
+    queryFn: async () => {
+      const response = await fetch("/api/season-pass/progression", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load season progression");
+      return response.json();
+    },
+  });
+
+  const { data: battlePassOverview } = useQuery<BattlePassOverviewResponse>({
+    queryKey: ["/api/battle-pass/overview"],
+    queryFn: async () => {
+      const response = await fetch("/api/battle-pass/overview", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load battle pass overview");
+      return response.json();
+    },
+  });
+
+  const { data: populationSnapshot } = useQuery<PopulationSnapshotResponse>({
+    queryKey: ["/api/population/snapshot"],
+    queryFn: async () => {
+      const response = await fetch("/api/population/snapshot", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load population snapshot");
+      return response.json();
+    },
+  });
+
+  const seasonXpMutation = useMutation({
+    mutationFn: async (xp: number) => {
+      const response = await apiRequest("POST", "/api/season-pass/xp", { xp });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/season-pass/progression"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/season-pass/overview"] });
+      toast({ title: "Season XP Added", description: "Season progress updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Season XP failed", description: error?.message || "Unknown error", variant: "destructive" });
+    },
+  });
+
+  const battleXpMutation = useMutation({
+    mutationFn: async (xp: number) => {
+      const response = await apiRequest("POST", "/api/battle-pass/xp", { xp });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/battle-pass/overview"] });
+      toast({ title: "Battle XP Added", description: "Battle pass progress updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Battle XP failed", description: error?.message || "Unknown error", variant: "destructive" });
+    },
+  });
 
   return (
     <GameLayout>
@@ -258,6 +380,16 @@ export default function Overview() {
               <Link href="/season-pass">
                 <Button variant="outline" className="w-full justify-start h-10 text-slate-700 hover:bg-slate-50" data-testid="button-goto-season-pass">
                   <Trophy className="w-4 h-4 mr-2 text-amber-500" /> Season Pass
+                </Button>
+              </Link>
+              <Link href="/battle-pass">
+                <Button variant="outline" className="w-full justify-start h-10 text-slate-700 hover:bg-slate-50" data-testid="button-goto-battle-pass">
+                  <Swords className="w-4 h-4 mr-2 text-red-500" /> Battle Pass
+                </Button>
+              </Link>
+              <Link href="/civilization-systems">
+                <Button variant="outline" className="w-full justify-start h-10 text-slate-700 hover:bg-slate-50" data-testid="button-goto-civilization-systems">
+                  <Users className="w-4 h-4 mr-2 text-cyan-600" /> Civilization Systems
                 </Button>
               </Link>
               <Link href="/storefront">
@@ -478,6 +610,186 @@ export default function Overview() {
                   </Button>
                 </Link>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-slate-200 shadow-sm" data-testid="card-civilization-life-support">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Activity className="w-4 h-4 text-cyan-600" /> Civilization Life Support
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                  <div className="text-slate-500">Frame Tier</div>
+                  <div className="font-semibold text-slate-900">
+                    T{populationSnapshot?.snapshot.frameTier || 1} {populationSnapshot?.snapshot.frame?.name || "Baseline Frame"}
+                  </div>
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                  <div className="text-slate-500">Population</div>
+                  <div className="font-semibold text-slate-900">
+                    {(populationSnapshot?.snapshot.population.current || 0).toLocaleString()} / {(populationSnapshot?.snapshot.population.capacity || 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Food Pressure</span>
+                  <Badge variant="outline" className={pressureBadgeClass(populationSnapshot?.snapshot.food.pressure || "stable")}>
+                    {(populationSnapshot?.snapshot.food.pressure || "stable").toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Net {Number(populationSnapshot?.snapshot.food.netPerHour || 0).toFixed(2)} /h
+                  {populationSnapshot?.snapshot.food.hoursToDepletion !== null && populationSnapshot?.snapshot.food.hoursToDepletion !== undefined
+                    ? ` • Depletion in ${populationSnapshot.snapshot.food.hoursToDepletion}h`
+                    : " • No depletion projected"}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Water Pressure</span>
+                  <Badge variant="outline" className={pressureBadgeClass(populationSnapshot?.snapshot.water.pressure || "stable")}>
+                    {(populationSnapshot?.snapshot.water.pressure || "stable").toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Net {Number(populationSnapshot?.snapshot.water.netPerHour || 0).toFixed(2)} /h
+                  {populationSnapshot?.snapshot.water.hoursToDepletion !== null && populationSnapshot?.snapshot.water.hoursToDepletion !== undefined
+                    ? ` • Depletion in ${populationSnapshot.snapshot.water.hoursToDepletion}h`
+                    : " • No depletion projected"}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-cyan-50 rounded border border-cyan-100">
+                  <div className="text-cyan-700">Projected Growth</div>
+                  <div className="font-semibold text-cyan-900">+{(populationSnapshot?.snapshot.population.estimatedGrowthPerHour || 0).toLocaleString()}/h</div>
+                </div>
+                <div className="p-2 bg-indigo-50 rounded border border-indigo-100">
+                  <div className="text-indigo-700">Workforce Output</div>
+                  <div className="font-semibold text-indigo-900">{(populationSnapshot?.snapshot.civilizationSystems.projectedProductivity || 0).toLocaleString()}</div>
+                </div>
+              </div>
+
+              <Link href="/civilization-systems">
+                <Button variant="outline" size="sm" className="w-full">Open Civilization Systems</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-slate-200 shadow-sm" data-testid="card-live-pass-progress">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-500" /> Pass Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-700">Season Pass</span>
+                  <span className="font-mono">Tier {seasonProgress?.state.currentTier || 1}</span>
+                </div>
+                <Progress value={Math.min(100, (seasonProgress?.state.completionRatio || 0) * 100)} className="h-2" />
+                <div className="text-[11px] text-slate-500">
+                  XP {(seasonProgress?.state.xpIntoTier || 0).toLocaleString()} / {(seasonProgress?.state.xpForNextTier || 1).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-700">Battle Pass</span>
+                  <span className="font-mono">Tier {battlePassOverview?.state.currentTier || 1}</span>
+                </div>
+                <Progress value={Math.min(100, (battlePassOverview?.state.completionRatio || 0) * 100)} className="h-2" />
+                <div className="text-[11px] text-slate-500">
+                  XP {(battlePassOverview?.state.xpIntoTier || 0).toLocaleString()} / {(battlePassOverview?.state.xpForNextTier || 1).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className={battlePassOverview?.state.premiumUnlocked ? "text-amber-700 border-amber-300" : "text-slate-500"}>
+                  Premium {battlePassOverview?.state.premiumUnlocked ? "Unlocked" : "Locked"}
+                </Badge>
+                <Badge variant="outline" className={battlePassOverview?.state.eliteUnlocked ? "text-indigo-700 border-indigo-300" : "text-slate-500"}>
+                  Elite {battlePassOverview?.state.eliteUnlocked ? "Unlocked" : "Locked"}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/season-pass">
+                  <Button variant="outline" size="sm" className="w-full">Open Season</Button>
+                </Link>
+                <Link href="/battle-pass">
+                  <Button variant="outline" size="sm" className="w-full">Open Battle</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-slate-200 shadow-sm" data-testid="card-pass-shortcuts">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Target className="w-4 h-4 text-indigo-600" /> Pass Mission Shortcuts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-slate-600">
+                Quick balance actions for pass progression and reward-flow testing.
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={seasonXpMutation.isPending}
+                  onClick={() => seasonXpMutation.mutate(1200)}
+                >
+                  +1 Season Tier
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={seasonXpMutation.isPending}
+                  onClick={() => seasonXpMutation.mutate(2400)}
+                >
+                  +2 Season Tiers
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={battleXpMutation.isPending}
+                  onClick={() => battleXpMutation.mutate(900)}
+                >
+                  +1 Battle Tier
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={battleXpMutation.isPending}
+                  onClick={() => battleXpMutation.mutate(1800)}
+                >
+                  +2 Battle Tiers
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/season-pass">
+                  <Button variant="ghost" size="sm" className="w-full">Season Rewards →</Button>
+                </Link>
+                <Link href="/battle-pass">
+                  <Button variant="ghost" size="sm" className="w-full">Battle Rewards →</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
 

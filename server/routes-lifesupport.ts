@@ -9,6 +9,11 @@ import {
   BUILDING_FACTORY_JOB_META,
   ENTITY_ARCHETYPES_90,
   ENTITY_ARCHETYPES_META,
+  CIVILIZATION_MILITARY_JOB_ARCHETYPES_90,
+  CIVILIZATION_MILITARY_JOB_META,
+  getJobArchetypesByDomain,
+  estimateFoodWaterForJobAssignments,
+  estimateProductivityForAssignments,
   FRAME_SYSTEMS,
   POPULATION_SYSTEM,
   FOOD_SYSTEM,
@@ -99,6 +104,59 @@ export function registerLifeSupportRoutes(app: Express) {
     });
   });
 
+  app.get("/api/config/civilization-jobs", (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      total: CIVILIZATION_MILITARY_JOB_ARCHETYPES_90.length,
+      items: CIVILIZATION_MILITARY_JOB_ARCHETYPES_90,
+    });
+  });
+
+  app.get("/api/config/civilization-jobs/meta", (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      meta: CIVILIZATION_MILITARY_JOB_META,
+    });
+  });
+
+  app.get("/api/config/civilization-jobs/domain/:domain", (req: Request, res: Response) => {
+    const domain = String(req.params.domain || "").toLowerCase();
+    if (domain !== "civilization" && domain !== "military") {
+      return res.status(400).json({ success: false, message: "Invalid domain" });
+    }
+
+    res.json({
+      success: true,
+      domain,
+      total: getJobArchetypesByDomain(domain).length,
+      items: getJobArchetypesByDomain(domain),
+    });
+  });
+
+  app.post("/api/config/civilization-jobs/projection", (req: Request, res: Response) => {
+    const assignments = Array.isArray(req.body?.assignments) ? req.body.assignments : [];
+    const normalizedAssignments = assignments
+      .map((entry: any) => ({
+        jobId: String(entry?.jobId || "").trim(),
+        count: Math.max(0, toNumber(entry?.count, 0)),
+      }))
+      .filter((entry: { jobId: string; count: number }) => entry.jobId.length > 0 && entry.count > 0);
+
+    const resourceDemand = estimateFoodWaterForJobAssignments(normalizedAssignments);
+    const projectedProductivity = estimateProductivityForAssignments(normalizedAssignments);
+
+    res.json({
+      success: true,
+      assignments: normalizedAssignments,
+      projection: {
+        workforce: resourceDemand.workforce,
+        projectedProductivity,
+        foodDemandPerHour: resourceDemand.foodDemandPerHour,
+        waterDemandPerHour: resourceDemand.waterDemandPerHour,
+      },
+    });
+  });
+
   app.get("/api/config/frame-systems", (_req: Request, res: Response) => {
     res.json({ success: true, frameSystems: FRAME_SYSTEMS });
   });
@@ -151,6 +209,17 @@ export function registerLifeSupportRoutes(app: Express) {
         : Math.floor(populationCapacity * 0.58);
 
       const populationByClass = buildPopulationDistribution(currentPopulation);
+
+      const inferredJobAssignments = [
+        { jobId: "civilization-administration-cadet-1", count: populationByClass.administrators },
+        { jobId: "civilization-infrastructure-operator-12", count: Math.floor(populationByClass.workers * 0.4) },
+        { jobId: "civilization-research-specialist-23", count: populationByClass.scientists },
+        { jobId: "civilization-manufacturing-specialist-33", count: Math.floor(populationByClass.workers * 0.6) },
+        { jobId: "military-ground-operations-specialist-63", count: populationByClass.military },
+      ];
+
+      const jobDemand = estimateFoodWaterForJobAssignments(inferredJobAssignments);
+      const jobProductivity = estimateProductivityForAssignments(inferredJobAssignments);
 
       const foodStock = toNumber(resources.food, 0);
       const waterStock = toNumber(resources.water, 0);
@@ -219,6 +288,13 @@ export function registerLifeSupportRoutes(app: Express) {
             netPerHour: Number(waterNetPerHour.toFixed(2)),
             pressure: waterPressure,
             hoursToDepletion: waterHoursToDepletion,
+          },
+          civilizationSystems: {
+            jobsCatalogSize: CIVILIZATION_MILITARY_JOB_META.total,
+            inferredAssignments: inferredJobAssignments,
+            projectedProductivity: Number(jobProductivity.toFixed(2)),
+            foodDemandFromJobsPerHour: jobDemand.foodDemandPerHour,
+            waterDemandFromJobsPerHour: jobDemand.waterDemandPerHour,
           },
         },
       });

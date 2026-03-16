@@ -28,7 +28,7 @@ export default function Terms() {
         <CardContent className="space-y-6 text-sm text-slate-600 max-h-[60vh] overflow-y-auto">
           <section>
             <h3 className="font-semibold text-slate-900 mb-2">1. Acceptance of Terms</h3>
-            <p>By accessing and playing Stellar Dominion, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the game.</p>
+            <p>By accessing and playing Universe-Empires-Dominions, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the game.</p>
           </section>
 
           <section>
@@ -49,7 +49,7 @@ export default function Terms() {
 
           <section>
             <h3 className="font-semibold text-slate-900 mb-2">4. Virtual Items</h3>
-            <p>All in-game items, resources, and currencies are virtual and have no real-world value. They remain the property of Stellar Dominion.</p>
+            <p>All in-game items, resources, and currencies are virtual and have no real-world value. They remain the property of Universe-Empires-Dominions.</p>
           </section>
 
           <section>
@@ -64,7 +64,7 @@ export default function Terms() {
 
           <section>
             <h3 className="font-semibold text-slate-900 mb-2">7. Disclaimer</h3>
-            <p>Stellar Dominion is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the game.</p>
+            <p>Universe-Empires-Dominions is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the game.</p>
           </section>
 
           <section className="text-xs text-slate-400 pt-4 border-t border-slate-200">

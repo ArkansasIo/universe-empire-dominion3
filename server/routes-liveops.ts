@@ -10,12 +10,22 @@ import {
   getCommanderTitleByTier,
 } from "../shared/config/commanderTalentTreeConfig";
 import {
+  BATTLE_PASS_CONFIG,
+  BATTLE_PASS_MISSIONS,
   SEASON_PASS_CONFIG,
   STOREFRONT_ITEMS,
   STORY_ACTS,
   STORY_CHAPTERS_PER_ACT,
   STORY_MISSIONS_ALL,
   STORY_TOTAL_ACTS,
+  calculateStorePurchaseTotals,
+  getBattlePassTierProgress,
+  getBattlePassTrackReward,
+  getSeasonPassTierProgress,
+  getSeasonPassTrackReward,
+  getStoreFeaturedItems,
+  getStoreItemsByCategory,
+  type BattlePassReward,
   type SeasonPassReward,
   type StorefrontItem,
 } from "../shared/config/liveOpsContentConfig";
@@ -127,13 +137,15 @@ function resolveSeasonPassState(playerState: any) {
   const commander = (playerState?.commander as any) || {};
   const seasonPass = (commander.seasonPass as any) || {};
 
-  const seasonXp = Math.max(0, toNumber(seasonPass.xp, 0));
-  const currentTier = Math.min(SEASON_PASS_CONFIG.maxTier, Math.floor(seasonXp / SEASON_PASS_CONFIG.xpPerTier) + 1);
+  const tierProgress = getSeasonPassTierProgress(Math.max(0, toNumber(seasonPass.xp, 0)));
 
   return {
     seasonId: seasonPass.seasonId || SEASON_PASS_CONFIG.seasonId,
-    xp: seasonXp,
-    currentTier,
+    xp: tierProgress.xp,
+    currentTier: tierProgress.currentTier,
+    xpIntoTier: tierProgress.xpIntoTier,
+    xpForNextTier: tierProgress.xpForNextTier,
+    completionRatio: tierProgress.completionRatio,
     claimedFree: Array.isArray(seasonPass.claimedFree) ? seasonPass.claimedFree as number[] : [],
     claimedGold: Array.isArray(seasonPass.claimedGold)
       ? seasonPass.claimedGold as number[]
@@ -146,14 +158,32 @@ function resolveSeasonPassState(playerState: any) {
   };
 }
 
+function resolveBattlePassState(playerState: any) {
+  const commander = (playerState?.commander as any) || {};
+  const battlePass = (commander.battlePass as any) || {};
+  const tierProgress = getBattlePassTierProgress(Math.max(0, toNumber(battlePass.xp, 0)));
+
+  return {
+    battlePassId: battlePass.battlePassId || BATTLE_PASS_CONFIG.battlePassId,
+    xp: tierProgress.xp,
+    currentTier: tierProgress.currentTier,
+    xpIntoTier: tierProgress.xpIntoTier,
+    xpForNextTier: tierProgress.xpForNextTier,
+    completionRatio: tierProgress.completionRatio,
+    claimedFree: Array.isArray(battlePass.claimedFree) ? battlePass.claimedFree as number[] : [],
+    claimedPremium: Array.isArray(battlePass.claimedPremium) ? battlePass.claimedPremium as number[] : [],
+    claimedElite: Array.isArray(battlePass.claimedElite) ? battlePass.claimedElite as number[] : [],
+    premiumUnlocked: Boolean(battlePass.premiumUnlocked),
+    eliteUnlocked: Boolean(battlePass.eliteUnlocked),
+  };
+}
+
 function findSeasonReward(tier: number, track: "free" | "gold" | "platinum"): SeasonPassReward | undefined {
-  const rewardPool =
-    track === "free"
-      ? SEASON_PASS_CONFIG.freeRewards
-      : track === "gold"
-        ? SEASON_PASS_CONFIG.goldRewards
-        : SEASON_PASS_CONFIG.platinumRewards;
-  return rewardPool.find((reward) => reward.tier === tier);
+  return getSeasonPassTrackReward(tier, track);
+}
+
+function findBattleReward(tier: number, track: "free" | "premium" | "elite"): BattlePassReward | undefined {
+  return getBattlePassTrackReward(tier, track);
 }
 
 async function ensureStoreRewardItemExists(storeItem: StorefrontItem) {
@@ -313,6 +343,32 @@ export function registerLiveOpsRoutes(app: Express) {
     } catch (error) {
       console.error("Failed to fetch season pass overview:", error);
       return res.status(500).json({ message: "Failed to fetch season pass overview" });
+    }
+  });
+
+  app.get("/api/season-pass/progression", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const playerState = await storage.getPlayerState(userId);
+      const seasonPass = resolveSeasonPassState(playerState);
+
+      const nextTiers = Array.from({ length: 5 }, (_, offset) => seasonPass.currentTier + offset)
+        .filter((tier) => tier <= SEASON_PASS_CONFIG.maxTier)
+        .map((tier) => ({
+          tier,
+          free: findSeasonReward(tier, "free"),
+          gold: findSeasonReward(tier, "gold"),
+          platinum: findSeasonReward(tier, "platinum"),
+        }));
+
+      return res.json({
+        success: true,
+        state: seasonPass,
+        nextTiers,
+      });
+    } catch (error) {
+      console.error("Failed to fetch season pass progression:", error);
+      return res.status(500).json({ message: "Failed to fetch season pass progression" });
     }
   });
 
@@ -506,10 +562,262 @@ export function registerLiveOpsRoutes(app: Express) {
     }
   });
 
+  app.get("/api/battle-pass/overview", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const playerState = await storage.getPlayerState(userId);
+      const battlePass = resolveBattlePassState(playerState);
+
+      return res.json({
+        config: {
+          battlePassId: BATTLE_PASS_CONFIG.battlePassId,
+          name: BATTLE_PASS_CONFIG.name,
+          seasonAlignment: BATTLE_PASS_CONFIG.seasonAlignment,
+          maxTier: BATTLE_PASS_CONFIG.maxTier,
+          xpPerTier: BATTLE_PASS_CONFIG.xpPerTier,
+          unlockTracks: BATTLE_PASS_CONFIG.unlockTracks,
+          freeRewards: BATTLE_PASS_CONFIG.freeRewards,
+          premiumRewards: BATTLE_PASS_CONFIG.premiumRewards,
+          eliteRewards: BATTLE_PASS_CONFIG.eliteRewards,
+          missions: BATTLE_PASS_MISSIONS,
+        },
+        state: battlePass,
+      });
+    } catch (error) {
+      console.error("Failed to fetch battle pass overview:", error);
+      return res.status(500).json({ message: "Failed to fetch battle pass overview" });
+    }
+  });
+
+  app.post("/api/battle-pass/xp", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const xpGain = Math.max(0, toNumber(req.body?.xp, 0));
+      const playerState = await storage.getPlayerState(userId);
+      if (!playerState) {
+        return res.status(404).json({ message: "Player state not found" });
+      }
+
+      const commander = { ...((playerState.commander as any) || {}) };
+      const currentBattlePass = resolveBattlePassState(playerState);
+
+      commander.battlePass = {
+        ...((commander.battlePass as any) || {}),
+        battlePassId: BATTLE_PASS_CONFIG.battlePassId,
+        xp: currentBattlePass.xp + xpGain,
+        claimedFree: currentBattlePass.claimedFree,
+        claimedPremium: currentBattlePass.claimedPremium,
+        claimedElite: currentBattlePass.claimedElite,
+        premiumUnlocked: currentBattlePass.premiumUnlocked,
+        eliteUnlocked: currentBattlePass.eliteUnlocked,
+      };
+
+      await storage.updatePlayerState(userId, { commander } as any);
+      return res.json({ success: true, state: resolveBattlePassState({ commander }) });
+    } catch (error) {
+      console.error("Failed to add battle pass XP:", error);
+      return res.status(500).json({ message: "Failed to add battle pass XP" });
+    }
+  });
+
+  app.post("/api/battle-pass/premium/unlock", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const track = String(req.body?.track || "premium").toLowerCase() as "premium" | "elite";
+      if (track !== "premium" && track !== "elite") {
+        return res.status(400).json({ message: "Invalid battle pass track" });
+      }
+
+      const playerState = await storage.getPlayerState(userId);
+      if (!playerState) {
+        return res.status(404).json({ message: "Player state not found" });
+      }
+
+      const commander = { ...((playerState.commander as any) || {}) };
+      const battlePass = resolveBattlePassState(playerState);
+
+      if ((track === "premium" && battlePass.premiumUnlocked) || (track === "elite" && battlePass.eliteUnlocked)) {
+        return res.json({ success: true, alreadyUnlocked: true, state: battlePass, track });
+      }
+
+      if (track === "elite" && !battlePass.premiumUnlocked) {
+        return res.status(400).json({ message: "Unlock Premium track before Elite" });
+      }
+
+      const balance = await storage.getPlayerCurrency(userId);
+      const unlockCost = BATTLE_PASS_CONFIG.unlockTracks[track].cost;
+      const currency = BATTLE_PASS_CONFIG.unlockTracks[track].currency as "silver" | "gold" | "platinum";
+
+      if (currency === "silver" && toNumber(balance.silver, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient silver" });
+      }
+      if (currency === "gold" && toNumber(balance.gold, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient gold" });
+      }
+      if (currency === "platinum" && toNumber(balance.platinum, 0) < unlockCost) {
+        return res.status(400).json({ message: "Insufficient platinum" });
+      }
+
+      await storage.addCurrency(
+        userId,
+        currency === "silver" ? -unlockCost : 0,
+        currency === "gold" ? -unlockCost : 0,
+        currency === "platinum" ? -unlockCost : 0,
+        `battle_pass_${track}_unlock`,
+      );
+
+      commander.battlePass = {
+        ...((commander.battlePass as any) || {}),
+        battlePassId: BATTLE_PASS_CONFIG.battlePassId,
+        xp: battlePass.xp,
+        claimedFree: battlePass.claimedFree,
+        claimedPremium: battlePass.claimedPremium,
+        claimedElite: battlePass.claimedElite,
+        premiumUnlocked: track === "premium" ? true : battlePass.premiumUnlocked,
+        eliteUnlocked: track === "elite" ? true : battlePass.eliteUnlocked,
+      };
+
+      await storage.updatePlayerState(userId, { commander } as any);
+      return res.json({ success: true, track, unlocked: true });
+    } catch (error) {
+      console.error("Failed to unlock battle pass track:", error);
+      return res.status(500).json({ message: "Failed to unlock battle pass track" });
+    }
+  });
+
+  app.post("/api/battle-pass/claim", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const tier = Math.max(1, Math.min(BATTLE_PASS_CONFIG.maxTier, toNumber(req.body?.tier, 1)));
+      const requestedTrack = String(req.body?.track || "free").toLowerCase();
+      const track: "free" | "premium" | "elite" =
+        requestedTrack === "premium" || requestedTrack === "elite" || requestedTrack === "free"
+          ? requestedTrack
+          : "free";
+
+      const playerState = await storage.getPlayerState(userId);
+      if (!playerState) {
+        return res.status(404).json({ message: "Player state not found" });
+      }
+
+      const commander = { ...((playerState.commander as any) || {}) };
+      const battlePass = resolveBattlePassState(playerState);
+
+      if (track === "premium" && !battlePass.premiumUnlocked) {
+        return res.status(403).json({ message: "Premium track is locked" });
+      }
+
+      if (track === "elite" && !battlePass.eliteUnlocked) {
+        return res.status(403).json({ message: "Elite track is locked" });
+      }
+
+      if (tier > battlePass.currentTier) {
+        return res.status(400).json({ message: "Tier is not unlocked yet" });
+      }
+
+      const targetClaimed =
+        track === "free"
+          ? battlePass.claimedFree
+          : track === "premium"
+            ? battlePass.claimedPremium
+            : battlePass.claimedElite;
+      if (targetClaimed.includes(tier)) {
+        return res.status(400).json({ message: "Reward already claimed" });
+      }
+
+      const reward = findBattleReward(tier, track);
+      if (!reward) {
+        return res.status(404).json({ message: "Reward not found" });
+      }
+
+      if (reward.rewardType === "currency" && reward.currency && reward.amount) {
+        await storage.addCurrency(
+          userId,
+          reward.currency === "silver" ? reward.amount : 0,
+          reward.currency === "gold" ? reward.amount : 0,
+          reward.currency === "platinum" ? reward.amount : 0,
+          `battle_pass_tier_${tier}`,
+        );
+      }
+
+      if (reward.rewardType === "item" && reward.itemId) {
+        await ensureSeasonPassRewardItemExists(reward.itemId, tier);
+        await storage.addItemToInventory(userId, reward.itemId, reward.quantity || 1);
+      }
+
+      commander.battlePass = {
+        ...((commander.battlePass as any) || {}),
+        battlePassId: BATTLE_PASS_CONFIG.battlePassId,
+        xp: battlePass.xp,
+        claimedFree: track === "free" ? [...battlePass.claimedFree, tier] : battlePass.claimedFree,
+        claimedPremium: track === "premium" ? [...battlePass.claimedPremium, tier] : battlePass.claimedPremium,
+        claimedElite: track === "elite" ? [...battlePass.claimedElite, tier] : battlePass.claimedElite,
+        premiumUnlocked: battlePass.premiumUnlocked,
+        eliteUnlocked: battlePass.eliteUnlocked,
+      };
+
+      await storage.updatePlayerState(userId, { commander } as any);
+      return res.json({ success: true, tier, track, reward });
+    } catch (error) {
+      console.error("Failed to claim battle pass reward:", error);
+      return res.status(500).json({ message: "Failed to claim battle pass reward" });
+    }
+  });
+
   app.get("/api/storefront/catalog", isAuthenticated, async (_req: Request, res: Response) => {
+    const categories = Array.from(new Set(STOREFRONT_ITEMS.map((item) => item.category)));
     return res.json({
       items: STOREFRONT_ITEMS,
-      categories: Array.from(new Set(STOREFRONT_ITEMS.map((item) => item.category))),
+      categories,
+      featured: getStoreFeaturedItems(6),
+      byCategory: categories.reduce((map, category) => {
+        map[category] = getStoreItemsByCategory(category as StorefrontItem['category']);
+        return map;
+      }, {} as Record<string, StorefrontItem[]>),
+    });
+  });
+
+  app.get("/api/storefront/featured", isAuthenticated, async (req: Request, res: Response) => {
+    const limit = Math.max(1, Math.min(12, toNumber(req.query.limit, 6)));
+    return res.json({
+      items: getStoreFeaturedItems(limit),
+    });
+  });
+
+  app.get("/api/storefront/category/:category", isAuthenticated, async (req: Request, res: Response) => {
+    const category = String(req.params.category || "").trim().toLowerCase() as StorefrontItem['category'];
+    if (!['boosters', 'cosmetics', 'resources', 'bundles'].includes(category)) {
+      return res.status(400).json({ message: "Invalid storefront category" });
+    }
+
+    return res.json({
+      category,
+      items: getStoreItemsByCategory(category),
+    });
+  });
+
+  app.post("/api/storefront/preview-checkout", isAuthenticated, async (req: Request, res: Response) => {
+    const itemId = String(req.body?.itemId || "").trim();
+    const quantity = Math.max(1, Math.min(99, toNumber(req.body?.quantity, 1)));
+    const preview = calculateStorePurchaseTotals(itemId, quantity);
+    if (!preview) {
+      return res.status(404).json({ message: "Storefront item not found" });
+    }
+
+    const userId = getUserId(req);
+    const balance = await storage.getPlayerCurrency(userId);
+
+    const affordable =
+      preview.item.currency === "silver"
+        ? toNumber(balance.silver, 0) >= preview.totalCost
+        : preview.item.currency === "gold"
+          ? toNumber(balance.gold, 0) >= preview.totalCost
+          : toNumber(balance.platinum, 0) >= preview.totalCost;
+
+    return res.json({
+      ...preview,
+      affordable,
+      balance,
     });
   });
 
@@ -540,7 +848,11 @@ export function registerLiveOpsRoutes(app: Express) {
       }
 
       const balance = await storage.getPlayerCurrency(userId);
-      const totalCost = product.price * quantity;
+      const checkout = calculateStorePurchaseTotals(itemId, quantity);
+      if (!checkout) {
+        return res.status(400).json({ message: "Invalid checkout payload" });
+      }
+      const totalCost = checkout.totalCost;
 
       if (product.currency === "silver" && toNumber(balance.silver, 0) < totalCost) {
         return res.status(400).json({ message: "Insufficient silver" });
@@ -561,13 +873,14 @@ export function registerLiveOpsRoutes(app: Express) {
       );
 
       await ensureStoreRewardItemExists(product);
-      await storage.addItemToInventory(userId, product.grantItemId, product.grantQuantity * quantity);
+      await storage.addItemToInventory(userId, product.grantItemId, checkout.totalGrantQuantity);
 
       return res.json({
         success: true,
         product,
-        quantity,
+        quantity: checkout.quantity,
         totalCost,
+        totalGrantQuantity: checkout.totalGrantQuantity,
       });
     } catch (error) {
       console.error("Failed to purchase storefront item:", error);

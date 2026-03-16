@@ -44,6 +44,53 @@ async function isAdminUser(userId: string): Promise<boolean> {
   return Boolean(adminRecord);
 }
 
+async function getAdminRole(userId: string): Promise<string | null> {
+  if (!userId) return null;
+
+  const [adminRecord] = await db
+    .select({ role: adminUsers.role })
+    .from(adminUsers)
+    .where(eq(adminUsers.userId, userId))
+    .limit(1);
+
+  return adminRecord?.role || null;
+}
+
+function getAdminSettingsKey(): string {
+  return "admin_panel_settings";
+}
+
+async function loadAdminSettings() {
+  const setting = await storage.getSetting(getAdminSettingsKey());
+  const defaults = {
+    maintenanceMode: false,
+    peaceMode: false,
+    resourceRate: 1,
+    gameSpeed: 1,
+    fleetSpeed: 1,
+    allowNewRegistrations: true,
+    adminBroadcastEnabled: true,
+  };
+
+  if (!setting || !setting.value || typeof setting.value !== "object") {
+    return defaults;
+  }
+
+  return {
+    ...defaults,
+    ...(setting.value as Record<string, unknown>),
+  };
+}
+
+async function saveAdminSettings(nextSettings: Record<string, unknown>) {
+  await storage.setSetting(
+    getAdminSettingsKey(),
+    nextSettings,
+    "Admin panel configuration and live server options",
+    "admin",
+  );
+}
+
 function getModerationKey(): string {
   return "admin_user_moderation";
 }
@@ -126,6 +173,215 @@ async function appendOperation(operation: Omit<AdminOperation, "id" | "requested
 }
 
 export function registerAdminRoutes(app: Express) {
+  app.get("/api/admin/me", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      const role = await getAdminRole(actorId);
+      res.json({
+        isAdmin: Boolean(role),
+        role,
+      });
+    } catch (error) {
+      console.error("Failed to load admin identity:", error);
+      res.status(500).json({ message: "Failed to load admin identity" });
+    }
+  });
+
+  app.get("/api/admin/settings", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      if (!(await isAdminUser(actorId))) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const settings = await loadAdminSettings();
+      res.json({ settings });
+    } catch (error) {
+      console.error("Failed to load admin settings:", error);
+      res.status(500).json({ message: "Failed to load admin settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      if (!(await isAdminUser(actorId))) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const current = await loadAdminSettings();
+      const next = {
+        ...current,
+        ...((req.body && typeof req.body === "object") ? req.body : {}),
+      };
+
+      await saveAdminSettings(next);
+      await appendAudit({
+        actorId,
+        action: "update_admin_settings",
+        details: "settings patched",
+      });
+
+      res.json({ success: true, settings: next });
+    } catch (error) {
+      console.error("Failed to update admin settings:", error);
+      res.status(500).json({ message: "Failed to update admin settings" });
+    }
+  });
+
+  app.get("/api/admin/accounts", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      if (!(await isAdminUser(actorId))) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const rows = await db
+        .select({
+          id: adminUsers.id,
+          userId: adminUsers.userId,
+          role: adminUsers.role,
+          permissions: adminUsers.permissions,
+          createdAt: adminUsers.createdAt,
+          username: users.username,
+          email: users.email,
+        })
+        .from(adminUsers)
+        .leftJoin(users, eq(users.id, adminUsers.userId))
+        .orderBy(desc(adminUsers.createdAt));
+
+      res.json({
+        accounts: rows.map((row) => ({
+          id: row.id,
+          userId: row.userId,
+          role: row.role,
+          permissions: row.permissions || [],
+          createdAt: row.createdAt,
+          username: row.username || "unknown",
+          email: row.email || "",
+        })),
+      });
+    } catch (error) {
+      console.error("Failed to load admin accounts:", error);
+      res.status(500).json({ message: "Failed to load admin accounts" });
+    }
+  });
+
+  app.post("/api/admin/accounts", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      if (!(await isAdminUser(actorId))) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const identifier = String(req.body?.identifier || "").trim();
+      const role = String(req.body?.role || "moderator").trim();
+      if (!identifier) {
+        return res.status(400).json({ message: "identifier is required" });
+      }
+
+      const [userRow] = await db
+        .select({ id: users.id, username: users.username, email: users.email })
+        .from(users)
+        .where(eq(users.username, identifier))
+        .limit(1);
+
+      const resolvedUser = userRow || (await db
+        .select({ id: users.id, username: users.username, email: users.email })
+        .from(users)
+        .where(eq(users.email, identifier))
+        .limit(1))[0];
+
+      if (!resolvedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const [existingAdmin] = await db
+        .select({ id: adminUsers.id })
+        .from(adminUsers)
+        .where(eq(adminUsers.userId, resolvedUser.id))
+        .limit(1);
+
+      if (existingAdmin) {
+        return res.status(400).json({ message: "User is already an admin" });
+      }
+
+      const permissions =
+        role === "founder"
+          ? ["all_access", "administrate", "manage", "moderate", "view_only"]
+          : role === "administrator"
+            ? ["administrate", "manage", "moderate", "view_only"]
+            : role === "suadmin"
+              ? ["manage", "moderate", "view_only"]
+              : role === "moderator"
+                ? ["moderate", "view_only"]
+                : ["view_only"];
+
+      await db.insert(adminUsers).values({
+        userId: resolvedUser.id,
+        role,
+        permissions,
+      });
+
+      await appendAudit({
+        actorId,
+        action: "create_admin_account",
+        targetUserId: resolvedUser.id,
+        details: `role=${role}`,
+      });
+
+      res.json({
+        success: true,
+        user: {
+          id: resolvedUser.id,
+          username: resolvedUser.username,
+          email: resolvedUser.email,
+          role,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create admin account:", error);
+      res.status(500).json({ message: "Failed to create admin account" });
+    }
+  });
+
+  app.delete("/api/admin/accounts/:userId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const actorId = getUserId(req);
+      if (!(await isAdminUser(actorId))) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      if (actorId === userId) {
+        return res.status(400).json({ message: "You cannot remove your own admin role" });
+      }
+
+      const [existing] = await db
+        .select({ id: adminUsers.id })
+        .from(adminUsers)
+        .where(eq(adminUsers.userId, userId))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ message: "Admin account not found" });
+      }
+
+      await db.delete(adminUsers).where(eq(adminUsers.userId, userId));
+
+      await appendAudit({
+        actorId,
+        action: "remove_admin_account",
+        targetUserId: userId,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to remove admin account:", error);
+      res.status(500).json({ message: "Failed to remove admin account" });
+    }
+  });
+
   app.get("/api/admin/users", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const actorId = getUserId(req);

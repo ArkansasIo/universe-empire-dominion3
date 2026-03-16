@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { PLANET_ASSETS } from "@shared/config";
+import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
   Pickaxe, 
@@ -45,6 +46,7 @@ import {
   Satellite,
   Link2,
   ScrollText,
+  BookOpen,
   Network,
   AlertTriangle,
   Image,
@@ -178,27 +180,51 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
       
       {/* Top Bar - Resources */}
-      <header className="relative z-20 h-20 border-b border-slate-200 bg-white flex items-center justify-between px-6 shadow-sm">
+      <header className="relative z-20 h-24 border-b border-slate-200 bg-white flex items-center justify-between px-6 shadow-sm">
         <div className="flex items-center gap-4">
            <div className="w-10 h-10 bg-primary rounded flex items-center justify-center shadow-sm">
              <Rocket className="text-white w-6 h-6" />
            </div>
            <div>
-             <h1 className="font-orbitron font-bold text-xl tracking-wider text-slate-900">STELLAR <span className="text-primary text-sm font-normal">DOMINION</span></h1>
+             <h1 className="font-orbitron font-bold text-xl tracking-wider text-slate-900">Universe-<span className="text-primary text-sm font-normal">Empires-Dominions</span></h1>
              <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">Server: Nexus-Alpha // User: {username || "Commander"}</p>
            </div>
         </div>
 
-        <div className="flex gap-4">
-          <TurnDisplay 
-            currentTurns={turnData?.currentTurns || 0} 
-            totalTurns={turnData?.totalTurns || 0} 
-            isLoading={turnsLoading} 
-          />
-          <ResourceDisplay icon={Box} label="Metal" value={resources.metal} colorClass="text-slate-600" />
-          <ResourceDisplay icon={Gem} label="Crystal" value={resources.crystal} colorClass="text-blue-600" />
-          <ResourceDisplay icon={Database} label="Deuterium" value={resources.deuterium} colorClass="text-green-600" />
-          <ResourceDisplay icon={Zap} label="Energy" value={resources.energy} colorClass={resources.energy >= 0 ? "text-yellow-600" : "text-red-600"} />
+        <div className="flex flex-col items-end gap-2">
+          <div className="hidden lg:flex items-center gap-1">
+              {[
+              { href: "/forums", label: "Forums" },
+              { href: "/about", label: "About" },
+              { href: "/terms", label: "Terms" },
+              { href: "/privacy", label: "Privacy" },
+            ].map((entry) => (
+              <Link key={entry.href} href={entry.href}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 px-2 text-[11px]",
+                    location === entry.href ? "text-primary" : "text-slate-600 hover:text-slate-900"
+                  )}
+                >
+                  {entry.label}
+                </Button>
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <TurnDisplay 
+              currentTurns={turnData?.currentTurns || 0} 
+              totalTurns={turnData?.totalTurns || 0} 
+              isLoading={turnsLoading} 
+            />
+            <ResourceDisplay icon={Box} label="Metal" value={resources.metal} colorClass="text-slate-600" />
+            <ResourceDisplay icon={Gem} label="Crystal" value={resources.crystal} colorClass="text-blue-600" />
+            <ResourceDisplay icon={Database} label="Deuterium" value={resources.deuterium} colorClass="text-green-600" />
+            <ResourceDisplay icon={Zap} label="Energy" value={resources.energy} colorClass={resources.energy >= 0 ? "text-yellow-600" : "text-red-600"} />
+          </div>
         </div>
       </header>
 
@@ -235,7 +261,9 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               location={location}
               defaultOpen
               items={[
+                { href: "/empire-command-center", icon: Crown, label: "Command Center" },
                 { href: "/empire-view", icon: LayoutDashboard, label: "Empire View" },
+                { href: "/civilization-systems", icon: Users, label: "Civilization Systems" },
                 { href: "/resources", icon: Pickaxe, label: "Resources" },
                 { href: "/facilities", icon: Factory, label: "Facilities" },
                 { href: "/megastructures", icon: CircleDot, label: "Megastructures" },
@@ -288,6 +316,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 { href: "/exploration", icon: Compass, label: "Exploration" },
                 { href: "/warp-network", icon: Network, label: "Warp Network" },
                 { href: "/celestial-browser", icon: CircleDot, label: "Celestial Browser" },
+                { href: "/biome-codex", icon: BookOpen, label: "Biome Codex" },
                 { href: "/empire-planets", icon: Globe, label: "Empire Planets" },
               ]}
             />
@@ -300,6 +329,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               items={[
                 { href: "/commander", icon: User, label: "Commander" },
                 { href: "/season-pass", icon: Award, label: "Season Pass" },
+                { href: "/battle-pass", icon: Swords, label: "Battle Pass" },
                 { href: "/government", icon: Landmark, label: "Government" },
                 { href: "/factions", icon: Users, label: "Factions" },
                 { href: "/alliance", icon: Shield, label: "Alliance" },
@@ -356,7 +386,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <footer className="h-8 border-t border-slate-200 bg-white px-6 flex items-center justify-between text-[11px] text-slate-500 font-mono" data-testid="footer-build-info">
-        <div>STELLAR DOMINION</div>
+        <div>Universe-Empires-Dominions</div>
         <div className="flex items-center gap-4">
           <span>Version: {appVersion}</span>
           <span>Build: {buildId}</span>

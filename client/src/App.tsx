@@ -35,6 +35,7 @@ const BattleLogs = lazy(() => import("@/pages/BattleLogs"));
 const AccountSetup = lazy(() => import("@/pages/AccountSetup"));
 const Terms = lazy(() => import("@/pages/Terms"));
 const Privacy = lazy(() => import("@/pages/Privacy"));
+const Forums = lazy(() => import("@/pages/Forums"));
 const ServerConsole = lazy(() => import("@/pages/ServerConsole"));
 const Exploration = lazy(() => import("@/pages/Exploration"));
 const Colonies = lazy(() => import("@/pages/Colonies"));
@@ -52,9 +53,13 @@ const Stations = lazy(() => import("@/pages/Stations"));
 const Merchants = lazy(() => import("@/pages/Merchants"));
 const Storefront = lazy(() => import("@/pages/Storefront"));
 const CelestialBrowser = lazy(() => import("@/pages/CelestialBrowser"));
+const BiomeCodex = lazy(() => import("@/pages/BiomeCodex"));
+const BiomeDetail = lazy(() => import("@/pages/BiomeDetail"));
 const Diagnostics = lazy(() => import("@/pages/Diagnostics"));
 const StoryMode = lazy(() => import("@/pages/StoryMode"));
 const SeasonPass = lazy(() => import("@/pages/SeasonPass"));
+const BattlePass = lazy(() => import("@/pages/BattlePass"));
+const CivilizationSystems = lazy(() => import("@/pages/CivilizationSystems"));
 const Relics = lazy(() => import("@/pages/Relics"));
 const FriendsList = lazy(() => import("@/pages/FriendsList"));
 const Guilds = lazy(() => import("@/pages/Guilds"));
@@ -64,6 +69,7 @@ const RaidBosses = lazy(() => import("@/pages/RaidBosses"));
 const RaidFinder = lazy(() => import("@/pages/RaidFinder"));
 const EmpirePlanetViewer = lazy(() => import("@/pages/EmpirePlanetViewer"));
 const EmpireView = lazy(() => import("@/pages/EmpireView"));
+const EmpireCommandCenter = lazy(() => import("@/pages/EmpireCommandCenter"));
 const ResearchLab = lazy(() => import("@/pages/ResearchLab"));
 const GameAssetsGallery = lazy(() => import("@/pages/GameAssetsGallery"));
 const PlanetDetail = lazy(() => import("@/pages/PlanetDetail"));
@@ -83,7 +89,7 @@ function LoadingSplash() {
         </div>
 
         <h1 className="font-orbitron text-4xl font-bold text-white tracking-widest mb-2">
-          STELLAR <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">DOMINION</span>
+          Universe-<span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Empires-Dominions</span>
         </h1>
         <p className="text-slate-300 font-rajdhani text-xs tracking-widest uppercase mb-5">
           Connecting to Nexus Command System
@@ -157,6 +163,7 @@ function RouterContent() {
     return (
       <Switch>
         <Route path="/about" component={About} />
+        <Route path="/forums" component={Forums} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route component={Auth} />
@@ -168,6 +175,7 @@ function RouterContent() {
     return (
       <Switch>
         <Route path="/about" component={About} />
+        <Route path="/forums" component={Forums} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route component={AccountSetup} />
@@ -179,6 +187,7 @@ function RouterContent() {
     <Switch>
       <Route path="/" component={Overview} />
       <Route path="/about" component={About} />
+      <Route path="/forums" component={Forums} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/resources" component={Resources} />
@@ -214,9 +223,13 @@ function RouterContent() {
       <Route path="/merchants" component={Merchants} />
       <Route path="/storefront" component={Storefront} />
       <Route path="/celestial-browser" component={CelestialBrowser} />
+      <Route path="/biome-codex" component={BiomeCodex} />
+      <Route path="/biome/:id" component={BiomeDetail} />
       <Route path="/diagnostics" component={Diagnostics} />
       <Route path="/story-mode" component={StoryMode} />
       <Route path="/season-pass" component={SeasonPass} />
+      <Route path="/battle-pass" component={BattlePass} />
+      <Route path="/civilization-systems" component={CivilizationSystems} />
       <Route path="/relics" component={Relics} />
       <Route path="/friends" component={FriendsList} />
       <Route path="/guilds" component={Guilds} />
@@ -226,6 +239,7 @@ function RouterContent() {
       <Route path="/raid-finder" component={RaidFinder} />
       <Route path="/empire-planets" component={EmpirePlanetViewer} />
       <Route path="/empire-view" component={EmpireView} />
+      <Route path="/empire-command-center" component={EmpireCommandCenter} />
       <Route path="/planet/:id" component={PlanetDetail} />
       <Route path="/planet-command" component={PlanetCommand} />
       <Route path="/research-lab" component={ResearchLab} />

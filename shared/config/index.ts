@@ -140,6 +140,18 @@ export {
   type FactoryJobArchetype,
 } from './buildingFactoryJobArchetypesConfig';
 export {
+  CIVILIZATION_MILITARY_JOB_ARCHETYPES_90,
+  CIVILIZATION_MILITARY_JOB_META,
+  getJobArchetypesByDomain,
+  getJobArchetypesByClass,
+  getJobArchetypeById,
+  estimateFoodWaterForJobAssignments,
+  estimateProductivityForAssignments,
+  type JobDomain,
+  type JobRarity,
+  type CivilizationMilitaryJobArchetype,
+} from './civilizationMilitaryJobConfig';
+export {
   FRAME_SYSTEMS,
   POPULATION_SYSTEM,
   FOOD_SYSTEM,
@@ -192,6 +204,8 @@ export {
 export {
   STOREFRONT_ITEMS,
   SEASON_PASS_CONFIG,
+  BATTLE_PASS_CONFIG,
+  BATTLE_PASS_MISSIONS,
   STORY_TOTAL_ACTS,
   STORY_CHAPTERS_PER_ACT,
   STORY_MISSIONS_PER_ACT,
@@ -202,9 +216,18 @@ export {
   STORY_MAIN_MISSIONS_50,
   STORY_SIDE_MISSIONS,
   STORY_MISSIONS_ALL,
+  getStoreItemsByCategory,
+  getStoreFeaturedItems,
+  calculateStorePurchaseTotals,
+  getSeasonPassTrackReward,
+  getSeasonPassTierProgress,
+  getBattlePassTrackReward,
+  getBattlePassTierProgress,
   type StoreCurrency,
   type StorefrontItem,
   type SeasonPassReward,
+  type BattlePassMissionTemplate,
+  type BattlePassReward,
   type StoryMissionTemplate,
   type StoryActDefinition,
 } from './liveOpsContentConfig';
@@ -303,6 +326,19 @@ export {
   type PlanetStats as PlanetTypeStats,
   type PlanetType as ConfigPlanetType,
 } from './planetTypesConfig';
+
+// Starfleet Biome Catalog Exports
+export {
+  STARFLEET_BIOME_CATALOG_90,
+  STARFLEET_BIOME_CATALOG_META,
+  getBiomeById,
+  getBiomesByEnvironment,
+  getBiomesByLetter,
+  getBiomesByRarity,
+  type BiomeEnvironmentType,
+  type BiomeRarity,
+  type StarfleetBiomeEntry,
+} from './starfleetBiomeCatalogConfig';
 
 // Universe Generation & State Exports
 export {
@@ -424,6 +460,7 @@ export * as MegastructuresConfig from './megastructuresConfig';
 export * as InterstellarTravelConfig from './interstellarTravelConfig';
 export * as NavigationConfig from './navigationConfig';
 export * as PlanetTypesConfig from './planetTypesConfig';
+export * as StarfleetBiomeCatalogConfig from './starfleetBiomeCatalogConfig';
 export * as UniverseGenerationConfig from './universeGenerationConfig';
 export * as TechnologyTreeConfig from './technologyTreeConfig';
 export * as TechnologyTreeExpandedConfig from './technologyTreeExpandedConfig';
