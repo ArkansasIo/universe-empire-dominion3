@@ -628,7 +628,6 @@ const AuctionHouseContent = () => {
         <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center overflow-hidden">
                 <img src={MENU_ASSETS.RESOURCES.ENERGY.path} alt="ending soon" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }} />
               </div>
