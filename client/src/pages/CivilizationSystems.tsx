@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +57,7 @@ const rarityConfig: Record<JobRarity, { color: string; bg: string; border: strin
   legendary: { color: "text-amber-800", bg: "bg-amber-100", border: "border-amber-300", icon: "⭐" },
 };
 
-const domainIcons: Record<JobDomain, JSX.Element> = {
+const domainIcons: Record<JobDomain, React.ReactElement> = {
   civilization: <BriefcaseBusiness className="w-4 h-4" />,
   military: <Shield className="w-4 h-4" />,
 };

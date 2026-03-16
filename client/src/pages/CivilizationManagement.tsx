@@ -1,0 +1,223 @@
+import React, { useMemo, useState } from 'react';
+import GameLayout from '@/components/layout/GameLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  useCivilizationState,
+  useSubsystems,
+  useCivilizationJobs,
+  useWorkforceAssignments,
+  useWorkforceProjection,
+  useAssignWorkforce,
+  useUpgradeSubsystem,
+  useRemoveAssignment,
+} from '@/hooks/useCivilizationArmy';
+import type { CivilizationSubsystem, CivilizationJob, WorkforceAssignment } from '@shared/types/civilization';
+
+export default function CivilizationManagement() {
+  const { data: stateData, isLoading: stateLoading } = useCivilizationState();
+  const { data: subsystems, isLoading: systemsLoading } = useSubsystems();
+  const { data: jobs, isLoading: jobsLoading } = useCivilizationJobs();
+  const { data: assignments } = useWorkforceAssignments();
+  const { data: projection } = useWorkforceProjection();
+
+  const assignMutation = useAssignWorkforce();
+  const upgradeMutation = useUpgradeSubsystem();
+  const removeMutation = useRemoveAssignment();
+
+  const [jobSearch, setJobSearch] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState('');
+  const [assignCount, setAssignCount] = useState(5);
+
+  if (stateLoading || systemsLoading || jobsLoading) {
+    return (
+      <GameLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">Loading civilization management...</div>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  const summary = stateData?.data;
+  const currentAssignments: WorkforceAssignment[] = assignments || [];
+  const systemList: CivilizationSubsystem[] = subsystems || [];
+  const jobList: CivilizationJob[] = jobs || [];
+
+  const filteredJobs = useMemo(() => {
+    const term = jobSearch.trim().toLowerCase();
+    if (!term) return jobList.slice(0, 30);
+    return jobList
+      .filter((job: CivilizationJob) => {
+        return (
+          job.name.toLowerCase().includes(term) ||
+          job.class.toLowerCase().includes(term) ||
+          (job.subclass || '').toLowerCase().includes(term) ||
+          job.description.toLowerCase().includes(term)
+        );
+      })
+      .slice(0, 30);
+  }, [jobList, jobSearch]);
+
+  const subsystemStates: Array<{ systemId: string; level: number }> =
+    summary?.state?.subsystemStates || [];
+  const subsystemStateMap = new Map<string, number>(
+    subsystemStates.map((state) => [state.systemId, state.level] as [string, number])
+  );
+
+  return (
+    <GameLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Civilization Management</h1>
+            <p className="text-sm text-gray-400">Manage subsystem progression and workforce allocation</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="pt-6">
+              <div className="text-sm text-gray-400">Total Workforce</div>
+              <div className="text-3xl font-bold">{projection?.totalWorkforce ?? 0}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="pt-6">
+              <div className="text-sm text-gray-400">Food Required</div>
+              <div className="text-3xl font-bold">{projection?.foodRequired ?? 0}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="pt-6">
+              <div className="text-sm text-gray-400">Water Required</div>
+              <div className="text-3xl font-bold">{projection?.waterRequired ?? 0}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="pt-6">
+              <div className="text-sm text-gray-400">Productivity</div>
+              <div className="text-3xl font-bold">{projection?.productivityGenerated ?? 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="subsystems" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="subsystems">Subsystems</TabsTrigger>
+            <TabsTrigger value="workforce">Workforce</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="subsystems" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {systemList.map((system: CivilizationSubsystem) => {
+                const currentLevel = subsystemStateMap.get(system.id) ?? 0;
+                const nextLevel = Math.min(system.maxLevel, currentLevel + 1);
+                const canUpgrade = currentLevel < system.maxLevel;
+
+                return (
+                  <Card key={system.id} className="bg-slate-900 border-slate-700">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{system.name}</CardTitle>
+                        <Badge variant="outline">{system.systemType}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-gray-300">{system.description}</p>
+                      <div className="text-sm text-gray-400">
+                        Level {currentLevel} / {system.maxLevel}
+                      </div>
+                      <Button
+                        disabled={!canUpgrade || upgradeMutation.isPending}
+                        className="w-full"
+                        onClick={() =>
+                          upgradeMutation.mutate({
+                            systemId: system.id,
+                            targetLevel: nextLevel,
+                          })
+                        }
+                      >
+                        {canUpgrade ? `Upgrade to ${nextLevel}` : 'Max Level'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="workforce" className="space-y-4">
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader>
+                <CardTitle>Assign Workforce</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Input
+                  placeholder="Search jobs by name/class"
+                  value={jobSearch}
+                  onChange={(event) => setJobSearch(event.target.value)}
+                />
+                <select
+                  className="w-full p-2 rounded bg-slate-800 border border-slate-700"
+                  value={selectedJobId}
+                  onChange={(event) => setSelectedJobId(event.target.value)}
+                >
+                  <option value="">Select job</option>
+                  {filteredJobs.map((job: CivilizationJob) => (
+                    <option key={job.id} value={job.id}>
+                      {job.name} ({job.class}/{job.subclass || 'general'})
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  min={1}
+                  value={assignCount}
+                  onChange={(event) => setAssignCount(Math.max(1, Number(event.target.value) || 1))}
+                />
+                <Button
+                  className="w-full"
+                  disabled={!selectedJobId || assignMutation.isPending}
+                  onClick={() => assignMutation.mutate({ jobId: selectedJobId, employees: assignCount })}
+                >
+                  Assign Workforce
+                </Button>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-3">
+              {currentAssignments.length === 0 ? (
+                <Card className="bg-slate-900 border-slate-700">
+                  <CardContent className="pt-6 text-center text-gray-400">No assignments yet.</CardContent>
+                </Card>
+              ) : (
+                currentAssignments.map((assignment: WorkforceAssignment) => (
+                  <Card key={assignment.id} className="bg-slate-900 border-slate-700">
+                    <CardContent className="pt-6 flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold">{assignment.jobId}</div>
+                        <div className="text-sm text-gray-400">Employees: {assignment.employees}</div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="text-red-400 border-red-400"
+                        onClick={() => removeMutation.mutate(assignment.id)}
+                        disabled={removeMutation.isPending}
+                      >
+                        Remove
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </GameLayout>
+  );
+}

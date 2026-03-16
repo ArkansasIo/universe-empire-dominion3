@@ -404,6 +404,58 @@ export {
   getExpandedTechCount,
 } from './technologyTreeExpandedConfig';
 
+// Custom Technology Tree Exports
+export {
+  CUSTOM_TECHS,
+  EXPERIMENTAL_TECHS,
+  FACTION_TECHS,
+  ANCIENT_TECHS,
+  EVENT_TECHS,
+  getCustomTechsByClass,
+  getCustomTechsByRarity,
+  getAvailableCustomTechs,
+  getFactionTechs,
+  getExperimentalTechs,
+  getActiveEventTechs,
+  calculateCustomTechResearchCost,
+} from './technologyTreeCustomConfig';
+
+// Civilization Subsystems Exports
+export {
+  GOVERNANCE_SUBSYSTEMS,
+  COMMERCE_SUBSYSTEMS,
+  EDUCATION_SUBSYSTEMS,
+  CULTURE_SUBSYSTEMS,
+  getAllSubsystems,
+  getSubsystemsByType,
+  getSubsystemById,
+  getAvailableSubsystems,
+  calculateSubsystemBonuses,
+  getPrerequisiteChain,
+  calculateUpgradeCost,
+  getSubsystemEfficiency,
+  type CivilizationSubsystem,
+} from './civilizationSubsystemsConfig';
+
+// Army Subsystems Exports
+export {
+  GROUND_FORCES,
+  ARMOR_VEHICLES,
+  MECH_UNITS,
+  SUPPORT_UNITS,
+  AIR_UNITS,
+  getAllArmySubsystems,
+  getArmySubsystemsByType,
+  getArmySubsystemsByRole,
+  getArmySubsystemById,
+  getAvailableArmyUnits,
+  calculateSquadCombatPower,
+  calculateFormationBonus,
+  calculateTotalCrewRequired,
+  calculateTotalCost,
+  type ArmySubsystem,
+} from './armySubsystemsConfig';
+
 // Game Assets System Exports
 export {
   ASSET_SIZES,
@@ -464,6 +516,7 @@ export * as StarfleetBiomeCatalogConfig from './starfleetBiomeCatalogConfig';
 export * as UniverseGenerationConfig from './universeGenerationConfig';
 export * as TechnologyTreeConfig from './technologyTreeConfig';
 export * as TechnologyTreeExpandedConfig from './technologyTreeExpandedConfig';
+export * as TechnologyTreeCustomConfig from './technologyTreeCustomConfig';
 export * as GameAssetsConfig from './gameAssetsConfig';
 export * as ResearchQueueConfig from './researchQueueConfig';
 export * as TurnSystemConfig from './turnSystemConfig';

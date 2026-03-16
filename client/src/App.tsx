@@ -44,6 +44,8 @@ const Blueprints = lazy(() => import("@/pages/Blueprints"));
 const TechnologyTree = lazy(() => import("@/pages/TechnologyTree"));
 const Expeditions = lazy(() => import("@/pages/Expeditions"));
 const Army = lazy(() => import("@/pages/Army"));
+const ArmyManagement = lazy(() => import("@/pages/ArmyManagement"));
+const CivilizationManagement = lazy(() => import("@/pages/CivilizationManagement"));
 const MegaStructures = lazy(() => import("@/pages/MegaStructures"));
 const Achievements = lazy(() => import("@/pages/Achievements"));
 const Factions = lazy(() => import("@/pages/Factions"));
@@ -197,6 +199,8 @@ function RouterContent() {
       <Route path="/shipyard" component={Shipyard} />
       <Route path="/fleet" component={Fleet} />
       <Route path="/army" component={Army} />
+      <Route path="/army-management" component={ArmyManagement} />
+      <Route path="/civilization-management" component={CivilizationManagement} />
       <Route path="/interstellar" component={Interstellar} />
       <Route path="/galaxy" component={Galaxy} />
       <Route path="/universe" component={Universe} />
