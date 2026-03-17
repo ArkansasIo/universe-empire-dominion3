@@ -768,3 +768,29 @@ export {
   type ResearchTechRecord,
 } from './researchTechnologyLibraryConfig';
 export * as ResearchTechnologyLibraryConfig from './researchTechnologyLibraryConfig';
+export {
+  CIVILIAN_STRUCTURES,
+  CIVILIAN_STRUCTURES_META,
+  CIVILIAN_TIER_CONFIG,
+  CIVILIAN_LEVEL_CONFIG,
+  CIVILIAN_RANKS,
+  CIVILIAN_SUBCLASS_RANKS,
+  getCivilianStructuresByCategory,
+  getCivilianStructuresBySubCategory,
+  getCivilianStructuresByClass,
+  getCivilianStructuresByTierRange,
+  getCivilianStructureById,
+  type CivilianStructure,
+  type CivilianCategory,
+  type CivilianSubCategory,
+  type CivilianType,
+  type CivilianSubType,
+  type CivilianClass,
+  type CivilianSubClass,
+  type CivilianStructureStats,
+  type CivilianStructureSubStats,
+  type CivilianStructureAttributes,
+  type CivilianStructureSubAttributes,
+  type CivilianStructureSubjectDetails,
+} from './civilianStructuresConfig';
+export * as CivilianStructuresConfig from './civilianStructuresConfig';
