@@ -4,11 +4,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ORBITAL_BUILDINGS, StationBuilding } from "@/lib/stationData";
+import {
+  ORBITAL_STATION_CATEGORIES,
+  ORBITAL_STATION_STATS,
+  getOrbitalStationsByCategory,
+  type OrbitalStation,
+  type OrbitalCategoryMeta,
+} from "@shared/config/orbitalStationsConfig";
 import { MENU_ASSETS } from "@shared/config";
-import { Satellite, Moon, Building2, Clock, Box, Gem, Database, TrendingUp, Hammer } from "lucide-react";
+import {
+  Satellite, Moon, Building2, Clock, Box, Gem, Database,
+  TrendingUp, Hammer, ChevronDown, ChevronRight, Layers,
+  Zap, Shield, FlaskConical, Truck, Radio, Users, Pickaxe,
+  ShoppingCart, Sword, Anchor, Eye, HandshakeIcon, Wind,
+  Search, Heart, Cpu,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
-type StationsTab = "moon" | "station";
+type StationsTab = "moon" | "station" | "infrastructure";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
@@ -121,6 +134,268 @@ function BuildingCard({ building, level = 0 }: { building: StationBuilding; leve
   );
 }
 
+// ─── Orbital Station class colour palette ────────────────────────────────────
+const CLASS_COLORS: Record<string, { border: string; badge: string; bg: string }> = {
+  common:       { border: "border-slate-300",  badge: "bg-slate-100 text-slate-700",  bg: "bg-slate-50"  },
+  uncommon:     { border: "border-green-300",  badge: "bg-green-100 text-green-700",  bg: "bg-green-50"  },
+  rare:         { border: "border-blue-300",   badge: "bg-blue-100 text-blue-700",    bg: "bg-blue-50"   },
+  epic:         { border: "border-purple-300", badge: "bg-purple-100 text-purple-700",bg: "bg-purple-50" },
+  legendary:    { border: "border-amber-400",  badge: "bg-amber-100 text-amber-800",  bg: "bg-amber-50"  },
+  mythic:       { border: "border-rose-400",   badge: "bg-rose-100 text-rose-800",    bg: "bg-rose-50"   },
+  transcendent: { border: "border-cyan-400",   badge: "bg-cyan-100 text-cyan-800",    bg: "bg-cyan-50"   },
+};
+
+// ─── Category icon map ────────────────────────────────────────────────────────
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  command_control:       <Cpu className="w-4 h-4" />,
+  energy_systems:        <Zap className="w-4 h-4" />,
+  defense_systems:       <Shield className="w-4 h-4" />,
+  manufacturing:         <Hammer className="w-4 h-4" />,
+  research_development:  <FlaskConical className="w-4 h-4" />,
+  logistics_supply:      <Truck className="w-4 h-4" />,
+  communications:        <Radio className="w-4 h-4" />,
+  habitation:            <Users className="w-4 h-4" />,
+  mining_extraction:     <Pickaxe className="w-4 h-4" />,
+  trade_commerce:        <ShoppingCart className="w-4 h-4" />,
+  military_operations:   <Sword className="w-4 h-4" />,
+  shipyard_operations:   <Anchor className="w-4 h-4" />,
+  intelligence:          <Eye className="w-4 h-4" />,
+  diplomacy:             <HandshakeIcon className="w-4 h-4" />,
+  terraforming:          <Wind className="w-4 h-4" />,
+  anomaly_research:      <Search className="w-4 h-4" />,
+  medical:               <Heart className="w-4 h-4" />,
+  megastructure_support: <Layers className="w-4 h-4" />,
+};
+
+// ─── OrbitalStationCard ───────────────────────────────────────────────────────
+function OrbitalStationCard({ station }: { station: OrbitalStation }) {
+  const [expanded, setExpanded] = useState(false);
+  const colors = CLASS_COLORS[station.class] ?? CLASS_COLORS.common;
+
+  return (
+    <Card className={`border-2 ${colors.border} ${colors.bg}`} data-testid={`card-station-${station.id}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-base">{station.name}</CardTitle>
+            <p className="text-xs text-slate-500 mt-0.5">{station.title} · {station.rank}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1 ml-2">
+            <Badge className={`${colors.badge} text-xs capitalize`}>{station.class}</Badge>
+            <Badge variant="outline" className="text-xs">
+              T{station.tier} · {station.subClass}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {/* Description */}
+        <p className="text-xs text-slate-600">{station.description}</p>
+        <p className="text-xs text-slate-500 italic">{station.subDescription}</p>
+
+        {/* Type badges */}
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline" className="text-xs">{station.type}</Badge>
+          <Badge variant="outline" className="text-xs">{station.subType}</Badge>
+          <Badge variant="outline" className="text-xs">Tier {station.tier}–{station.maxTier}</Badge>
+          <Badge variant="outline" className="text-xs">Lv 1–{station.maxLevel}</Badge>
+        </div>
+
+        {/* Cost */}
+        <div className="p-2 bg-white rounded-lg border border-slate-200">
+          <p className="text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1">
+            <Hammer className="w-3 h-3" /> Base Construction Cost
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="text-center p-1.5 bg-slate-50 rounded">
+              <Box className="w-3 h-3 text-slate-600 mx-auto mb-0.5" />
+              <p className="text-xs text-slate-500">Metal</p>
+              <p className="font-bold text-xs">{station.cost.metal.toLocaleString()}</p>
+            </div>
+            <div className="text-center p-1.5 bg-blue-50 rounded">
+              <Gem className="w-3 h-3 text-blue-600 mx-auto mb-0.5" />
+              <p className="text-xs text-blue-500">Crystal</p>
+              <p className="font-bold text-xs text-blue-700">{station.cost.crystal.toLocaleString()}</p>
+            </div>
+            <div className="text-center p-1.5 bg-green-50 rounded">
+              <Database className="w-3 h-3 text-green-600 mx-auto mb-0.5" />
+              <p className="text-xs text-green-500">Deut.</p>
+              <p className="font-bold text-xs text-green-700">{station.cost.deuterium.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Build time */}
+        <div className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200">
+          <div className="flex items-center gap-1.5 text-amber-700">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs">Build Time:</span>
+          </div>
+          <span className="font-bold text-xs text-amber-900">{formatTime(station.attributes.constructionTimeSec)}</span>
+        </div>
+
+        {/* Expand / collapse toggle */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-slate-700 py-1 border-t border-slate-200 mt-1"
+          data-testid={`toggle-details-${station.id}`}
+        >
+          <span>Details, Stats & Subjects</span>
+          {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </button>
+
+        {expanded && (
+          <div className="space-y-3 pt-1">
+            {/* Details */}
+            <div className="p-2 bg-white rounded border border-slate-200 text-xs">
+              <p className="font-semibold text-slate-700 mb-1">Details</p>
+              <p className="text-slate-600">{station.details}</p>
+              {station.subDetails && <p className="text-slate-500 italic mt-1">{station.subDetails}</p>}
+            </div>
+
+            {/* Stats */}
+            {Object.keys(station.stats).length > 0 && (
+              <div className="p-2 bg-white rounded border border-slate-200 text-xs">
+                <p className="font-semibold text-slate-700 mb-1">Stats</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {Object.entries(station.stats).map(([k, v]) => (
+                    v !== undefined && (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                        <span className="font-medium text-slate-700">{v.toLocaleString()}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Stats */}
+            {Object.keys(station.subStats).length > 0 && (
+              <div className="p-2 bg-white rounded border border-slate-200 text-xs">
+                <p className="font-semibold text-slate-700 mb-1">Sub-Stats</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {Object.entries(station.subStats).map(([k, v]) => (
+                    v !== undefined && (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                        <span className="font-medium text-slate-700">
+                          {typeof v === 'number' ? (v > 0 && v < 1 ? `${(v * 100).toFixed(1)}%` : v.toLocaleString()) : String(v)}
+                        </span>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Attributes */}
+            <div className="p-2 bg-white rounded border border-slate-200 text-xs">
+              <p className="font-semibold text-slate-700 mb-1">Attributes</p>
+              <div className="grid grid-cols-2 gap-1">
+                <div className="flex justify-between"><span className="text-slate-500">Orbital:</span><span className="font-medium">{station.attributes.isOrbital ? "Yes" : "No"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Modular:</span><span className="font-medium">{station.attributes.isModular ? "Yes" : "No"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Needs Moon:</span><span className="font-medium">{station.attributes.requiresMoon ? "Yes" : "No"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Cost Factor:</span><span className="font-medium">×{station.attributes.costFactor}</span></div>
+                {station.attributes.requiresTech && (
+                  <div className="flex justify-between col-span-2"><span className="text-slate-500">Required Tech:</span><span className="font-medium">{station.attributes.requiresTech}</span></div>
+                )}
+                {station.attributes.maxInstances && (
+                  <div className="flex justify-between"><span className="text-slate-500">Max Instances:</span><span className="font-medium">{station.attributes.maxInstances}</span></div>
+                )}
+              </div>
+            </div>
+
+            {/* Sub-Attributes */}
+            <div className="p-2 bg-white rounded border border-slate-200 text-xs">
+              <p className="font-semibold text-slate-700 mb-1">Sub-Attributes</p>
+              <div className="grid grid-cols-2 gap-1">
+                {Object.entries(station.subAttributes).map(([k, v]) => (
+                  <div key={k} className="flex justify-between">
+                    <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                    <span className="font-medium">{typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Subjects */}
+            {station.subjects.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-700">Subjects</p>
+                {station.subjects.map((subject, i) => (
+                  <div key={i} className="p-2 bg-slate-50 rounded border border-slate-200 text-xs">
+                    <p className="font-medium text-slate-800">{subject.name}</p>
+                    <p className="text-slate-600 mt-0.5">{subject.details}</p>
+                    <p className="text-slate-500 italic mt-0.5">{subject.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <Button className="w-full text-sm" size="sm" data-testid={`button-build-station-${station.id}`}>
+          <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+          Construct {station.title}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── CategorySection: one accordion-style category ───────────────────────────
+function CategorySection({ category }: { category: OrbitalCategoryMeta }) {
+  const [open, setOpen] = useState(false);
+  const stations = getOrbitalStationsByCategory(category.id);
+  const icon = CATEGORY_ICONS[category.id] ?? <Satellite className="w-4 h-4" />;
+
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden" data-testid={`category-${category.id}`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-slate-600">{icon}</span>
+          <div>
+            <span className="font-semibold text-slate-800 text-sm">{category.label}</span>
+            <span className="ml-2 text-xs text-slate-500">({category.subCategories.length} sub-categories · {stations.length} stations)</span>
+          </div>
+        </div>
+        {open ? <ChevronDown className="w-4 h-4 text-slate-500 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-slate-600">{category.description}</p>
+
+          {/* Sub-category pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {category.subCategories.map(sub => (
+              <Badge key={sub.id} variant="outline" className="text-xs" title={sub.description}>
+                {sub.label}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Station cards */}
+          {stations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stations.map(s => (
+                <OrbitalStationCard key={s.id} station={s} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 italic">No station definitions for this category yet.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Stations() {
   const moonBuildings = ORBITAL_BUILDINGS.filter(b => b.type === 'moon');
   const stationBuildings = ORBITAL_BUILDINGS.filter(b => b.type === 'station');
@@ -134,8 +409,8 @@ export default function Stations() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
-    if (tabParam === "moon" || tabParam === "station") {
-      setActiveTab(tabParam);
+    if (tabParam === "moon" || tabParam === "station" || tabParam === "infrastructure") {
+      setActiveTab(tabParam as StationsTab);
     }
   }, []);
 
@@ -180,13 +455,13 @@ export default function Stations() {
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
             <CardContent className="p-4 text-center">
               <Building2 className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-purple-900">{ORBITAL_BUILDINGS.length}</p>
-              <p className="text-xs text-purple-700">Total Buildings</p>
+              <p className="text-2xl font-bold text-purple-900">{ORBITAL_STATION_STATS.totalStations}</p>
+              <p className="text-xs text-purple-700">Infrastructure Stations</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-white border-slate-200">
             <CardContent className="pt-6">
               <div className="text-xs uppercase text-slate-500">Active Facility Pool</div>
@@ -201,8 +476,14 @@ export default function Stations() {
           </Card>
           <Card className="bg-white border-slate-200">
             <CardContent className="pt-6">
-              <div className="text-xs uppercase text-slate-500">Active Mode</div>
-              <div className="text-2xl font-bold text-purple-700 capitalize">{activeTab}</div>
+              <div className="text-xs uppercase text-slate-500">Categories</div>
+              <div className="text-2xl font-bold text-purple-700">{ORBITAL_STATION_STATS.totalCategories}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Sub-Categories</div>
+              <div className="text-2xl font-bold text-rose-700">{ORBITAL_STATION_STATS.totalSubCategories}</div>
             </CardContent>
           </Card>
         </div>
@@ -216,6 +497,10 @@ export default function Stations() {
             <TabsTrigger value="station" data-testid="tab-station-buildings">
               <Satellite className="w-4 h-4 mr-2" />
               Station Facilities
+            </TabsTrigger>
+            <TabsTrigger value="infrastructure" data-testid="tab-infrastructure">
+              <Layers className="w-4 h-4 mr-2" />
+              Infrastructure
             </TabsTrigger>
           </TabsList>
 
@@ -251,6 +536,57 @@ export default function Stations() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {stationBuildings.map(building => (
                 <BuildingCard key={building.id} building={building} />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="infrastructure" className="mt-4">
+            <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h3 className="font-bold text-purple-700 mb-2 flex items-center gap-2">
+                <Layers className="w-5 h-5" />
+                Orbital Station Infrastructure
+              </h3>
+              <p className="text-sm text-purple-600">
+                Manage the full spectrum of orbital station infrastructure across{" "}
+                <strong>{ORBITAL_STATION_STATS.totalCategories} categories</strong> and{" "}
+                <strong>{ORBITAL_STATION_STATS.totalSubCategories} sub-categories</strong>.
+                Each station supports Tiers 1–{ORBITAL_STATION_STATS.maxTier} and Levels 1–{ORBITAL_STATION_STATS.maxLevel},
+                with rich metadata including class, sub-class, type, sub-type, rank, title, stats, attributes, and subjects.
+              </p>
+            </div>
+
+            {/* Progress overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <Card className="bg-white border-slate-200">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-slate-900">{ORBITAL_STATION_STATS.totalStations}</p>
+                  <p className="text-xs text-slate-500">Total Stations</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-slate-200">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-blue-700">{ORBITAL_STATION_STATS.maxTier}</p>
+                  <p className="text-xs text-slate-500">Max Tier</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-slate-200">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-purple-700">{ORBITAL_STATION_STATS.maxLevel}</p>
+                  <p className="text-xs text-slate-500">Max Level</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-slate-200">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-rose-700">7</p>
+                  <p className="text-xs text-slate-500">Station Classes</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Category accordion list */}
+            <div className="space-y-2">
+              {ORBITAL_STATION_CATEGORIES.map(cat => (
+                <CategorySection key={cat.id} category={cat} />
               ))}
             </div>
           </TabsContent>
