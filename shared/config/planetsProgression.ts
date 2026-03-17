@@ -88,7 +88,7 @@ export interface PlanetTypeConfig {
   baseGravity: number;
   atmosphere: Atmosphere;
   hydrosphere: Hydrosphere;
-  resourceMultipliers: Record<ResourceType, number>;
+  resourceMultipliers: Partial<Record<ResourceType, number>>;
   buildableAreas: Array<'land' | 'ocean' | 'orbital' | 'underground' | 'aerial'>;
   dangers: string[];
   color: string;

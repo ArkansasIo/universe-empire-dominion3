@@ -190,7 +190,7 @@ interface GameState {
   username: string;
   totalTurns: number;
   currentTurns: number;
-  spendTurns: (amount: number) => boolean;
+  spendTurns: (amount: number) => Promise<boolean>;
   login: () => void;
   logout: () => void;
   isLoading: boolean;
@@ -226,12 +226,15 @@ interface GameState {
   buyItem: (itemId: string, cost: {metal: number, crystal: number, deuterium: number}) => void;
   sellItem: (itemId: string, value: {metal: number, crystal: number, deuterium: number}) => void;
   processMissions: () => void;
+  completeResearch: () => void;
+  processQueue: () => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [resources, setResources] = useState<Resources>(DEFAULT_RESOURCES);
 
   const [buildings, setBuildings] = useState<Buildings>({

@@ -1098,6 +1098,7 @@ export const EM_FLUX_COMPOUND: ResourceElement = {
   name: 'EM Flux Compound',
   symbol: 'EF',
   icon: '🔌',
+  category: 'electromagnetic',
   subCategory: 'em-flux',
   type: 'compound',
   subType: 'charged',
