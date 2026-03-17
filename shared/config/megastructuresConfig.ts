@@ -52,6 +52,10 @@ export type MegastructureType =
   | 'nova-cannon'
   | InfrastructureGeneratedType;
 
+// ============================================================================
+// 18 CATEGORIES (MegastructureClass)
+// ============================================================================
+
 export type MegastructureClass = 
   | 'superweapon' 
   | 'infrastructure' 
@@ -59,43 +63,207 @@ export type MegastructureClass =
   | 'production' 
   | 'defense' 
   | 'mobility' 
-  | 'exotic';
+  | 'exotic'
+  | 'civilization'
+  | 'economic'
+  | 'diplomatic'
+  | 'exploration'
+  | 'colonization'
+  | 'communication'
+  | 'surveillance'
+  | 'terraforming'
+  | 'ecological'
+  | 'temporal'
+  | 'dimensional-forge';
 
-export const MEGASTRUCTURE_CATEGORY_METADATA: Record<MegastructureClass, { label: string; description: string; order: number }> = {
+// ============================================================================
+// 32 SUB-CATEGORIES (MegastructureSubCategory)
+// ============================================================================
+
+export type MegastructureSubCategory =
+  // Infrastructure (3)
+  | 'habitat-construction'
+  | 'energy-grid'
+  | 'transit-network'
+  // Production (3)
+  | 'factory-complex'
+  | 'matter-fabrication'
+  | 'resource-extraction'
+  // Research (3)
+  | 'scientific-array'
+  | 'computation-matrix'
+  | 'quantum-laboratory'
+  // Defense (2)
+  | 'planetary-fortress'
+  | 'orbital-shield'
+  // Mobility (2)
+  | 'ftl-drive'
+  | 'starlift-system'
+  // Exotic (2)
+  | 'dimensional-rift'
+  | 'reality-anchor'
+  // Superweapon (2)
+  | 'stellar-weapon'
+  | 'planetary-annihilator'
+  // Civilization (2)
+  | 'culture-nexus'
+  | 'population-center'
+  // Economic (2)
+  | 'trade-exchange'
+  | 'market-nexus'
+  // Diplomatic (2)
+  | 'diplomatic-station'
+  | 'peace-beacon'
+  // Exploration (1)
+  | 'survey-array'
+  // Colonization (2)
+  | 'relay-network'
+  | 'settlement-complex'
+  // Communication (1)
+  | 'broadcast-tower'
+  // Surveillance (1)
+  | 'sensor-array'
+  // Terraforming (1)
+  | 'terraforming-engine'
+  // Ecological (1)
+  | 'biome-reconstructor'
+  // Temporal (1)
+  | 'temporal-observatory'
+  // Dimensional-forge (1)
+  | 'forge-nexus';
+
+// ============================================================================
+// TIER CLASS & SUB-CLASS (1-99 Tiers)
+// ============================================================================
+
+export type MegastructureTierClass =
+  | 'Alpha'    // Tiers  1-11
+  | 'Beta'     // Tiers 12-22
+  | 'Gamma'    // Tiers 23-33
+  | 'Delta'    // Tiers 34-44
+  | 'Epsilon'  // Tiers 45-55
+  | 'Zeta'     // Tiers 56-66
+  | 'Eta'      // Tiers 67-77
+  | 'Theta'    // Tiers 78-88
+  | 'Omega';   // Tiers 89-99
+
+export type MegastructureTierSubClass =
+  | 'Prime'     // Position 0 (first in each 11-tier band)
+  | 'Minor'     // Position 1
+  | 'Major'     // Position 2
+  | 'Superior'  // Position 3
+  | 'Apex'      // Position 4 and 9 within the 11-tier cycle
+  | 'Ascendant' // Position 10 (last in each 11-tier band)
+  | 'Void';     // Tier 99 only — pinnacle designation
+
+export const MEGASTRUCTURE_CATEGORY_METADATA: Record<MegastructureClass, { label: string; description: string; order: number; subCategories: MegastructureSubCategory[] }> = {
   infrastructure: {
     label: 'Infrastructure',
     description: 'Large-scale energy and habitat backbone systems',
     order: 1,
+    subCategories: ['habitat-construction', 'energy-grid', 'transit-network'],
   },
   production: {
     label: 'Production',
     description: 'Industrial-scale fabrication and conversion systems',
     order: 2,
+    subCategories: ['factory-complex', 'matter-fabrication', 'resource-extraction'],
   },
   research: {
     label: 'Research',
     description: 'Scientific acceleration and advanced discovery systems',
     order: 3,
+    subCategories: ['scientific-array', 'computation-matrix', 'quantum-laboratory'],
   },
   defense: {
     label: 'Defense',
     description: 'Fortification, shielding, and planetary protection',
     order: 4,
+    subCategories: ['planetary-fortress', 'orbital-shield'],
   },
   mobility: {
     label: 'Mobility',
     description: 'Interstellar transit and stellar movement systems',
     order: 5,
+    subCategories: ['ftl-drive', 'starlift-system'],
   },
   exotic: {
     label: 'Exotic',
     description: 'Dimensional and non-standard physics structures',
     order: 6,
+    subCategories: ['dimensional-rift', 'reality-anchor'],
   },
   superweapon: {
     label: 'Superweapon',
     description: 'Strategic-scale offensive megastructures',
     order: 7,
+    subCategories: ['stellar-weapon', 'planetary-annihilator'],
+  },
+  civilization: {
+    label: 'Civilization',
+    description: 'Culture, governance, and population administration megastructures',
+    order: 8,
+    subCategories: ['culture-nexus', 'population-center'],
+  },
+  economic: {
+    label: 'Economic',
+    description: 'Galactic-scale commerce, trade, and resource market systems',
+    order: 9,
+    subCategories: ['trade-exchange', 'market-nexus'],
+  },
+  diplomatic: {
+    label: 'Diplomatic',
+    description: 'Inter-faction diplomacy, treaties, and peace-keeping structures',
+    order: 10,
+    subCategories: ['diplomatic-station', 'peace-beacon'],
+  },
+  exploration: {
+    label: 'Exploration',
+    description: 'Deep-space surveying, scouting, and frontier expansion platforms',
+    order: 11,
+    subCategories: ['survey-array'],
+  },
+  colonization: {
+    label: 'Colonization',
+    description: 'Mass settlement infrastructure and planetary seeding platforms',
+    order: 12,
+    subCategories: ['relay-network', 'settlement-complex'],
+  },
+  communication: {
+    label: 'Communication',
+    description: 'Interstellar broadcast, relay, and data-link infrastructure',
+    order: 13,
+    subCategories: ['broadcast-tower'],
+  },
+  surveillance: {
+    label: 'Surveillance',
+    description: 'Galaxy-wide sensor grids and intelligence-gathering platforms',
+    order: 14,
+    subCategories: ['sensor-array'],
+  },
+  terraforming: {
+    label: 'Terraforming',
+    description: 'Climate engineering and planetary transformation systems',
+    order: 15,
+    subCategories: ['terraforming-engine'],
+  },
+  ecological: {
+    label: 'Ecological',
+    description: 'Biosphere reconstruction, ecosystem preservation, and life-seeding structures',
+    order: 16,
+    subCategories: ['biome-reconstructor'],
+  },
+  temporal: {
+    label: 'Temporal',
+    description: 'Chrono-observation platforms and time-dilation field generators',
+    order: 17,
+    subCategories: ['temporal-observatory'],
+  },
+  'dimensional-forge': {
+    label: 'Dimensional Forge',
+    description: 'Reality-shaping fabrication cores that bridge multiple dimensions',
+    order: 18,
+    subCategories: ['forge-nexus'],
   },
 };
 
@@ -153,6 +321,209 @@ export interface MegastructureAttributes {
   quantumPotential: number;
 }
 
+// ============================================================================
+// SUB-ATTRIBUTES (detailed attribute breakdowns)
+// ============================================================================
+
+export interface MegastructureSubAttributes {
+  // Power Sub-Attributes
+  powerSurgeCapacity: number;
+  overloadThreshold: number;
+  heatDissipationRate: number;
+
+  // Production Sub-Attributes
+  batchSize: number;
+  outputVariance: number;
+  wasteRecyclingRate: number;
+
+  // Computational Sub-Attributes
+  parallelProcessingThreads: number;
+  errorCorrectionRate: number;
+  memoryBandwidth: number;
+
+  // Exotic Sub-Attributes
+  anomalyResistance: number;
+  warpFieldDensity: number;
+  phaseShiftStability: number;
+}
+
+// ============================================================================
+// SUB-STATS (granular stat breakdowns)
+// ============================================================================
+
+export interface MegastructureSubStats {
+  // Power Sub-Stats
+  thrustPower: number;
+  radiationOutput: number;
+  solarHarvestRate: number;
+
+  // Defense Sub-Stats
+  hullIntegrity: number;
+  barrierResonance: number;
+  redundancyIndex: number;
+
+  // Operational Sub-Stats
+  automationLevel: number;
+  synchronizationRate: number;
+  adaptability: number;
+
+  // Special Sub-Stats
+  phaseCoherence: number;
+  gravimetricPotential: number;
+  neuralNetworkBandwidth: number;
+}
+
+// ============================================================================
+// SUBJECTS (subject taxonomy per megastructure)
+// ============================================================================
+
+export type MegastructureSubjectDomain =
+  | 'strategic'
+  | 'economic'
+  | 'scientific'
+  | 'civilizational'
+  | 'military'
+  | 'ecological'
+  | 'temporal'
+  | 'diplomatic';
+
+export interface MegastructureSubject {
+  id: string;
+  name: string;
+  domain: MegastructureSubjectDomain;
+  description: string;
+  subjectDetails: string;
+  relevanceScore: number; // 0-100
+}
+
+// ============================================================================
+// RANKS & TITLES (1-99 tier ranks, 1-999 level titles)
+// ============================================================================
+
+export type MegastructureRank =
+  | 'Pioneer'      // Tiers  1-10
+  | 'Apprentice'   // Tiers 11-20
+  | 'Journeyman'   // Tiers 21-30
+  | 'Adept'        // Tiers 31-40
+  | 'Expert'       // Tiers 41-50
+  | 'Master'       // Tiers 51-60
+  | 'Grand Master' // Tiers 61-70
+  | 'Archon'       // Tiers 71-80
+  | 'Ascendant'    // Tiers 81-90
+  | 'Transcendent' // Tiers 91-99
+  | 'Mythic';      // Tier  99 apex only
+
+/** 99 tier-specific titles, one per tier level. */
+export const MEGASTRUCTURE_TIER_TITLES: Record<number, string> = {
+  1: 'Novice Constructor',       2: 'Apprentice Builder',
+  3: 'Basic Engineer',           4: 'Junior Architect',
+  5: 'Standard Operator',        6: 'Skilled Technician',
+  7: 'Proficient Overseer',      8: 'Competent Director',
+  9: 'Advanced Manager',        10: 'Senior Coordinator',
+  11: 'Lead Engineer',           12: 'Chief Technician',
+  13: 'Expert Builder',          14: 'Master Planner',
+  15: 'Senior Architect',        16: 'Grand Engineer',
+  17: 'Elite Director',          18: 'Prime Overseer',
+  19: 'Superior Commander',      20: 'Executive Builder',
+  21: 'High Architect',          22: 'Sovereign Planner',
+  23: 'Supreme Technician',      24: 'Imperial Engineer',
+  25: 'Celestial Constructor',   26: 'Cosmic Architect',
+  27: 'Stellar Planner',         28: 'Galactic Overseer',
+  29: 'Universal Director',      30: 'Infinite Commander',
+  31: 'Quantum Architect',       32: 'Temporal Engineer',
+  33: 'Void Constructor',        34: 'Singularity Planner',
+  35: 'Nexus Overseer',          36: 'Core Director',
+  37: 'Apex Builder',            38: 'Zenith Architect',
+  39: 'Pinnacle Engineer',       40: 'Summit Commander',
+  41: 'Transcendent Overseer',   42: 'Ascendant Planner',
+  43: 'Ethereal Architect',      44: 'Divine Engineer',
+  45: 'Celestial Core Builder',  46: 'Astral Constructor',
+  47: 'Cosmic Core Planner',     48: 'Universal Architect',
+  49: 'Infinite Engineer',       50: 'Eternal Overseer',
+  51: 'Mythic Constructor',      52: 'Legendary Engineer',
+  53: 'Immortal Architect',      54: 'Timeless Planner',
+  55: 'Primordial Overseer',     56: 'Ancient Commander',
+  57: 'Elder Architect',         58: 'Primal Engineer',
+  59: 'Origin Constructor',      60: 'Genesis Planner',
+  61: 'Creation Overseer',       62: 'Manifestation Director',
+  63: 'Revelation Engineer',     64: 'Enlightenment Builder',
+  65: 'Awakened Architect',      66: 'Awakened Planner',
+  67: 'Ascended Engineer',       68: 'Ascended Overseer',
+  69: 'Exalted Constructor',     70: 'Exalted Director',
+  71: 'Sovereign Architect',     72: 'Sovereign Engineer',
+  73: 'Imperial Overseer',       74: 'Imperial Builder',
+  75: 'Galactic Core Planner',   76: 'Universal Core Director',
+  77: 'Infinite Core Architect', 78: 'Eternal Core Engineer',
+  79: 'Mythic Core Overseer',    80: 'Legendary Core Builder',
+  81: 'Omnipotent Planner',      82: 'Omniscient Director',
+  83: 'Omnipresent Architect',   84: 'Omniversal Engineer',
+  85: 'Transcended Overseer',    86: 'Transcended Builder',
+  87: 'Absolute Planner',        88: 'Absolute Director',
+  89: 'Ultimate Architect',      90: 'Ultimate Engineer',
+  91: 'Supreme Existence',       92: 'Beyond-Apex Builder',
+  93: 'Void-Born Architect',     94: 'Reality-Forger',
+  95: 'Cosmos-Shaper',           96: 'Dimension-Weaver',
+  97: 'Eternity-Crafter',        98: 'Universe-Sculptor',
+  99: 'The Infinite Architect',
+};
+
+// ============================================================================
+// TIER CLASS & SUB-CLASS METADATA
+// ============================================================================
+
+export interface MegastructureTierClassMeta {
+  tierClass: MegastructureTierClass;
+  tierSubClass: MegastructureTierSubClass;
+  tierRange: [number, number];
+  rank: MegastructureRank;
+  title: string;
+  description: string;
+  subDescription: string;
+  powerMultiplierBonus: number; // additional stat multiplier at this class tier
+}
+
+export const MEGASTRUCTURE_TIER_CLASS_TABLE: MegastructureTierClassMeta[] = Array.from({ length: 99 }, (_, i) => {
+  const tier = i + 1;
+
+  // Tier class (9 bands of ~11) — derive max index from classes array length
+  const classes: MegastructureTierClass[] = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Omega'];
+  const classIndex = Math.min(classes.length - 1, Math.floor((tier - 1) / 11));
+  const tierClass = classes[classIndex];
+
+  // Tier sub-class: 11-position cycle (0-4: Prime/Minor/Major/Superior/Apex, 5-9: repeat, 10: Ascendant)
+  const posInBand = (tier - 1) % 11;
+  const BASE_SUB_CLASSES: MegastructureTierSubClass[] = ['Prime', 'Minor', 'Major', 'Superior', 'Apex'];
+  const tierSubClass: MegastructureTierSubClass =
+    tier === 99 ? 'Void'
+    : posInBand === 10 ? 'Ascendant'
+    : BASE_SUB_CLASSES[posInBand % BASE_SUB_CLASSES.length];
+
+  // Rank
+  const rankBands: Array<[number, MegastructureRank]> = [
+    [10, 'Pioneer'], [20, 'Apprentice'], [30, 'Journeyman'], [40, 'Adept'],
+    [50, 'Expert'], [60, 'Master'], [70, 'Grand Master'], [80, 'Archon'],
+    [90, 'Ascendant'], [98, 'Transcendent'], [99, 'Mythic'],
+  ];
+  const rank = (rankBands.find(([max]) => tier <= max)?.[1] ?? 'Transcendent') as MegastructureRank;
+
+  // Title from table (guaranteed defined for all 1-99)
+  const title = MEGASTRUCTURE_TIER_TITLES[tier] ?? `Tier ${tier} Architect`;
+
+  const tierRangeStart = classIndex * 11 + 1;
+  const tierRangeEnd = Math.min(99, tierRangeStart + 10);
+
+  return {
+    tierClass,
+    tierSubClass,
+    tierRange: [tierRangeStart, tierRangeEnd],
+    rank,
+    title,
+    description: `${tierClass} ${tierSubClass} classification — ${rank} rank megastructure tier ${tier}`,
+    subDescription: `Tier ${tier} structures in the ${tierClass} class exhibit ${tierSubClass.toLowerCase()} specialization. They are designated ${rank} rank within the galactic hierarchy.`,
+    powerMultiplierBonus: parseFloat((0.005 * (tier - 1)).toFixed(3)), // 0.000 at T1 → 0.490 at T99
+  };
+});
+
 export interface MegastructureStats {
   // Base Stats
   power: number;
@@ -175,6 +546,9 @@ export interface MegastructureStats {
   command: number;
   logistics: number;
   survivability: number;
+
+  // Extended Sub-Stats
+  subStats?: MegastructureSubStats;
 }
 
 export interface MegastructureProgressionConfig {
@@ -193,9 +567,23 @@ export interface Megastructure {
   subType?: string;
   class: MegastructureClass;
   subClass: MegastructureSubClass;
-  
+
+  // Category & Sub-Category (18 categories, 32 sub-categories)
+  category?: MegastructureClass;
+  subCategory?: MegastructureSubCategory;
+
   description: string;
+  subDescription?: string;
   lore: string;
+
+  // Rank, Title & Tier Classification
+  rank?: MegastructureRank;
+  title?: string;
+  tierClass?: MegastructureTierClass;
+  tierSubClass?: MegastructureTierSubClass;
+
+  // Subjects (subject taxonomy with domain + detail)
+  subjects?: MegastructureSubject[];
   
   // Progression
   level: number;
@@ -206,6 +594,10 @@ export interface Megastructure {
   // Stats
   baseStats: MegastructureStats;
   currentStats: MegastructureStats;
+
+  // Attributes & Sub-Attributes
+  attributes?: MegastructureAttributes;
+  subAttributes?: MegastructureSubAttributes;
   
   // Progression multipliers
   levelMultiplier: number;
@@ -1037,12 +1429,135 @@ export function getMegastructureCatalogByCategory() {
   }));
 }
 
+/**
+ * Get tier class metadata for a given tier (1-99).
+ */
+export function getMegastructureTierClassMeta(tier: number): MegastructureTierClassMeta {
+  const clampedTier = Math.max(1, Math.min(tier, 99));
+  return MEGASTRUCTURE_TIER_CLASS_TABLE[clampedTier - 1];
+}
+
+/**
+ * Get the rank for a given tier (1-99).
+ */
+export function getMegastructureRank(tier: number): MegastructureRank {
+  return getMegastructureTierClassMeta(tier).rank;
+}
+
+/**
+ * Get the title for a given tier (1-99).
+ */
+export function getMegastructureTitle(tier: number): string {
+  return getMegastructureTierClassMeta(tier).title;
+}
+
+/**
+ * Get all sub-categories for a given category class.
+ */
+export function getMegastructureSubCategories(modelClass: MegastructureClass): MegastructureSubCategory[] {
+  return MEGASTRUCTURE_CATEGORY_METADATA[modelClass]?.subCategories ?? [];
+}
+
+/**
+ * Get all 32 sub-categories across all 18 categories.
+ */
+export function getAllMegastructureSubCategories(): MegastructureSubCategory[] {
+  return (Object.values(MEGASTRUCTURE_CATEGORY_METADATA) as { subCategories: MegastructureSubCategory[] }[])
+    .flatMap(meta => meta.subCategories);
+}
+
+/**
+ * Get megastructures filtered by sub-category.
+ */
+export function getMegastructuresBySubCategory(subCategory: MegastructureSubCategory): typeof MEGASTRUCTURES {
+  return MEGASTRUCTURES.filter(m => m.subCategory === subCategory);
+}
+
+/**
+ * Build default subjects for a megastructure based on its class.
+ */
+export function buildDefaultSubjects(modelClass: MegastructureClass): MegastructureSubject[] {
+  const domainMap: Record<MegastructureClass, MegastructureSubjectDomain[]> = {
+    infrastructure:       ['economic', 'civilizational'],
+    production:           ['economic', 'military'],
+    research:             ['scientific', 'civilizational'],
+    defense:              ['military', 'strategic'],
+    mobility:             ['strategic', 'civilizational'],
+    exotic:               ['scientific', 'temporal'],
+    superweapon:          ['military', 'strategic'],
+    civilization:         ['civilizational', 'diplomatic'],
+    economic:             ['economic', 'diplomatic'],
+    diplomatic:           ['diplomatic', 'civilizational'],
+    exploration:          ['scientific', 'strategic'],
+    colonization:         ['civilizational', 'ecological'],
+    communication:        ['civilizational', 'strategic'],
+    surveillance:         ['strategic', 'military'],
+    terraforming:         ['ecological', 'civilizational'],
+    ecological:           ['ecological', 'scientific'],
+    temporal:             ['temporal', 'scientific'],
+    'dimensional-forge':  ['temporal', 'strategic'],
+  };
+
+  const domains = domainMap[modelClass] ?? ['strategic'];
+  return domains.map((domain, idx) => ({
+    id: `${modelClass}-subject-${idx + 1}`,
+    name: `${domain.charAt(0).toUpperCase() + domain.slice(1)} Subject ${idx + 1}`,
+    domain,
+    description: `Primary ${domain} subject for ${modelClass} megastructures`,
+    subjectDetails: `This subject governs the ${domain} interactions and influence of ${modelClass}-class megastructures within the galactic ecosystem.`,
+    relevanceScore: idx === 0 ? 90 : 70,
+  }));
+}
+
+/**
+ * Generate default sub-attributes for a megastructure.
+ */
+export function buildDefaultSubAttributes(baseStats: MegastructureStats): MegastructureSubAttributes {
+  return {
+    powerSurgeCapacity: Math.floor(baseStats.power * 1.25),
+    overloadThreshold: Math.floor(baseStats.power * 2.0),
+    heatDissipationRate: Math.floor(baseStats.efficiency * 0.8),
+    batchSize: Math.floor(baseStats.output * 0.5),
+    outputVariance: Math.floor(baseStats.output * 0.1),
+    wasteRecyclingRate: Math.floor(baseStats.efficiency * 0.5),
+    parallelProcessingThreads: Math.floor(baseStats.control * 0.25),
+    errorCorrectionRate: Math.floor(baseStats.precision * 0.6),
+    memoryBandwidth: Math.floor(baseStats.control * 0.4),
+    anomalyResistance: Math.floor(baseStats.resilience * 0.7),
+    warpFieldDensity: Math.floor(baseStats.power * 0.3),
+    phaseShiftStability: Math.floor(baseStats.resilience * 0.5),
+  };
+}
+
+/**
+ * Generate default sub-stats for a megastructure.
+ */
+export function buildDefaultSubStats(baseStats: MegastructureStats): MegastructureSubStats {
+  return {
+    thrustPower: Math.floor(baseStats.power * 0.6),
+    radiationOutput: Math.floor(baseStats.output * 0.4),
+    solarHarvestRate: Math.floor(baseStats.power * 0.35),
+    hullIntegrity: Math.floor(baseStats.resilience * 1.1),
+    barrierResonance: Math.floor(baseStats.defense.shieldCapacity * 0.02),
+    redundancyIndex: Math.floor(baseStats.endurance * 0.7),
+    automationLevel: Math.floor(baseStats.control * 0.55),
+    synchronizationRate: Math.floor(baseStats.precision * 0.8),
+    adaptability: Math.floor(baseStats.endurance * 0.5),
+    phaseCoherence: Math.floor(baseStats.tech * 1.2),
+    gravimetricPotential: Math.floor(baseStats.power * 0.45),
+    neuralNetworkBandwidth: Math.floor(baseStats.control * 0.6),
+  };
+}
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
 
 export default {
   MEGASTRUCTURES,
+  MEGASTRUCTURE_CATEGORY_METADATA,
+  MEGASTRUCTURE_TIER_CLASS_TABLE,
+  MEGASTRUCTURE_TIER_TITLES,
   MegastructureProgression,
   createMegastructure,
   upgradeMegastructureLevel,
@@ -1055,11 +1570,20 @@ export default {
   getMegastructuresByType,
   getMegastructuresByClass,
   getMegastructuresBySubClass,
+  getMegastructuresBySubCategory,
   getAllMegastructureTypes,
   getAllMegastructureClasses,
   getAllMegastructureSubClasses,
+  getAllMegastructureSubCategories,
   getMegastructureCategoryMeta,
+  getMegastructureSubCategories,
   getMegastructureTierFromLevel,
+  getMegastructureTierClassMeta,
+  getMegastructureRank,
+  getMegastructureTitle,
+  buildDefaultSubjects,
+  buildDefaultSubAttributes,
+  buildDefaultSubStats,
   calculateMegastructureConstructionCost,
   calculateMegastructureUpgradeCost,
   getMegastructureCatalogByCategory,
