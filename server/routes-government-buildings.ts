@@ -17,6 +17,8 @@ import {
   getSubCategoriesForCategory,
   getGovBuildingClasses,
   getGovBuildingTypes,
+  isGovBuildingClass,
+  isGovBuildingType,
 } from '../shared/config/governmentBuildingStructuresConfig';
 
 export function registerGovernmentBuildingRoutes(app: Express) {
@@ -105,7 +107,13 @@ export function registerGovernmentBuildingRoutes(app: Express) {
    * Returns all sub-categories belonging to a given class.
    */
   app.get('/api/government-buildings/sub-categories/by-class/:class', (req: Request, res: Response) => {
-    const cls = String(req.params.class || '') as any;
+    const cls = String(req.params.class || '');
+
+    if (!isGovBuildingClass(cls)) {
+      res.status(400).json({ success: false, message: `Invalid class '${cls}'. Valid values: ${getGovBuildingClasses().join(', ')}.` });
+      return;
+    }
+
     const subCategories = getSubCategoriesByClass(cls);
 
     res.json({
@@ -121,7 +129,13 @@ export function registerGovernmentBuildingRoutes(app: Express) {
    * Returns all sub-categories of a given building type.
    */
   app.get('/api/government-buildings/sub-categories/by-type/:type', (req: Request, res: Response) => {
-    const type = String(req.params.type || '') as any;
+    const type = String(req.params.type || '');
+
+    if (!isGovBuildingType(type)) {
+      res.status(400).json({ success: false, message: `Invalid type '${type}'. Valid values: ${getGovBuildingTypes().join(', ')}.` });
+      return;
+    }
+
     const subCategories = getSubCategoriesByType(type);
 
     res.json({
@@ -161,7 +175,6 @@ export function registerGovernmentBuildingRoutes(app: Express) {
     res.json({
       success: true,
       level,
-      tierLabel: getTierRangeLabel(Math.ceil(level / 10)),
       levelLabel: getLevelRangeLabel(level),
       rank,
     });

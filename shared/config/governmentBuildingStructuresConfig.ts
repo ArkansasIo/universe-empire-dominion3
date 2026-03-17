@@ -65,6 +65,22 @@ export type GovBuildingClass =
   | 'infrastructure'
   | 'cultural';
 
+/** Exhaustive list of all valid GovBuildingClass values for runtime validation. */
+export const GOV_BUILDING_CLASS_VALUES: readonly GovBuildingClass[] = [
+  'administrative',
+  'military',
+  'economic',
+  'research',
+  'diplomatic',
+  'security',
+  'infrastructure',
+  'cultural',
+] as const;
+
+export function isGovBuildingClass(value: string): value is GovBuildingClass {
+  return (GOV_BUILDING_CLASS_VALUES as readonly string[]).includes(value);
+}
+
 export type GovBuildingSubClass =
   | 'governance'
   | 'legislative'
@@ -106,6 +122,29 @@ export type GovBuildingType =
   | 'office'
   | 'outpost';
 
+/** Exhaustive list of all valid GovBuildingType values for runtime validation. */
+export const GOV_BUILDING_TYPE_VALUES: readonly GovBuildingType[] = [
+  'headquarters',
+  'branch',
+  'facility',
+  'station',
+  'complex',
+  'center',
+  'hub',
+  'institute',
+  'academy',
+  'bureau',
+  'authority',
+  'council',
+  'commission',
+  'office',
+  'outpost',
+] as const;
+
+export function isGovBuildingType(value: string): value is GovBuildingType {
+  return (GOV_BUILDING_TYPE_VALUES as readonly string[]).includes(value);
+}
+
 export type GovBuildingSubType = 'primary' | 'secondary' | 'tertiary';
 
 // ---------------------------------------------------------------------------
@@ -146,7 +185,7 @@ export interface GovBuildingSubStat {
   base: number;
   /** Additive bonus per level */
   perLevel: number;
-  /** Multiplicative bonus per tier (applied on top of level scaling) */
+  /** Additive bonus per tier */
   perTier: number;
   /** Human-readable description */
   description: string;
@@ -1511,14 +1550,25 @@ export const GOVERNMENT_BUILDING_SUB_CATEGORY_MAP: Record<string, GovBuildingSub
 // Utility: calculate stat value at a given level and tier
 // ---------------------------------------------------------------------------
 
-export function calcGovBuildingStatValue(
-  stat: GovBuildingStat,
+/** Shared calculation helper — clamps level/tier then applies additive scaling. */
+function calcScaledValue(
+  base: number,
+  perLevel: number,
+  perTier: number,
   level: number,
   tier: number,
 ): number {
   const clampedLevel = Math.max(GOV_BUILDING_MIN_LEVEL, Math.min(GOV_BUILDING_MAX_LEVEL, level));
   const clampedTier  = Math.max(GOV_BUILDING_MIN_TIER,  Math.min(GOV_BUILDING_MAX_TIER,  tier));
-  return stat.base + stat.perLevel * clampedLevel + stat.perTier * clampedTier;
+  return base + perLevel * clampedLevel + perTier * clampedTier;
+}
+
+export function calcGovBuildingStatValue(
+  stat: GovBuildingStat,
+  level: number,
+  tier: number,
+): number {
+  return calcScaledValue(stat.base, stat.perLevel, stat.perTier, level, tier);
 }
 
 export function calcGovBuildingSubStatValue(
@@ -1526,9 +1576,7 @@ export function calcGovBuildingSubStatValue(
   level: number,
   tier: number,
 ): number {
-  const clampedLevel = Math.max(GOV_BUILDING_MIN_LEVEL, Math.min(GOV_BUILDING_MAX_LEVEL, level));
-  const clampedTier  = Math.max(GOV_BUILDING_MIN_TIER,  Math.min(GOV_BUILDING_MAX_TIER,  tier));
-  return subStat.base + subStat.perLevel * clampedLevel + subStat.perTier * clampedTier;
+  return calcScaledValue(subStat.base, subStat.perLevel, subStat.perTier, level, tier);
 }
 
 // ---------------------------------------------------------------------------
