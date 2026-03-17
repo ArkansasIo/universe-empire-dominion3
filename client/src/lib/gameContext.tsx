@@ -442,6 +442,51 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     staleTime: 5000
   });
 
+  const startResearchMutation = useMutation({
+    mutationFn: (techId: string) => apiRequest('POST', '/api/research/player/start', { techId }),
+    onSuccess: () => {
+      refetchGameState();
+      addEvent("Research Started", "Technological initiative confirmed.", "info");
+    },
+    onError: (error: any) => {
+      addEvent("Research Error", error.message || "Failed to start research", "danger");
+    }
+  });
+
+  const completeResearchMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/research/player/complete', {}),
+    onSuccess: () => refetchGameState()
+  });
+
+  const processQueueMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/game/process-queue', {}),
+    onSuccess: (data) => {
+      refetchGameState();
+      if (data.completed && data.completed.length > 0) {
+        data.completed.forEach((item: any) => {
+          if (item.type === "building") {
+            addEvent("Construction Complete", `${item.buildingType} upgrade finished on server.`, "success");
+          } else if (item.type === "unit") {
+            addEvent("Shipyard Order", `${item.amount}x ${item.unitType} constructed on server.`, "success");
+          }
+        });
+      }
+    }
+  });
+
+  const syncTickMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/game/sync-tick', {}),
+    onSuccess: (data) => {
+      // Sync resources if backend is more authoritative
+      if (data.resourceTick?.resources) {
+        setResources(normalizeResources(data.resourceTick.resources, resources));
+      }
+      if (data.queueTick?.completed && data.queueTick.completed.length > 0) {
+        refetchGameState();
+      }
+    }
+  });
+
   const createMissionMutation = useMutation({
     mutationFn: (mission: any) => apiRequest('POST', '/api/game/send-fleet', {
       missionType: mission.type,
@@ -468,6 +513,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     queryFn: () => apiRequest('GET', '/api/messages?limit=50'),
     enabled: !!authUser,
     staleTime: 10000
+  });
+
+  const collectResourcesMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/game/collect-resources'),
+    onSuccess: (data) => {
+      setResources(normalizeResources(data.resources, resources));
+    }
   });
 
   const sendMessageMutation = useMutation({
@@ -684,12 +736,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Main Game Loop
   useEffect(() => {
+    let tickCount = 0;
+    let tickCount = 0;
     const interval = setInterval(() => {
       const now = Date.now();
       const production = getProduction();
       const speedMult = config?.gameSpeed || 1;
+      tickCount++;
 
-      // 1. Resource Production (Now formally part of "resource_tick" logic, but kept inline for smooth UI)
+      // 1. Resource Production (Visual only, synced with backend every 30 ticks)
       // We sync this with the cron job update visually
       setResources(prev => ({
         ...prev,
@@ -698,6 +753,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         deuterium: prev.deuterium + (production.deuterium * 10 * speedMult),
         energy: production.energy
       }));
+
+      tickCount++;
+      if (tickCount >= 30) {
+        collectResourcesMutation.mutate();
+        tickCount = 0;
+      }
 
       // 2. Process Cron Jobs
       setCronJobs(prev => prev.map(job => {
@@ -718,12 +779,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const finished = prev.filter(item => item.endTime <= now);
         const remaining = prev.filter(item => item.endTime > now);
 
+        if (finished.length > 0) {
+           processQueueMutation.mutate();
+        }
+
         finished.forEach(item => {
            if (item.type === "building") {
              setBuildings(b => ({ ...b, [item.id]: b[item.id as keyof Buildings] + 1 }));
              addEvent("Construction Complete", `${item.name} upgrade finished.`, "success");
              setCommander(c => ({ ...c, stats: { ...c.stats, xp: c.stats.xp + 100 } }));
            } else if (item.type === "research") {
+             completeResearchMutation.mutate();
              setResearch(r => ({ ...r, [item.id]: (r[item.id] || 0) + 1 }));
              addEvent("Research Complete", `${item.name} research finished.`, "info");
              setCommander(c => ({ ...c, stats: { ...c.stats, xp: c.stats.xp + 200 } }));
@@ -864,6 +930,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         addEvent("Turn Generated", "A new turn has arrived!", "info");
       }
 
+      // 7. Backend Sync (every 30 seconds)
+      if (tickCount % 30 === 0) {
+        syncTickMutation.mutate();
+      }
+
     }, 1000);
 
     return () => clearInterval(interval);
@@ -925,6 +996,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      const currentLevel = research[tech] || 0;
      const adjustedTime = (time * Math.pow(1.2, currentLevel)) / (config?.gameSpeed || 1);
      const now = Date.now();
+
+     startResearchMutation.mutate(tech);
+
      setQueue(prev => [...prev, {
         id: tech,
         name: name,
@@ -1405,7 +1479,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        totalTurns,
        currentTurns,
        spendTurns,
-       processMissions
+       processMissions,
+       completeResearch: completeResearchMutation.mutate,
+       processQueue: processQueueMutation.mutate
     }}>
       {children}
     </GameContext.Provider>
