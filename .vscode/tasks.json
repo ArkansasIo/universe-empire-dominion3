@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run StellarDominion Dev Server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"./StellarDominion-2",
+				"run",
+				"dev"
+			],
+			"isBackground": true
+		}
+	]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "stellar-dominion-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix ./StellarDominion-2 run dev",
+    "build": "npm --prefix ./StellarDominion-2 run build",
+    "start": "npm --prefix ./StellarDominion-2 run start",
+    "check": "npm --prefix ./StellarDominion-2 run check",
+    "db:push": "npm --prefix ./StellarDominion-2 run db:push",
+    "admin": "npm --prefix ./StellarDominion-2 run admin",
+    "dev:client": "npm --prefix ./StellarDominion-2 run dev:client"
+  }
+}
