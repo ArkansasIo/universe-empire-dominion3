@@ -610,7 +610,6 @@ export * as AutoBuyResourcesConfig from './autoBuyResourcesConfig';
 export * as ResearchTradingConfig from './researchTradingConfig';
 export * as UnitSystemsConfig from './unitSystemsConfig';
 export * as GovernmentLeadersConfig from './governmentLeadersConfig';
-<<<<<<< HEAD
 
 // Resource Elements Exports
 export {
@@ -740,3 +739,32 @@ export {
 export * as StaryardConfig from './staryardConfig';
 export * as BuildingFactoryJobArchetypesConfig from './buildingFactoryJobArchetypesConfig';
 export * as BuildingFactoryTierConfig from './buildingFactoryTierConfig';
+export {
+  RESEARCH_TECH_CATEGORIES,
+  RESEARCH_TECH_SUBCATEGORIES,
+  RESEARCH_TECH_TYPES,
+  RESEARCH_TECH_SUBTYPES,
+  RESEARCH_TECH_TIERS,
+  RESEARCH_TECH_LEVELS,
+  RESEARCH_TECH_LIBRARY,
+  RESEARCH_TECH_META,
+  getResearchTechByCategory,
+  getResearchTechBySubCategory,
+  getResearchTechByTierRange,
+  getResearchTechById,
+  getResearchTechByClass,
+  getResearchTechByType,
+  getResearchTechBySubType,
+  getResearchTechTier,
+  getResearchTechLevel,
+  type ResearchTechCategory,
+  type ResearchTechSubCategory,
+  type ResearchTechType,
+  type ResearchTechSubType,
+  type ResearchTechClass,
+  type ResearchTechSubClass,
+  type ResearchTechTier,
+  type ResearchTechLevel,
+  type ResearchTechRecord,
+} from './researchTechnologyLibraryConfig';
+export * as ResearchTechnologyLibraryConfig from './researchTechnologyLibraryConfig';
