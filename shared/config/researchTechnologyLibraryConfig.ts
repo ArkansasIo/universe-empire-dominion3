@@ -713,9 +713,9 @@ function getTierSubClass(tier: number): ResearchTechSubClass {
 function getTierRank(tier: number): string {
   const tierClass = getTierClass(tier)
   const rankNum = ((tier - 1) % 10) + 1
-  // rankNum is always 1-10 due to the modulo above; the map is exhaustive
-  const romanMap: Record<1|2|3|4|5|6|7|8|9|10, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X' }
-  return `${tierClass} Researcher ${romanMap[rankNum as 1|2|3|4|5|6|7|8|9|10]}`
+  // rankNum is always 0-9 due to modulo; use index-based lookup
+  const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+  return `${tierClass} Researcher ${romanNumerals[(tier - 1) % 10]}`
 }
 
 function getTierTitle(tier: number): string {

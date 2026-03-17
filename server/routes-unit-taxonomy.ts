@@ -18,6 +18,7 @@ import {
 } from '../shared/config/unitJobTaxonomyConfig';
 
 const VALID_DOMAINS: UnitJobDomain[] = ['civilization', 'military', 'government'];
+const ERROR_INVALID_DOMAIN = 'Invalid domain. Must be civilization, military, or government';
 
 function isValidDomain(value: unknown): value is UnitJobDomain {
   return VALID_DOMAINS.includes(value as UnitJobDomain);
@@ -51,7 +52,7 @@ export function registerUnitTaxonomyRoutes(app: Express) {
   app.get('/api/unit-taxonomy/categories/:domain', (req: Request, res: Response) => {
     const { domain } = req.params;
     if (!isValidDomain(domain)) {
-      return res.status(400).json({ success: false, message: 'Invalid domain. Must be civilization, military, or government' });
+      return res.status(400).json({ success: false, message: ERROR_INVALID_DOMAIN });
     }
     const categories = getCategoriesByDomain(domain);
     res.json({ success: true, domain, total: categories.length, categories });
@@ -155,7 +156,7 @@ export function registerUnitTaxonomyRoutes(app: Express) {
   app.get('/api/unit-taxonomy/entries/domain/:domain', (req: Request, res: Response) => {
     const { domain } = req.params;
     if (!isValidDomain(domain)) {
-      return res.status(400).json({ success: false, message: 'Invalid domain. Must be civilization, military, or government' });
+      return res.status(400).json({ success: false, message: ERROR_INVALID_DOMAIN });
     }
     const entries = getTaxonomyByDomain(domain);
     res.json({ success: true, domain, total: entries.length, entries });
