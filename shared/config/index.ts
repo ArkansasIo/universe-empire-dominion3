@@ -97,6 +97,25 @@ export {
   type GovernmentLeaderType,
 } from './governmentLeadersConfig';
 
+// Government Progression Tree Exports
+export {
+  GOVERNMENT_MAX_LEVEL,
+  GOVERNMENT_MAX_TIER,
+  LEVELS_PER_TIER,
+  GOVERNMENT_PROGRESSION_TREE_DEFINITION,
+  getGovernmentNodeById,
+  getNodesByPillar,
+  getNodesByTier,
+  getNodesRequiringNode,
+  canUnlockNode,
+  calculateNodeCost,
+  calculateUnlockTime,
+  type GovernmentPillar,
+  type GovernmentNodeEffect,
+  type GovernmentProgressionNode,
+  type GovernmentTreeDefinition,
+} from './governmentProgressionTreeConfig';
+
 // Research Progression Exports
 export {
   ALL_TECHNOLOGIES,
@@ -610,6 +629,7 @@ export * as AutoBuyResourcesConfig from './autoBuyResourcesConfig';
 export * as ResearchTradingConfig from './researchTradingConfig';
 export * as UnitSystemsConfig from './unitSystemsConfig';
 export * as GovernmentLeadersConfig from './governmentLeadersConfig';
+export * as GovernmentProgressionTreeConfig from './governmentProgressionTreeConfig';
 
 // Resource Elements Exports
 export {
