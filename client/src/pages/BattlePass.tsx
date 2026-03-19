@@ -1,4 +1,4 @@
-﻿import GameLayout from "@/components/layout/GameLayout";
+import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
