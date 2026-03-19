@@ -15,6 +15,43 @@ import {
   SHIP_COSTS,
 } from "./gameEngine";
 
+type FleetUnits = Record<string, number>;
+type MissionResources = {
+  metal: number;
+  crystal: number;
+  deuterium: number;
+  energy: number;
+  credits: number;
+  food: number;
+  water: number;
+};
+
+const MISSION_UNIT_PROFILES: Record<string, { speed: number; cargo: number; attack: number; structure: number; shield: number }> = {
+  lightFighter: { speed: 12500, cargo: 50, attack: 50, structure: 4000, shield: 10 },
+  heavyFighter: { speed: 10000, cargo: 100, attack: 150, structure: 10000, shield: 25 },
+  interceptor: { speed: 15000, cargo: 0, attack: 400, structure: 25000, shield: 50 },
+  cruiser: { speed: 15000, cargo: 800, attack: 400, structure: 27000, shield: 50 },
+  battleship: { speed: 10000, cargo: 1500, attack: 1000, structure: 60000, shield: 200 },
+  battlecruiser: { speed: 10000, cargo: 750, attack: 700, structure: 70000, shield: 400 },
+  destroyer: { speed: 5000, cargo: 2000, attack: 2000, structure: 110000, shield: 500 },
+  bomber: { speed: 4000, cargo: 500, attack: 1000, structure: 75000, shield: 500 },
+  mothership: { speed: 2000, cargo: 100000, attack: 5000, structure: 1500000, shield: 10000 },
+  deathstar: { speed: 100, cargo: 1000000, attack: 200000, structure: 9000000, shield: 50000 },
+  titanPrometheus: { speed: 50, cargo: 500000, attack: 5000000, structure: 25000000, shield: 1000000 },
+  titanAtlas: { speed: 40, cargo: 800000, attack: 3000000, structure: 40000000, shield: 2000000 },
+  titanHyperion: { speed: 60, cargo: 200000, attack: 8000000, structure: 20000000, shield: 500000 },
+  smallCargo: { speed: 5000, cargo: 5000, attack: 5, structure: 4000, shield: 10 },
+  largeCargo: { speed: 7500, cargo: 25000, attack: 5, structure: 12000, shield: 25 },
+  colonyShip: { speed: 2500, cargo: 7500, attack: 50, structure: 30000, shield: 100 },
+  recycler: { speed: 2000, cargo: 20000, attack: 1, structure: 16000, shield: 10 },
+  espionageProbe: { speed: 100000000, cargo: 5, attack: 0, structure: 1000, shield: 0 },
+  marine: { speed: 0, cargo: 0, attack: 10, structure: 100, shield: 5 },
+  exoTrooper: { speed: 0, cargo: 0, attack: 50, structure: 500, shield: 20 },
+  colonist: { speed: 0, cargo: 0, attack: 0, structure: 50, shield: 0 },
+  hoverTank: { speed: 50, cargo: 0, attack: 200, structure: 2000, shield: 100 },
+  battleMech: { speed: 20, cargo: 0, attack: 1000, structure: 10000, shield: 500 },
+};
+
 // Middleware to check authentication
 function isAuthenticated(req: Request, res: Response, next: Function) {
   if (req.session?.userId) {
@@ -22,6 +59,161 @@ function isAuthenticated(req: Request, res: Response, next: Function) {
   } else {
     res.status(401).json({ error: "Unauthorized" });
   }
+}
+
+function normalizeMissionResources(raw: any): MissionResources {
+  return {
+    metal: Math.max(0, Number(raw?.metal || 0)),
+    crystal: Math.max(0, Number(raw?.crystal || 0)),
+    deuterium: Math.max(0, Number(raw?.deuterium || 0)),
+    energy: Number(raw?.energy || 0),
+    credits: Math.max(0, Number(raw?.credits || 0)),
+    food: Math.max(0, Number(raw?.food || 0)),
+    water: Math.max(0, Number(raw?.water || 0)),
+  };
+}
+
+function normalizeFleetUnits(raw: unknown): FleetUnits {
+  const fleet: FleetUnits = {};
+  if (!raw || typeof raw !== "object") return fleet;
+
+  for (const [unitId, quantity] of Object.entries(raw as Record<string, unknown>)) {
+    const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+    if (safeQuantity > 0) {
+      fleet[unitId] = safeQuantity;
+    }
+  }
+
+  return fleet;
+}
+
+function parseCoordinateVector(raw: unknown): [number, number, number] {
+  const matches = String(raw || "")
+    .match(/\d+/g)
+    ?.map((part) => Number(part))
+    .filter((value) => Number.isFinite(value) && value >= 0) || [];
+
+  return [
+    matches[0] || 0,
+    matches[1] || 0,
+    matches[2] || 0,
+  ];
+}
+
+function calculateMissionDistance(origin: unknown, destination: unknown): number {
+  const [originGalaxy, originSystem, originPlanet] = parseCoordinateVector(origin);
+  const [targetGalaxy, targetSystem, targetPlanet] = parseCoordinateVector(destination);
+
+  return (
+    Math.abs(originGalaxy - targetGalaxy) * 20000 +
+    Math.abs(originSystem - targetSystem) * 95 +
+    Math.abs(originPlanet - targetPlanet) * 5
+  );
+}
+
+function getFleetMissionStats(units: FleetUnits) {
+  let totalShips = 0;
+  let totalCargo = 0;
+  let combatPower = 0;
+  let slowestSpeed = Number.POSITIVE_INFINITY;
+
+  for (const [unitId, quantity] of Object.entries(units)) {
+    const profile = MISSION_UNIT_PROFILES[unitId];
+    if (!profile || quantity <= 0) continue;
+
+    totalShips += quantity;
+    totalCargo += profile.cargo * quantity;
+    combatPower += (profile.attack + profile.shield + Math.floor(profile.structure / 10)) * quantity;
+    if (profile.speed > 0) {
+      slowestSpeed = Math.min(slowestSpeed, profile.speed);
+    }
+  }
+
+  return {
+    totalShips,
+    totalCargo,
+    combatPower,
+    slowestSpeed: Number.isFinite(slowestSpeed) ? slowestSpeed : 2500,
+  };
+}
+
+function calculateTravelTimeSeconds(origin: unknown, destination: unknown, units: FleetUnits): number {
+  const distance = calculateMissionDistance(origin, destination);
+  const fleetStats = getFleetMissionStats(units);
+  const distanceFactor = 1 + distance / 400;
+  const speedFactor = Math.max(0.35, 10000 / Math.max(1, fleetStats.slowestSpeed));
+  return Math.max(30, Math.min(5400, Math.ceil(distanceFactor * speedFactor * 60)));
+}
+
+function splitRewardPool(total: number, weights: { metal: number; crystal: number; deuterium: number }) {
+  return {
+    metal: Math.floor(total * weights.metal),
+    crystal: Math.floor(total * weights.crystal),
+    deuterium: Math.floor(total * weights.deuterium),
+  };
+}
+
+function calculateMissionRewards(mission: any) {
+  const units = normalizeFleetUnits(mission.units || mission.ships);
+  const fleetStats = getFleetMissionStats(units);
+  const distance = calculateMissionDistance(mission.origin, mission.target || mission.destination);
+  const distanceFactor = 1 + Math.min(3, distance / 4000);
+  const cargoFactor = 1 + Math.min(4, fleetStats.totalCargo / 25000);
+  const combatFactor = 1 + Math.min(6, fleetStats.combatPower / 50000);
+  const seedSource = `${mission.id || "mission"}:${mission.type || "mission"}:${mission.target || mission.destination || ""}`;
+  const seedValue = Array.from(seedSource).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const variance = 0.85 + (seedValue % 31) / 100;
+
+  if (mission.type === "trade") {
+    const total = Math.min(250000, Math.max(600, Math.round(750 * cargoFactor * distanceFactor * variance)));
+    return splitRewardPool(total, { metal: 0.45, crystal: 0.35, deuterium: 0.2 });
+  }
+
+  if (mission.type === "explore") {
+    const total = Math.min(275000, Math.max(700, Math.round(650 * ((combatFactor + cargoFactor) / 2) * distanceFactor * variance)));
+    return splitRewardPool(total, { metal: 0.35, crystal: 0.4, deuterium: 0.25 });
+  }
+
+  if (mission.type === "attack") {
+    const total = Math.min(350000, Math.max(1000, Math.round(900 * combatFactor * cargoFactor * variance)));
+    return splitRewardPool(total, { metal: 0.5, crystal: 0.3, deuterium: 0.2 });
+  }
+
+  if (mission.type === "sabotage") {
+    const total = Math.min(120000, Math.max(400, Math.round(500 * combatFactor * variance)));
+    return splitRewardPool(total, { metal: 0.25, crystal: 0.45, deuterium: 0.3 });
+  }
+
+  if (mission.type === "transport" && mission.cargo) {
+    return {
+      metal: Math.max(0, Number(mission.cargo.metal || 0)),
+      crystal: Math.max(0, Number(mission.cargo.crystal || 0)),
+      deuterium: Math.max(0, Number(mission.cargo.deuterium || 0)),
+    };
+  }
+
+  return { metal: 0, crystal: 0, deuterium: 0 };
+}
+
+function normalizeMissionRecord(mission: any) {
+  const units = normalizeFleetUnits(mission?.units || mission?.ships);
+  const target = mission?.target || mission?.destination || "";
+  const status = mission?.status === "in-transit" ? "outbound" : (mission?.status || "outbound");
+  const departureTime = Number(mission?.departureTime || Date.now());
+  const arrivalTime = Number(mission?.arrivalTime || departureTime);
+  const returnTime = Number(mission?.returnTime || arrivalTime);
+
+  return {
+    ...mission,
+    target,
+    destination: target,
+    units,
+    ships: units,
+    status,
+    departureTime,
+    arrivalTime,
+    returnTime,
+  };
 }
 
 export function registerGameActionRoutes(app: Express) {
@@ -217,7 +409,7 @@ export function registerGameActionRoutes(app: Express) {
   app.post("/api/game/send-fleet", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = req.session!.userId!;
-      const { destination, missionType, ships } = req.body;
+      const { destination, missionType, ships, cargo } = req.body;
       
       if (!destination || !missionType || !ships) {
         return res.status(400).json({ error: "Destination, mission type, and ships are required" });
@@ -232,9 +424,14 @@ export function registerGameActionRoutes(app: Express) {
       }
       
       const units = playerState.units as any || {};
+      const requestedShips = normalizeFleetUnits(ships);
+
+      if (Object.keys(requestedShips).length === 0) {
+        return res.status(400).json({ error: "Select at least one ship or unit for this mission" });
+      }
       
       // Verify player has the ships
-      for (const [shipType, quantity] of Object.entries(ships)) {
+      for (const [shipType, quantity] of Object.entries(requestedShips)) {
         if ((units[shipType] || 0) < (quantity as number)) {
           return res.status(400).json({ 
             error: `Insufficient ${shipType} ships`,
@@ -246,25 +443,34 @@ export function registerGameActionRoutes(app: Express) {
       
       // Deduct ships from fleet
       const newUnits = { ...units };
-      for (const [shipType, quantity] of Object.entries(ships)) {
+      for (const [shipType, quantity] of Object.entries(requestedShips)) {
         newUnits[shipType] = (newUnits[shipType] || 0) - (quantity as number);
       }
       
-      // Create mission (simplified - in production, calculate travel time based on distance and ship speed)
-      const travelTime = 300; // 5 minutes
-      const arrivalTime = Date.now() + travelTime * 1000;
+      const origin = playerState.coordinates || "1:1:1";
+      const travelTime = calculateTravelTimeSeconds(origin, destination, requestedShips);
+      const now = Date.now();
+      const arrivalTime = now + travelTime * 1000;
+      const returnTime = arrivalTime + travelTime * 1000;
       
       const travelState = (playerState.travelState as any) || { activeRoute: null, discoveredWormholes: [], activeMissions: [] };
       const activeMissions = travelState.activeMissions || [];
-      activeMissions.push({
+      const missionRecord = normalizeMissionRecord({
         id: `mission_${Date.now()}`,
         type: missionType,
+        origin,
+        target: destination,
         destination,
-        ships,
-        departureTime: Date.now(),
+        units: requestedShips,
+        ships: requestedShips,
+        cargo: missionType === "transport" ? normalizeMissionResources(cargo) : undefined,
+        departureTime: now,
         arrivalTime,
-        status: "in-transit",
+        returnTime,
+        travelTimeSeconds: travelTime,
+        status: "outbound",
       });
+      activeMissions.push(missionRecord);
       travelState.activeMissions = activeMissions;
       
       await db.update(playerStates)
@@ -279,7 +485,8 @@ export function registerGameActionRoutes(app: Express) {
         message: "Fleet sent successfully",
         missionType,
         destination,
-        ships,
+        ships: requestedShips,
+        mission: missionRecord,
         arrivalTime,
         travelTime,
       });
@@ -302,7 +509,7 @@ export function registerGameActionRoutes(app: Express) {
       }
       
       const travelState = (playerState.travelState as any) || { activeRoute: null, discoveredWormholes: [], activeMissions: [] };
-      const activeMissions = travelState.activeMissions || [];
+      const activeMissions = (travelState.activeMissions || []).map((mission: any) => normalizeMissionRecord(mission));
       
       res.json({
         missions: activeMissions,
@@ -340,11 +547,11 @@ export function registerGameActionRoutes(app: Express) {
        return res.status(404).json({ error: "Mission not found" });
       }
       
-      const mission = activeMissions[missionIndex];
+      const mission = normalizeMissionRecord(activeMissions[missionIndex]);
       
       // Return ships to fleet
       const units = playerState.units as any || {};
-      for (const [shipType, quantity] of Object.entries(mission.ships)) {
+      for (const [shipType, quantity] of Object.entries(mission.units || mission.ships || {})) {
         units[shipType] = (units[shipType] || 0) + (quantity as number);
       }
       
@@ -387,61 +594,37 @@ export function registerGameActionRoutes(app: Express) {
       const completedMissions = [];
       const remainingMissions = [];
       
-      let updatedResources = playerState.resources as any || { metal: 0, crystal: 0, deuterium: 0, energy: 0 };
+      let updatedResources = normalizeMissionResources(playerState.resources);
       let updatedUnits = playerState.units as any || {};
       const now = Date.now();
       
       for (const mission of activeMissions) {
-        if (mission.arrivalTime <= now) {
+        const normalizedMission = normalizeMissionRecord(mission);
+        if (normalizedMission.arrivalTime <= now) {
+          const rewards = calculateMissionRewards(normalizedMission);
+
           // Mission has arrived! Process it based on type
           completedMissions.push({
-            ...mission,
+            ...normalizedMission,
             status: "completed",
             completedAt: now,
+            rewards,
           });
           
           // Return fleet to player
-          for (const [shipType, quantity] of Object.entries(mission.ships)) {
+          for (const [shipType, quantity] of Object.entries(normalizedMission.units)) {
             updatedUnits[shipType] = (updatedUnits[shipType] || 0) + (quantity as number);
           }
           
-          // Grant mission rewards based on type
-          switch (mission.type) {
-            case "trade":
-              // Trading mission: gain 20% of base production
-              updatedResources.metal = (updatedResources.metal || 0) + 200;
-              updatedResources.crystal = (updatedResources.crystal || 0) + 150;
-              updatedResources.deuterium = (updatedResources.deuterium || 0) + 100;
-              break;
-              
-            case "explore":
-              // Exploration mission: gain resources + research
-              updatedResources.metal = (updatedResources.metal || 0) + 150;
-              updatedResources.crystal = (updatedResources.crystal || 0) + 200;
-              updatedResources.deuterium = (updatedResources.deuterium || 0) + 80;
-              // Boost research progress slightly (implementation depends on research system)
-              break;
-              
-            case "attack":
-              // Attack mission: gain plunder (30% of typical enemy resources)
-              updatedResources.metal = (updatedResources.metal || 0) + 300;
-              updatedResources.crystal = (updatedResources.crystal || 0) + 225;
-              updatedResources.deuterium = (updatedResources.deuterium || 0) + 150;
-              updatedResources.energy = (updatedResources.energy || 0) + 500;
-              break;
-              
-            case "transport":
-              // Transport mission: cargo already loaded, no additional rewards
-              break;
-              
-            default:
-              // Generic mission: minimal rewards
-              updatedResources.metal = (updatedResources.metal || 0) + 50;
-              break;
-          }
+          updatedResources = {
+            ...updatedResources,
+            metal: updatedResources.metal + rewards.metal,
+            crystal: updatedResources.crystal + rewards.crystal,
+            deuterium: updatedResources.deuterium + rewards.deuterium,
+          };
         } else {
           // Mission still in transit
-          remainingMissions.push(mission);
+          remainingMissions.push(normalizedMission);
         }
       }
       

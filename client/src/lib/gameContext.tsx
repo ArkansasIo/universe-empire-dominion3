@@ -751,19 +751,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [authUser, serverGameState, gameStateLoading, isInitialized, turnData]);
 
   useEffect(() => {
-    if (serverMissions && Array.isArray(serverMissions)) {
-      const formattedMissions = serverMissions.map((m: any) => ({
+    const missionPayload = Array.isArray(serverMissions)
+      ? serverMissions
+      : Array.isArray((serverMissions as any)?.missions)
+        ? (serverMissions as any).missions
+        : [];
+
+    if (missionPayload.length > 0) {
+      const formattedMissions = missionPayload.map((m: any) => ({
         id: m.id,
         type: m.type,
-        target: m.target,
-        units: m.units || {},
+        target: m.target || m.destination,
+        units: m.units || m.ships || {},
         arrivalTime: new Date(m.arrivalTime).getTime(),
         returnTime: m.returnTime ? new Date(m.returnTime).getTime() : 0,
-        status: m.status,
+        status: m.status === "in-transit" ? "outbound" : m.status,
         processed: m.processed
       }));
       setActiveMissions(formattedMissions);
+      return;
     }
+
+    setActiveMissions([]);
   }, [serverMissions]);
 
   useEffect(() => {

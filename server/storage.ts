@@ -1289,14 +1289,44 @@ export class DatabaseStorage implements IStorage {
       .set({ status: "accepted", respondedAt: new Date() })
       .where(eq(friendRequests.id, requestId));
     
-    // Create friendship
-    const [friendship] = await db.insert(friends).values({
-      playerId: request.receiverId,
-      friendId: request.senderId,
-      friendshipStatus: "accepted",
-      acceptedAt: new Date(),
-    }).returning();
-    return friendship;
+    const acceptedAt = new Date();
+    const existingReceiverSide = await db.select().from(friends).where(
+      and(eq(friends.playerId, request.receiverId), eq(friends.friendId, request.senderId))
+    ).then((rows) => rows[0]);
+
+    const existingSenderSide = await db.select().from(friends).where(
+      and(eq(friends.playerId, request.senderId), eq(friends.friendId, request.receiverId))
+    ).then((rows) => rows[0]);
+
+    let receiverSide: Friend;
+    if (existingReceiverSide) {
+      [receiverSide] = await db.update(friends)
+        .set({ friendshipStatus: "accepted", acceptedAt, updatedAt: new Date() })
+        .where(eq(friends.id, existingReceiverSide.id))
+        .returning();
+    } else {
+      [receiverSide] = await db.insert(friends).values({
+        playerId: request.receiverId,
+        friendId: request.senderId,
+        friendshipStatus: "accepted",
+        acceptedAt,
+      }).returning();
+    }
+
+    if (existingSenderSide) {
+      await db.update(friends)
+        .set({ friendshipStatus: "accepted", acceptedAt, updatedAt: new Date() })
+        .where(eq(friends.id, existingSenderSide.id));
+    } else {
+      await db.insert(friends).values({
+        playerId: request.senderId,
+        friendId: request.receiverId,
+        friendshipStatus: "accepted",
+        acceptedAt,
+      });
+    }
+
+    return receiverSide;
   }
   
   async rejectFriendRequest(requestId: string): Promise<FriendRequest> {
@@ -1309,9 +1339,15 @@ export class DatabaseStorage implements IStorage {
   
   async removeFriend(playerId: string, friendId: string): Promise<void> {
     await db.delete(friends).where(
-      and(
-        eq(friends.playerId, playerId),
-        eq(friends.friendId, friendId)
+      or(
+        and(
+          eq(friends.playerId, playerId),
+          eq(friends.friendId, friendId)
+        ),
+        and(
+          eq(friends.playerId, friendId),
+          eq(friends.friendId, playerId)
+        )
       )
     );
   }
