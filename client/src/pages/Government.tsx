@@ -64,11 +64,17 @@ export default function Government() {
    const [activeSubMenu, setActiveSubMenu] = useState<GovernmentSubMenu>("cabinet");
 
    useEffect(() => {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab") || params.get("sub");
-      if (tabParam === "cabinet" || tabParam === "field" || tabParam === "policies") {
-         setActiveSubMenu(tabParam);
-      }
+      const syncFromUrl = () => {
+         const params = new URLSearchParams(window.location.search);
+         const tabParam = params.get("tab") || params.get("sub");
+         if (tabParam === "cabinet" || tabParam === "field" || tabParam === "policies") {
+            setActiveSubMenu(tabParam);
+         }
+      };
+
+      syncFromUrl();
+      window.addEventListener("popstate", syncFromUrl);
+      return () => window.removeEventListener("popstate", syncFromUrl);
    }, []);
 
    useEffect(() => {

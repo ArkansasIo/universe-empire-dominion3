@@ -4,7 +4,7 @@
  * @component
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Zap,
@@ -17,6 +17,8 @@ import {
   Clock,
   Layers,
   FlaskConical,
+  Users,
+  Building2,
 } from "lucide-react";
 import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +26,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { unitData } from "@/lib/unitData";
+import {
+  UnitPersonnelDomain,
+  cloneDomainPersonnelProfile,
+  editDomainPersonnelProfile,
+  generateDomainUnitInstance,
+  getDomainForUnitClass,
+} from "@/lib/unitPersonnelGenClone";
+import { buildResearchLabAdministrationState } from "@/lib/researchLabAdministration";
 
 interface ResearchItem {
   id: string;
@@ -40,119 +51,108 @@ export default function ResearchLabPage() {
   const queryClient = useQueryClient();
   const [selectedTech, setSelectedTech] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("normal");
-  const [actionError, setActionError] = useState<string>("");
-
-  const apiRequest = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
-    const response = await fetch(url, {
-      credentials: "include",
-      ...options,
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload?.message || "Request failed");
-    }
-
-    return payload as T;
-  };
+  const [personnelDomain, setPersonnelDomain] = useState<UnitPersonnelDomain>("military");
+  const [personnelUnitId, setPersonnelUnitId] = useState<string>("");
+  const [generationCount, setGenerationCount] = useState<number>(12);
+  const [editLevelDelta, setEditLevelDelta] = useState<number>(1);
+  const [editMoraleDelta, setEditMoraleDelta] = useState<number>(6);
 
   const { data: labData, isLoading: labLoading } = useQuery({
     queryKey: ["activeLab"],
-    queryFn: () => apiRequest("/api/research/labs/active"),
+    queryFn: async () => {
+      const res = await fetch("/api/research/labs/active");
+      return res.json();
+    }
   });
 
   const { data: queueData, isLoading: queueLoading } = useQuery({
     queryKey: ["researchQueue"],
-    queryFn: () => apiRequest("/api/research/queue"),
+    queryFn: async () => {
+      const res = await fetch("/api/research/queue");
+      return res.json();
+    }
   });
 
   const { data: bonusesData } = useQuery({
     queryKey: ["activeBonuses"],
-    queryFn: () => apiRequest("/api/research/bonuses/active"),
+    queryFn: async () => {
+      const res = await fetch("/api/research/bonuses/active");
+      return res.json();
+    }
   });
 
   const { data: multiplierData } = useQuery({
     queryKey: ["speedMultiplier"],
-    queryFn: () => apiRequest("/api/research/speed-multiplier"),
+    queryFn: async () => {
+      const res = await fetch("/api/research/speed-multiplier");
+      return res.json();
+    }
   });
 
   const { data: diagnosticsData } = useQuery({
     queryKey: ["labDiagnostics"],
-    queryFn: () => apiRequest("/api/research/diagnostics"),
+    queryFn: async () => {
+      const res = await fetch("/api/research/diagnostics");
+      return res.json();
+    }
   });
 
   const addToQueueMutation = useMutation({
     mutationFn: async (data: { techId: string; priority: string }) => {
-      return apiRequest("/api/research/queue/add", {
+      const res = await fetch("/api/research/queue/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return res.json();
     },
     onSuccess: () => {
-      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
       queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
       setSelectedTech("");
-    },
-    onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to add research to queue");
     },
   });
 
   const removeFromQueueMutation = useMutation({
     mutationFn: async (queueItemId: string) => {
-      return apiRequest("/api/research/queue/remove", {
+      const res = await fetch("/api/research/queue/remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ queueItemId }),
       });
+      return res.json();
     },
     onSuccess: () => {
-      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
-      queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
-    },
-    onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to remove queue item");
     },
   });
 
   const accelerateMutation = useMutation({
     mutationFn: async (data: { queueItemId: string; speedupPercent: number }) => {
-      return apiRequest("/api/research/accelerate", {
+      const res = await fetch("/api/research/accelerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return res.json();
     },
     onSuccess: () => {
-      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
-      queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
-      queryClient.invalidateQueries({ queryKey: ["speedMultiplier"] });
-    },
-    onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to accelerate research");
     },
   });
 
   const reorderQueueMutation = useMutation({
     mutationFn: async (data: { queueItemId: string; newPosition: number }) => {
-      return apiRequest("/api/research/queue/reorder", {
+      const res = await fetch("/api/research/queue/reorder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return res.json();
     },
     onSuccess: () => {
-      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
       queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
-    },
-    onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to reorder queue");
     },
   });
 
@@ -161,7 +161,7 @@ export default function ResearchLabPage() {
       <GameLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin text-4xl mb-4">⚙️</div>
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
             <p className="text-muted-foreground font-rajdhani">Loading research labs...</p>
           </div>
         </div>
@@ -172,6 +172,71 @@ export default function ResearchLabPage() {
   const activeResearch = queueData?.queue?.[0];
   const allBonuses = bonusesData?.bonuses || [];
   const queue = queueData?.queue || [];
+
+  const domainUnits = useMemo(
+    () => unitData.filter((unit) => getDomainForUnitClass(unit.class) === personnelDomain),
+    [personnelDomain],
+  );
+
+  useEffect(() => {
+    if (!domainUnits.some((unit) => unit.id === personnelUnitId)) {
+      setPersonnelUnitId(domainUnits[0]?.id || "");
+    }
+  }, [domainUnits, personnelUnitId]);
+
+  const adminState = useMemo(() => {
+    return buildResearchLabAdministrationState({
+      labLevel: Number(labData?.lab?.level ?? 1),
+      queueLength: queue.length,
+      speedMultiplier: Number(multiplierData?.multiplier ?? 1),
+      durabilityPercent: Number(diagnosticsData?.diagnostics?.labDurability ?? 100),
+      activeBonusCount: allBonuses.length,
+    });
+  }, [allBonuses.length, diagnosticsData?.diagnostics?.labDurability, labData?.lab?.level, multiplierData?.multiplier, queue.length]);
+
+  const personnelProgram = useMemo(() => {
+    if (!personnelUnitId) return null;
+
+    const generated = generateDomainUnitInstance(personnelUnitId, Math.max(1, generationCount), {
+      domain: personnelDomain,
+      reserveRatio: 0.25,
+      tags: ["research-lab", "generated"],
+    });
+
+    const edited = generated.activePersonnel.slice(0, 6).map((profile) =>
+      editDomainPersonnelProfile(profile, {
+        progressDelta: {
+          level: editLevelDelta,
+          morale: editMoraleDelta,
+        },
+        tags: [...profile.tags, "edited"],
+      }),
+    );
+
+    const cloned = edited.map((profile, index) =>
+      cloneDomainPersonnelProfile(profile, {
+        id: `${profile.id}_clone_${index}`,
+        displayName: `${profile.displayName} Clone`,
+        tags: [...profile.tags, "clone"],
+      }),
+    );
+
+    const averageReadiness = (profiles: typeof edited) => {
+      if (!profiles.length) return 0;
+      return Math.round(
+        profiles.reduce((sum, profile) => sum + profile.progress.combatReadiness, 0) / profiles.length,
+      );
+    };
+
+    return {
+      generated,
+      edited,
+      cloned,
+      generatedReadiness: averageReadiness(generated.activePersonnel),
+      editedReadiness: averageReadiness(edited),
+      clonedReadiness: averageReadiness(cloned),
+    };
+  }, [editLevelDelta, editMoraleDelta, generationCount, personnelDomain, personnelUnitId]);
 
   const priorityVariant = (p: string): "destructive" | "default" | "secondary" | "outline" => {
     if (p === "critical") return "destructive";
@@ -192,7 +257,7 @@ export default function ResearchLabPage() {
           </h2>
           <p className="text-muted-foreground font-rajdhani text-lg">
             {labData?.lab?.name
-              ? `${labData.lab.name} · Type: ${labData.lab.type}`
+              ? `${labData.lab.name} - Type: ${labData.lab.type}`
               : "Manage your research queue, bonuses, and lab performance."}
           </p>
         </div>
@@ -254,13 +319,160 @@ export default function ResearchLabPage() {
           </Card>
         </div>
 
-        {actionError && (
-          <Card className="bg-red-50 border-red-200 shadow-sm">
-            <CardContent className="pt-4">
-              <p className="text-sm text-red-700 font-medium">{actionError}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-white border-slate-200 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Building2 className="w-4 h-4" /> Administration Matrix
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs text-muted-foreground uppercase">Throughput</div>
+                  <div className="text-xl font-bold text-slate-900">{adminState.score.throughput}%</div>
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs text-muted-foreground uppercase">Stability</div>
+                  <div className="text-xl font-bold text-slate-900">{adminState.score.stability}%</div>
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs text-muted-foreground uppercase">Efficiency</div>
+                  <div className="text-xl font-bold text-slate-900">{adminState.score.efficiency}%</div>
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs text-muted-foreground uppercase">Governance</div>
+                  <div className="text-xl font-bold text-slate-900">{adminState.score.governance}%</div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Total Administration Readiness</span>
+                  <span>{adminState.score.total}%</span>
+                </div>
+                <Progress value={adminState.score.total} className="h-2" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {(Object.entries(adminState.domainCapacity) as Array<[UnitPersonnelDomain, number]>).map(([domain, capacity]) => (
+                  <div key={domain} className="rounded border border-blue-200 bg-blue-50 p-2 text-xs">
+                    <div className="font-semibold text-blue-900 capitalize">{domain}</div>
+                    <div className="text-blue-700">Capacity {capacity}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                {adminState.recommendations.map((recommendation, index) => (
+                  <p key={index} className="text-xs text-slate-600">- {recommendation}</p>
+                ))}
+              </div>
             </CardContent>
           </Card>
-        )}
+
+          <Card className="bg-white border-slate-200 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Users className="w-4 h-4" /> Unit Clone / Gen Editing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Domain</label>
+                  <select
+                    value={personnelDomain}
+                    onChange={(event) => setPersonnelDomain(event.target.value as UnitPersonnelDomain)}
+                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="military">Military</option>
+                    <option value="government">Government</option>
+                    <option value="civilian">Civilian</option>
+                    <option value="scientific">Scientific</option>
+                    <option value="industrial">Industrial</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Unit</label>
+                  <select
+                    value={personnelUnitId}
+                    onChange={(event) => setPersonnelUnitId(event.target.value)}
+                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {domainUnits.map((unit) => (
+                      <option key={unit.id} value={unit.id}>{unit.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Generate Count</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={generationCount}
+                    onChange={(event) => setGenerationCount(Math.max(1, Math.min(500, Number(event.target.value) || 1)))}
+                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Edit Level Delta</label>
+                  <input
+                    type="number"
+                    min={-5}
+                    max={25}
+                    value={editLevelDelta}
+                    onChange={(event) => setEditLevelDelta(Math.max(-5, Math.min(25, Number(event.target.value) || 0)))}
+                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Edit Morale Delta</label>
+                  <input
+                    type="number"
+                    min={-40}
+                    max={40}
+                    value={editMoraleDelta}
+                    onChange={(event) => setEditMoraleDelta(Math.max(-40, Math.min(40, Number(event.target.value) || 0)))}
+                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              {personnelProgram ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div className="rounded border border-slate-200 bg-slate-50 p-2">
+                      <div className="text-muted-foreground">Generated</div>
+                      <div className="font-semibold text-slate-900">{personnelProgram.generated.quantity} total</div>
+                      <div className="text-muted-foreground">Readiness {personnelProgram.generatedReadiness}%</div>
+                    </div>
+                    <div className="rounded border border-amber-200 bg-amber-50 p-2">
+                      <div className="text-amber-700">Edited</div>
+                      <div className="font-semibold text-amber-900">{personnelProgram.edited.length} sample</div>
+                      <div className="text-amber-700">Readiness {personnelProgram.editedReadiness}%</div>
+                    </div>
+                    <div className="rounded border border-green-200 bg-green-50 p-2">
+                      <div className="text-green-700">Cloned</div>
+                      <div className="font-semibold text-green-900">{personnelProgram.cloned.length} generated</div>
+                      <div className="text-green-700">Readiness {personnelProgram.clonedReadiness}%</div>
+                    </div>
+                  </div>
+
+                  <div className="rounded border border-slate-200 bg-slate-50 p-2 text-xs space-y-1">
+                    <div className="font-semibold text-slate-800">Sample Edited Profiles</div>
+                    {personnelProgram.edited.slice(0, 3).map((profile) => (
+                      <div key={profile.id} className="flex items-center justify-between gap-2">
+                        <span className="text-slate-700 truncate">{profile.displayName} - {profile.grade}</span>
+                        <span className="text-slate-500">L{profile.progress.level} / Morale {profile.progress.morale}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No unit templates available for this domain.</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Active Research Progress */}
         {activeResearch && (

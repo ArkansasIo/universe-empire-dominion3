@@ -407,11 +407,17 @@ export default function Stations() {
       : "0.00";
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "moon" || tabParam === "station" || tabParam === "infrastructure") {
-      setActiveTab(tabParam as StationsTab);
-    }
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "moon" || tabParam === "station" || tabParam === "infrastructure") {
+        setActiveTab(tabParam as StationsTab);
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {

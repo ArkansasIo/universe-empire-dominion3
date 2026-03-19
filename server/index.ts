@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./loadEnv";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -46,10 +46,10 @@ export function log(message: string, source = "express", level: "info" | "succes
   });
 
   const icons = {
-    info: "ℹ️",
-    success: "✅",
-    error: "❌",
-    warn: "⚠️"
+    info: "[i]",
+    success: "[ok]",
+    error: "[x]",
+    warn: "[!]",
   };
 
   console.log(`${formattedTime} [${source}] ${icons[level]} ${message}`);
@@ -102,10 +102,10 @@ app.use((req, res, next) => {
 
       // Determine speed category
       let speed = "";
-      if (duration < 50) speed = "⚡";
-      else if (duration < 150) speed = "🚀";
-      else if (duration < 500) speed = "📊";
-      else speed = "🐌";
+      if (duration < 50) speed = "fast";
+      else if (duration < 150) speed = "quick";
+      else if (duration < 500) speed = "steady";
+      else speed = "slow";
 
       // Build log message
       const method = req.method.padEnd(6);
@@ -286,9 +286,9 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
   };
 
   // Status indicators
-  const statusOn = `${colors.green}●${colors.reset}`;
-  const statusOff = `${colors.red}●${colors.reset}`;
-  const statusWarning = `${colors.yellow}●${colors.reset}`;
+  const statusOn = `${colors.green}*${colors.reset}`;
+  const statusOff = `${colors.red}*${colors.reset}`;
+  const statusWarning = `${colors.yellow}*${colors.reset}`;
   
   const listenOptions: {
     port: number;
@@ -310,25 +310,25 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
       log(`serving on port ${port}`);
       
       // Startup animation sequence
-      const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      const spinnerFrames = ["-", "\\", "|", "/"];
       let frameIndex = 0;
       
       const displayStartupScreen = () => {
         console.clear();
-        console.log("\n" + colors.bright + colors.blue + "╔════════════════════════════════════════════════╗" + colors.reset);
-        console.log(colors.bright + colors.blue + "║" + colors.reset + colors.bright + "     🚀  SERVER STARTUP INITIALIZATION  🚀      " + colors.blue + "║" + colors.reset);
-        console.log(colors.bright + colors.blue + "╚════════════════════════════════════════════════╝" + colors.reset + "\n");
+        console.log("\n" + colors.bright + colors.blue + "================================================" + colors.reset);
+        console.log(colors.bright + colors.blue + " SERVER STARTUP INITIALIZATION " + colors.reset);
+        console.log(colors.bright + colors.blue + "================================================" + colors.reset + "\n");
         
         frameIndex = (frameIndex + 1) % spinnerFrames.length;
         const spinner = spinnerFrames[frameIndex];
         
         console.log(colors.bright + "  Initializing Server Components:" + colors.reset);
         console.log(`    ${spinner} Loading Express.js framework...`);
-        console.log(`    ✓ ${colors.green}Database connection pool initialized${colors.reset}`);
-        console.log(`    ✓ ${colors.green}Session manager configured${colors.reset}`);
-        console.log(`    ✓ ${colors.green}Authentication middleware loaded${colors.reset}`);
-        console.log(`    ✓ ${colors.green}API routes registered${colors.reset}`);
-        console.log(`    ✓ ${colors.green}Error handlers configured${colors.reset}`);
+        console.log(`    [ok] ${colors.green}Database connection pool initialized${colors.reset}`);
+        console.log(`    [ok] ${colors.green}Session manager configured${colors.reset}`);
+        console.log(`    [ok] ${colors.green}Authentication middleware loaded${colors.reset}`);
+        console.log(`    [ok] ${colors.green}API routes registered${colors.reset}`);
+        console.log(`    [ok] ${colors.green}Error handlers configured${colors.reset}`);
         console.log(`    ${spinner} Starting HTTP server...`);
       };
       
@@ -341,9 +341,9 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
         console.clear();
         
         // Display main startup banner
-        console.log("\n" + colors.bright + colors.green + "╔════════════════════════════════════════════════╗" + colors.reset);
-        console.log(colors.bright + colors.green + "║" + colors.reset + colors.bright + "      ✓ SERVER INITIALIZED SUCCESSFULLY       " + colors.green + "║" + colors.reset);
-        console.log(colors.bright + colors.green + "╚════════════════════════════════════════════════╝" + colors.reset + "\n");
+        console.log("\n" + colors.bright + colors.green + "================================================" + colors.reset);
+        console.log(colors.bright + colors.green + " SERVER INITIALIZED SUCCESSFULLY " + colors.reset);
+        console.log(colors.bright + colors.green + "================================================" + colors.reset + "\n");
         
         // Brief setup summary
         console.log(colors.bright + colors.blue + "Setup Complete:" + colors.reset);
@@ -352,9 +352,9 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
         console.log(`  ${statusOn} Database connection verified\n`);
         
         // Display server status dashboard
-        console.log(colors.bright + colors.cyan + "╔════════════════════════════════════════════════╗" + colors.reset);
-        console.log(colors.bright + colors.cyan + "║" + colors.reset + colors.bright + "          SERVER STATUS DASHBOARD               " + colors.cyan + "║" + colors.reset);
-        console.log(colors.bright + colors.cyan + "╚════════════════════════════════════════════════╝" + colors.reset + "\n");
+        console.log(colors.bright + colors.cyan + "================================================" + colors.reset);
+        console.log(colors.bright + colors.cyan + " SERVER STATUS DASHBOARD " + colors.reset);
+        console.log(colors.bright + colors.cyan + "================================================" + colors.reset + "\n");
         
         console.log(colors.bright + "Main Server Info:" + colors.reset);
         console.log(`  ${statusOn} Server Status: ${colors.green}RUNNING${colors.reset}`);
@@ -371,10 +371,10 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
         console.log(`  ${statusOn} Authentication: ${colors.green}READY${colors.reset}`);
         
         console.log("\n" + colors.bright + "Access:" + colors.reset);
-        console.log(`  ${colors.cyan}→${colors.reset} API Endpoint: ${colors.bright}http://localhost:${port}/api${colors.reset}`);
-        console.log(`  ${colors.cyan}→${colors.reset} Web Interface: ${colors.bright}http://localhost:${port}${colors.reset}`);
+        console.log(`  ${colors.cyan}->${colors.reset} API Endpoint: ${colors.bright}http://localhost:${port}/api${colors.reset}`);
+        console.log(`  ${colors.cyan}->${colors.reset} Web Interface: ${colors.bright}http://localhost:${port}${colors.reset}`);
         
-        console.log("\n" + colors.bright + colors.yellow + "⚠  Status Indicators:" + colors.reset);
+        console.log("\n" + colors.bright + colors.yellow + "Status Indicators:" + colors.reset);
         console.log(`  ${statusOn} Online / Active`);
         console.log(`  ${statusOff} Offline / Inactive`);
         console.log(`  ${statusWarning} Warning / Resetting\n`);

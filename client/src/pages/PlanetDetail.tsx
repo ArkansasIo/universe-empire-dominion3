@@ -68,11 +68,17 @@ export default function PlanetDetail() {
   const [activeTab, setActiveTab] = useState<PlanetDetailTab>("overview");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "overview" || tabParam === "resources" || tabParam === "buildings" || tabParam === "defense") {
-      setActiveTab(tabParam);
-    }
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "overview" || tabParam === "resources" || tabParam === "buildings" || tabParam === "defense") {
+        setActiveTab(tabParam);
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   // Fetch planet details

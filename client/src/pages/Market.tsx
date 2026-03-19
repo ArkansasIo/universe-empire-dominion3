@@ -745,11 +745,17 @@ export default function Market() {
   const [exchangeTo, setExchangeTo] = useState("crystal");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "market" || tabParam === "auction" || tabParam === "exchange" || tabParam === "history" || tabParam === "prices") {
-      setActiveTab(tabParam);
-    }
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "market" || tabParam === "auction" || tabParam === "exchange" || tabParam === "history" || tabParam === "prices") {
+        setActiveTab(tabParam);
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {

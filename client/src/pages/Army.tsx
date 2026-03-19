@@ -106,17 +106,23 @@ export default function Army() {
   const [constructionAmount, setConstructionAmount] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const domainParam = params.get("tab") || params.get("domain");
-    const subParam = params.get("sub");
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const domainParam = params.get("tab") || params.get("domain");
+      const subParam = params.get("sub");
 
-    if (domainParam === "troop" || domainParam === "civilian" || domainParam === "government" || domainParam === "military") {
-      setActiveDomain(domainParam);
+      if (domainParam === "troop" || domainParam === "civilian" || domainParam === "government" || domainParam === "military") {
+        setActiveDomain(domainParam);
 
-      if (subParam === "training" || subParam === "field" || subParam === "construction") {
-        setSubMenuByDomain((prev) => ({ ...prev, [domainParam]: subParam }));
+        if (subParam === "training" || subParam === "field" || subParam === "construction") {
+          setSubMenuByDomain((prev) => ({ ...prev, [domainParam]: subParam }));
+        }
       }
-    }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {

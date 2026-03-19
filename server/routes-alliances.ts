@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { isAuthenticated } from "./basicAuth";
 import { storage } from "./storage";
 import { db } from "./db";
@@ -29,7 +29,32 @@ type AllianceWar = {
   updatedAt: string;
 };
 
+type AllianceOperationType = "raid" | "siege" | "expedition";
+
+type AllianceJointOperationParticipant = {
+  userId: string;
+  contributionPower: number;
+  joinedAt: string;
+};
+
+type AllianceJointOperation = {
+  id: string;
+  allianceId: string;
+  targetCoordinates: string;
+  missionType: AllianceOperationType;
+  status: "draft" | "launched" | "completed" | "failed";
+  createdBy: string;
+  createdAt: string;
+  launchAt?: string;
+  resolveAt?: string;
+  totalPower: number;
+  participants: AllianceJointOperationParticipant[];
+  rewardCredits?: number;
+  report?: string;
+};
+
 const ALLIANCE_MEMBER_CAP = 150;
+const ALLIANCE_COORDINATES_PATTERN = /^\d+:\d+:\d+$/;
 
 function getUserId(req: Request): string {
   return (req.session as any)?.userId || "";
@@ -41,6 +66,24 @@ function getDiplomacyKey(allianceId: string): string {
 
 function getWarsKey(allianceId: string): string {
   return `alliance_wars:${allianceId}`;
+}
+
+function getAllianceOperationsKey(allianceId: string): string {
+  return `alliance_joint_operations:${allianceId}`;
+}
+
+function canManageAllianceOperations(rank: unknown): boolean {
+  const normalizedRank = String(rank ?? "").toLowerCase();
+  return normalizedRank === "leader" || normalizedRank === "officer";
+}
+
+function parseContributionPower(value: unknown, fallback: number): number | null {
+  const parsedValue = Number(value ?? fallback);
+  if (!Number.isFinite(parsedValue)) {
+    return null;
+  }
+
+  return Math.max(100, Math.round(parsedValue));
 }
 
 async function getAllianceDiplomacy(allianceId: string): Promise<AllianceDiplomacyRelation[]> {
@@ -75,6 +118,26 @@ async function saveAllianceWars(allianceId: string, wars: AllianceWar[]): Promis
     getWarsKey(allianceId),
     wars,
     `War ledger for alliance ${allianceId}`,
+    "alliance"
+  );
+}
+
+async function getAllianceOperations(allianceId: string): Promise<AllianceJointOperation[]> {
+  const setting = await storage.getSetting(getAllianceOperationsKey(allianceId));
+  if (!setting || !Array.isArray(setting.value)) {
+    return [];
+  }
+
+  return (setting.value as AllianceJointOperation[])
+    .filter((entry) => entry && typeof entry.id === "string")
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+}
+
+async function saveAllianceOperations(allianceId: string, operations: AllianceJointOperation[]): Promise<void> {
+  await storage.setSetting(
+    getAllianceOperationsKey(allianceId),
+    operations,
+    `Joint operations for alliance ${allianceId}`,
     "alliance"
   );
 }
@@ -156,8 +219,12 @@ export function registerAllianceRoutes(app: Express) {
       }
 
       const members = await storage.getAllianceMembers(membership.alliance.id);
-      const memberUsers = members.length
-        ? await db.select({ id: users.id, username: users.username }).from(users)
+      const memberUserIds = members.map((member) => member.userId);
+      const memberUsers = memberUserIds.length
+        ? await db
+            .select({ id: users.id, username: users.username })
+            .from(users)
+            .where(inArray(users.id, memberUserIds))
         : [];
 
       const userMap = new Map(memberUsers.map((user) => [user.id, user.username || "Commander"]));
@@ -424,6 +491,203 @@ export function registerAllianceRoutes(app: Express) {
     } catch (error) {
       console.error("Failed to apply diplomatic action:", error);
       res.status(500).json({ message: "Failed to apply diplomatic action" });
+    }
+  });
+
+  app.get("/api/alliances/:id/operations", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const allianceId = req.params.id;
+      const { membership } = await requireAllianceMembership(req, allianceId);
+
+      if (!membership) {
+        return res.status(403).json({ message: "Alliance membership required" });
+      }
+
+      const operations = await getAllianceOperations(allianceId);
+      res.json({ operations, count: operations.length });
+    } catch (error) {
+      console.error("Failed to load alliance operations:", error);
+      res.status(500).json({ message: "Failed to load alliance operations" });
+    }
+  });
+
+  app.post("/api/alliances/:id/operations", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const allianceId = req.params.id;
+      const { userId, membership } = await requireAllianceMembership(req, allianceId);
+
+      if (!membership) {
+        return res.status(403).json({ message: "Alliance membership required" });
+      }
+
+      const targetCoordinates = String(req.body?.targetCoordinates || "").trim();
+      const missionType = String(req.body?.missionType || "raid").trim().toLowerCase() as AllianceOperationType;
+      const contributionPower = parseContributionPower(req.body?.contributionPower, 1000);
+
+      if (!targetCoordinates) {
+        return res.status(400).json({ message: "Target coordinates are required" });
+      }
+
+      if (!ALLIANCE_COORDINATES_PATTERN.test(targetCoordinates)) {
+        return res.status(400).json({ message: "Target coordinates must use galaxy:system:position format" });
+      }
+
+      if (!["raid", "siege", "expedition"].includes(missionType)) {
+        return res.status(400).json({ message: "Unsupported mission type" });
+      }
+
+      if (contributionPower === null) {
+        return res.status(400).json({ message: "Contribution power must be a valid number" });
+      }
+
+      const operations = await getAllianceOperations(allianceId);
+      const nowIso = new Date().toISOString();
+      const operation: AllianceJointOperation = {
+        id: `op_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+        allianceId,
+        targetCoordinates,
+        missionType,
+        status: "draft",
+        createdBy: userId,
+        createdAt: nowIso,
+        totalPower: contributionPower,
+        participants: [
+          {
+            userId,
+            contributionPower,
+            joinedAt: nowIso,
+          },
+        ],
+      };
+
+      const nextOperations = [operation, ...operations].slice(0, 150);
+      await saveAllianceOperations(allianceId, nextOperations);
+
+      res.status(201).json({ success: true, operation });
+    } catch (error) {
+      console.error("Failed to create alliance operation:", error);
+      res.status(500).json({ message: "Failed to create alliance operation" });
+    }
+  });
+
+  app.post("/api/alliances/:id/operations/:operationId/join", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const allianceId = req.params.id;
+      const operationId = req.params.operationId;
+      const { userId, membership } = await requireAllianceMembership(req, allianceId);
+
+      if (!membership) {
+        return res.status(403).json({ message: "Alliance membership required" });
+      }
+
+      const parsedContributionPower = parseContributionPower(req.body?.contributionPower, 500);
+      const operations = await getAllianceOperations(allianceId);
+      const operation = operations.find((entry) => entry.id === operationId);
+
+      if (parsedContributionPower === null) {
+        return res.status(400).json({ message: "Contribution power must be a valid number" });
+      }
+
+      if (!operation) {
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      if (operation.status !== "draft") {
+        return res.status(409).json({ message: "Operation can only be joined while in draft state" });
+      }
+
+      const participantIndex = operation.participants.findIndex((participant) => participant.userId === userId);
+      if (participantIndex >= 0) {
+        operation.participants[participantIndex].contributionPower += parsedContributionPower;
+      } else {
+        operation.participants.push({ userId, contributionPower: parsedContributionPower, joinedAt: new Date().toISOString() });
+      }
+      operation.totalPower = operation.participants.reduce((sum, participant) => sum + participant.contributionPower, 0);
+
+      await saveAllianceOperations(allianceId, operations);
+      res.json({ success: true, operation });
+    } catch (error) {
+      console.error("Failed to join alliance operation:", error);
+      res.status(500).json({ message: "Failed to join alliance operation" });
+    }
+  });
+
+  app.post("/api/alliances/:id/operations/:operationId/launch", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const allianceId = req.params.id;
+      const operationId = req.params.operationId;
+      const { membership } = await requireAllianceMembership(req, allianceId);
+
+      if (!membership) {
+        return res.status(403).json({ message: "Alliance membership required" });
+      }
+
+      if (!membership.member || !canManageAllianceOperations(membership.member.rank)) {
+        return res.status(403).json({ message: "Leader or officer rank required to launch operation" });
+      }
+
+      const operations = await getAllianceOperations(allianceId);
+      const operation = operations.find((entry) => entry.id === operationId);
+      if (!operation) {
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      if (operation.status !== "draft") {
+        return res.status(409).json({ message: "Operation is not in draft state" });
+      }
+
+      operation.status = "launched";
+      operation.launchAt = new Date().toISOString();
+      operation.resolveAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await saveAllianceOperations(allianceId, operations);
+      res.json({ success: true, operation });
+    } catch (error) {
+      console.error("Failed to launch alliance operation:", error);
+      res.status(500).json({ message: "Failed to launch alliance operation" });
+    }
+  });
+
+  app.post("/api/alliances/:id/operations/:operationId/resolve", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const allianceId = req.params.id;
+      const operationId = req.params.operationId;
+      const { membership } = await requireAllianceMembership(req, allianceId);
+
+      if (!membership) {
+        return res.status(403).json({ message: "Alliance membership required" });
+      }
+
+      if (!membership.member || !canManageAllianceOperations(membership.member.rank)) {
+        return res.status(403).json({ message: "Leader or officer rank required to resolve operation" });
+      }
+
+      const operations = await getAllianceOperations(allianceId);
+      const operation = operations.find((entry) => entry.id === operationId);
+      if (!operation) {
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      if (operation.status !== "launched") {
+        return res.status(409).json({ message: "Only launched operations can be resolved" });
+      }
+
+      const successThreshold = operation.missionType === "siege" ? 4000 : operation.missionType === "expedition" ? 2500 : 1800;
+      const outcomeRoll = operation.totalPower + Math.floor(Math.random() * 1500);
+      const success = outcomeRoll >= successThreshold;
+
+      operation.status = success ? "completed" : "failed";
+      operation.rewardCredits = success ? Math.round(operation.totalPower * 0.45) : Math.round(operation.totalPower * 0.08);
+      operation.report = success
+        ? `Operation succeeded at ${operation.targetCoordinates}. Alliance forces secured strategic gains.`
+        : `Operation failed at ${operation.targetCoordinates}. Enemy resistance outmatched deployed force.`;
+      operation.resolveAt = new Date().toISOString();
+
+      await saveAllianceOperations(allianceId, operations);
+      res.json({ success: true, operation });
+    } catch (error) {
+      console.error("Failed to resolve alliance operation:", error);
+      res.status(500).json({ message: "Failed to resolve alliance operation" });
     }
   });
 }

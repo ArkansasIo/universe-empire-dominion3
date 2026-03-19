@@ -79,6 +79,7 @@ export default function StoryMode() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["story-campaign"] });
       queryClient.invalidateQueries({ queryKey: ["story-missions", selectedAct, missionType] });
+      queryClient.invalidateQueries({ queryKey: ["story-missions-all-acts"] });
       toast({ title: "Mission completed", description: "Rewards have been applied." });
     },
     onError: (error: any) => {
@@ -110,12 +111,12 @@ export default function StoryMode() {
     return acc;
   }, {});
 
-  const sortedSelectedActMissions = [...selectedActMissions].sort((left, right) => {
+  const sortedVisibleMissions = [...missions].sort((left, right) => {
     if (left.chapter !== right.chapter) return left.chapter - right.chapter;
     if (left.missionType !== right.missionType) return left.missionType === "main" ? -1 : 1;
     return left.title.localeCompare(right.title);
   });
-  const nextRecommendedMission = sortedSelectedActMissions.find((mission) => !mission.isCompleted) || null;
+  const nextRecommendedMission = sortedVisibleMissions.find((mission) => !mission.isCompleted) || null;
   const selectedActCompletionRate = selectedActTotal > 0 ? Math.round((selectedActCompleted / selectedActTotal) * 100) : 0;
   const totalMainCompleted = allMissions.filter((mission) => mission.missionType === "main" && mission.isCompleted).length;
   const totalSideCompleted = allMissions.filter((mission) => mission.missionType === "side" && mission.isCompleted).length;
@@ -222,7 +223,7 @@ export default function StoryMode() {
                   </div>
                   {nextRecommendedMission ? (
                     <div className="text-sm text-slate-600">
-                      {nextRecommendedMission.title} · Chapter {nextRecommendedMission.chapter} · {nextRecommendedMission.missionType}
+                      {nextRecommendedMission.title} - Chapter {nextRecommendedMission.chapter} - {nextRecommendedMission.missionType}
                     </div>
                   ) : (
                     <div className="text-sm text-green-700">All missions in this act are completed.</div>
@@ -274,7 +275,7 @@ export default function StoryMode() {
                     <p className="text-sm text-slate-600">
                       NPC: <span className="text-primary">{mission.npcName}</span>
                     </p>
-                    <p className="text-sm text-slate-600">Difficulty: {mission.difficulty} · Chapter {mission.chapter}</p>
+                    <p className="text-sm text-slate-600">Difficulty: {mission.difficulty} - Chapter {mission.chapter}</p>
                     <Button
                       data-testid={`button-complete-mission-${mission.id}`}
                       className="w-full"

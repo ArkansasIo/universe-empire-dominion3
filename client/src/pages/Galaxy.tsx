@@ -17,7 +17,7 @@ import {
   Search,
   Rocket
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -119,10 +119,39 @@ export default function Galaxy() {
       return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
    };
 
+   const syncGalaxyStateFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      setUniverse(params.get("universe") || "uni1");
+      setGalaxy(parsePositiveInt(params.get("galaxy"), 1));
+      setSector(parsePositiveInt(params.get("sector"), 4));
+      setSystem(parsePositiveInt(params.get("system"), 102));
+   };
+
    const [universe, setUniverse] = useState(searchParams.get("universe") || "uni1");
    const [galaxy, setGalaxy] = useState(parsePositiveInt(searchParams.get("galaxy"), 1));
    const [sector, setSector] = useState(parsePositiveInt(searchParams.get("sector"), 4)); 
    const [system, setSystem] = useState(parsePositiveInt(searchParams.get("system"), 102));
+
+  useEffect(() => {
+    const handlePopState = () => syncGalaxyStateFromUrl();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("universe", universe);
+    params.set("galaxy", String(galaxy));
+    params.set("sector", String(sector));
+    params.set("system", String(system));
+
+    const nextUrl = `/galaxy?${params.toString()}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+
+    if (currentUrl !== nextUrl) {
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [universe, galaxy, sector, system]);
 
   const { data: systemData, isFetching } = useQuery<SystemData>({
     queryKey: ["galaxy", universe, galaxy, sector, system],

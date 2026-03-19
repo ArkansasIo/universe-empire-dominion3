@@ -189,11 +189,17 @@ export default function Facilities() {
   const { buildings, orbitalBuildings, resources, updateBuilding, queue, activeBase, setActiveBase, research } = useGame();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const baseParam = params.get("tab") || params.get("base");
-    if (baseParam === "planet" || baseParam === "moon" || baseParam === "station") {
-      setActiveBase(baseParam as FacilityBase);
-    }
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const baseParam = params.get("tab") || params.get("base");
+      if (baseParam === "planet" || baseParam === "moon" || baseParam === "station") {
+        setActiveBase(baseParam as FacilityBase);
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, [setActiveBase]);
 
   useEffect(() => {

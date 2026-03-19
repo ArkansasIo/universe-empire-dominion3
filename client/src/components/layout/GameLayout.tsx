@@ -125,19 +125,23 @@ const CollapsibleMenu = ({ title, icon: Icon, items, location, defaultOpen = fal
   );
 };
 
-const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, label: string, value: number, colorClass: string }) => (
-  <div className="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded shadow-sm min-w-[140px]">
-    <div className={cn("p-2 rounded-full bg-slate-100", colorClass)}>
-      <Icon className="w-4 h-4" />
+const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, label: string, value: number, colorClass: string }) => {
+  const safeValue = Number.isFinite(value) ? value : 0;
+
+  return (
+    <div className="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded shadow-sm min-w-[140px]">
+      <div className={cn("p-2 rounded-full bg-slate-100", colorClass)}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex flex-col">
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+        <span className={cn("font-orbitron font-medium text-sm tabular-nums", colorClass)}>
+          {Math.floor(safeValue).toLocaleString()}
+        </span>
+      </div>
     </div>
-    <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
-      <span className={cn("font-orbitron font-medium text-sm tabular-nums", colorClass)}>
-        {Math.floor(value).toLocaleString()}
-      </span>
-    </div>
-  </div>
-);
+  );
+};
 
 const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: number, totalTurns: number, isLoading: boolean }) => (
   <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-4 py-2 rounded shadow-sm min-w-[180px]" data-testid="display-turns">

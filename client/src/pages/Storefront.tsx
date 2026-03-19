@@ -105,12 +105,21 @@ export default function Storefront() {
   }, [catalog?.items, category]);
 
   useEffect(() => {
-    if (!selectedItemId && visibleItems.length > 0) {
+    if (visibleItems.length === 0) {
+      if (selectedItemId) {
+        setSelectedItemId("");
+      }
+      return;
+    }
+
+    const hasVisibleSelection = visibleItems.some((item) => item.id === selectedItemId);
+    if (!hasVisibleSelection) {
       setSelectedItemId(visibleItems[0].id);
     }
   }, [selectedItemId, visibleItems]);
 
-  const selectedQuantity = selectedItemId ? getQuantityForItem(selectedItemId) : 1;
+  const selectedItem = visibleItems.find((item) => item.id === selectedItemId) || null;
+  const selectedQuantity = selectedItem ? getQuantityForItem(selectedItem.id) : 1;
   const totalVisibleItems = visibleItems.length;
   const visibleByCurrency = visibleItems.reduce(
     (acc, item) => {
@@ -121,14 +130,14 @@ export default function Storefront() {
   );
 
   const { data: checkoutPreview, isLoading: previewLoading } = useQuery<CheckoutPreviewResponse>({
-    queryKey: ["/api/storefront/preview-checkout", selectedItemId, selectedQuantity],
-    enabled: Boolean(selectedItemId),
+    queryKey: ["/api/storefront/preview-checkout", selectedItem?.id, selectedQuantity],
+    enabled: Boolean(selectedItem),
     queryFn: async () => {
       const res = await fetch("/api/storefront/preview-checkout", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId: selectedItemId, quantity: selectedQuantity }),
+        body: JSON.stringify({ itemId: selectedItem?.id, quantity: selectedQuantity }),
       });
       if (!res.ok) throw new Error("Failed to load checkout preview");
       return res.json();

@@ -71,6 +71,33 @@ type WarResponse = {
    count: number;
 };
 
+type AllianceOperationType = "raid" | "siege" | "expedition";
+
+type AllianceOperation = {
+   id: string;
+   allianceId: string;
+   targetCoordinates: string;
+   missionType: AllianceOperationType;
+   status: "draft" | "launched" | "completed" | "failed";
+   createdBy: string;
+   createdAt: string;
+   launchAt?: string;
+   resolveAt?: string;
+   totalPower: number;
+   participants: Array<{
+      userId: string;
+      contributionPower: number;
+      joinedAt: string;
+   }>;
+   rewardCredits?: number;
+   report?: string;
+};
+
+type AllianceOperationsResponse = {
+   operations: AllianceOperation[];
+   count: number;
+};
+
 type AllianceDirectoryEntry = {
    id: string;
    name: string;
@@ -121,6 +148,15 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
    return payload as T;
 }
 
+function parseOperationPower(value: string): number | null {
+   const parsed = Number(value.trim());
+   if (!Number.isFinite(parsed)) {
+      return null;
+   }
+
+   return Math.max(100, Math.round(parsed));
+}
+
 export default function Alliance() {
   const { alliance, createAlliance, joinAlliance, leaveAlliance } = useGame();
    const { toast } = useToast();
@@ -131,6 +167,9 @@ export default function Alliance() {
    const [targetAllianceTag, setTargetAllianceTag] = useState("");
    const [chatMessage, setChatMessage] = useState("");
    const [allianceSystemsVersion, setAllianceSystemsVersion] = useState(0);
+   const [operationTarget, setOperationTarget] = useState("1:1:1");
+   const [operationType, setOperationType] = useState<AllianceOperationType>("raid");
+   const [operationPower, setOperationPower] = useState("1000");
 
    const { data: myGuild } = useQuery<GuildInfo | null>({
       queryKey: ["guild-mine"],
@@ -163,6 +202,12 @@ export default function Alliance() {
    const { data: warsData } = useQuery<WarResponse>({
       queryKey: ["alliance-wars", alliance?.id],
       queryFn: () => fetchJson<WarResponse>(`/api/alliances/${alliance!.id}/wars`),
+      enabled: !!alliance?.id,
+   });
+
+   const { data: operationsData } = useQuery<AllianceOperationsResponse>({
+      queryKey: ["alliance-operations", alliance?.id],
+      queryFn: () => fetchJson<AllianceOperationsResponse>(`/api/alliances/${alliance!.id}/operations`),
       enabled: !!alliance?.id,
    });
 
@@ -206,6 +251,67 @@ export default function Alliance() {
       },
    });
 
+   const createOperationMutation = useMutation({
+      mutationFn: ({ targetCoordinates, missionType, contributionPower }: { targetCoordinates: string; missionType: AllianceOperationType; contributionPower: number }) =>
+         fetchJson(`/api/alliances/${alliance!.id}/operations`, {
+            method: "POST",
+            body: JSON.stringify({ targetCoordinates, missionType, contributionPower }),
+         }),
+      onSuccess: () => {
+         setOperationTarget("1:1:1");
+         setOperationType("raid");
+         setOperationPower("1000");
+         queryClient.invalidateQueries({ queryKey: ["alliance-operations", alliance?.id] });
+         toast({ title: "Operation drafted", description: "Alliance operation created." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const joinOperationMutation = useMutation({
+      mutationFn: ({ operationId, contributionPower }: { operationId: string; contributionPower: number }) =>
+         fetchJson(`/api/alliances/${alliance!.id}/operations/${operationId}/join`, {
+            method: "POST",
+            body: JSON.stringify({ contributionPower }),
+         }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["alliance-operations", alliance?.id] });
+         toast({ title: "Operation updated", description: "Your reinforcements were added." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Join failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const launchOperationMutation = useMutation({
+      mutationFn: (operationId: string) =>
+         fetchJson(`/api/alliances/${alliance!.id}/operations/${operationId}/launch`, {
+            method: "POST",
+         }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["alliance-operations", alliance?.id] });
+         toast({ title: "Operation launched", description: "Alliance fleets are now en route." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Launch failed", description: error.message, variant: "destructive" });
+      },
+   });
+
+   const resolveOperationMutation = useMutation({
+      mutationFn: (operationId: string) =>
+         fetchJson(`/api/alliances/${alliance!.id}/operations/${operationId}/resolve`, {
+            method: "POST",
+         }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["alliance-operations", alliance?.id] });
+         toast({ title: "Operation resolved", description: "Mission results have been recorded." });
+      },
+      onError: (error: Error) => {
+         toast({ title: "Resolve failed", description: error.message, variant: "destructive" });
+      },
+   });
+
   if (alliance) {
      const totalPoints = alliance.members.reduce((acc, m) => acc + m.points, 0);
      const diplomacyRelations = diplomacyData?.relations || [];
@@ -226,6 +332,9 @@ export default function Alliance() {
      ].slice(0, 4);
      const allianceSystems = getAllianceSystemsSnapshot(alliance.id);
      const unlockedTechnologyCount = allianceSystems.technologies.filter((technology) => technology.unlocked).length;
+     const operations = operationsData?.operations || [];
+     const parsedOperationPower = parseOperationPower(operationPower);
+     const canDraftOperation = Boolean(operationTarget.trim()) && parsedOperationPower !== null;
 
      const executeAllianceSystemsAction = (callback: () => void, successTitle: string) => {
         try {
@@ -331,6 +440,7 @@ export default function Alliance() {
                     <TabsTrigger value="overview" className="font-orbitron" data-testid="tab-overview"><Globe className="w-4 h-4 mr-2" /> Overview</TabsTrigger>
                     <TabsTrigger value="members" className="font-orbitron" data-testid="tab-members"><Users className="w-4 h-4 mr-2" /> Members</TabsTrigger>
                     <TabsTrigger value="systems" className="font-orbitron" data-testid="tab-systems"><Settings className="w-4 h-4 mr-2" /> Systems</TabsTrigger>
+                    <TabsTrigger value="operations" className="font-orbitron" data-testid="tab-operations"><Target className="w-4 h-4 mr-2" /> Operations</TabsTrigger>
                     <TabsTrigger value="diplomacy" className="font-orbitron" data-testid="tab-diplomacy"><Handshake className="w-4 h-4 mr-2" /> Diplomacy</TabsTrigger>
                     <TabsTrigger value="wars" className="font-orbitron" data-testid="tab-wars"><Swords className="w-4 h-4 mr-2" /> Wars</TabsTrigger>
                     <TabsTrigger value="comms" className="font-orbitron" data-testid="tab-comms"><MessageSquare className="w-4 h-4 mr-2" /> Comms</TabsTrigger>
@@ -573,6 +683,93 @@ export default function Alliance() {
                              <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Defense Matrix</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.defenseMatrix.toFixed(1)}%</div></div>
                              <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Diplomacy Strength</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.diplomacyStrength.toFixed(1)}%</div></div>
                              <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Expedition Intel</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.expeditionIntel.toFixed(1)}%</div></div>
+                          </CardContent>
+                       </Card>
+                    </div>
+                 </TabsContent>
+
+                 <TabsContent value="operations" className="mt-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                       <Card className="bg-white border-slate-200">
+                          <CardHeader>
+                             <CardTitle className="text-slate-900">Create Joint Operation</CardTitle>
+                             <CardDescription>Alliance Combat System (ACS) mission planning.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                             <div className="space-y-1">
+                                <label className="text-xs uppercase text-slate-500">Target Coordinates</label>
+                                <Input value={operationTarget} onChange={(event) => setOperationTarget(event.target.value)} placeholder="1:1:1" className="bg-slate-50" />
+                             </div>
+                             <div className="space-y-1">
+                                <label className="text-xs uppercase text-slate-500">Mission Type</label>
+                                <select value={operationType} onChange={(event) => setOperationType(event.target.value as AllianceOperationType)} className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-slate-50">
+                                   <option value="raid">Raid</option>
+                                   <option value="siege">Siege</option>
+                                   <option value="expedition">Expedition</option>
+                                </select>
+                             </div>
+                             <div className="space-y-1">
+                                <label className="text-xs uppercase text-slate-500">Initial Power</label>
+                                <Input value={operationPower} onChange={(event) => setOperationPower(event.target.value)} type="number" className="bg-slate-50" />
+                             </div>
+                             <Button
+                                className="w-full"
+                                onClick={() => {
+                                   if (parsedOperationPower === null) {
+                                      toast({
+                                         title: "Invalid power value",
+                                         description: "Initial power must be a valid number.",
+                                         variant: "destructive",
+                                      });
+                                      return;
+                                   }
+
+                                   createOperationMutation.mutate({
+                                      targetCoordinates: operationTarget.trim(),
+                                      missionType: operationType,
+                                      contributionPower: parsedOperationPower,
+                                   });
+                                }}
+                                disabled={createOperationMutation.isPending || !canDraftOperation}
+                             >
+                                Draft Operation
+                             </Button>
+                          </CardContent>
+                       </Card>
+
+                       <Card className="xl:col-span-2 bg-white border-slate-200">
+                          <CardHeader>
+                             <CardTitle className="text-slate-900">Active Joint Operations</CardTitle>
+                             <CardDescription>Create, join, launch, and resolve coordinated alliance missions.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                             {operations.length === 0 && <div className="text-sm text-slate-500 border border-dashed border-slate-200 rounded p-4">No alliance operations yet.</div>}
+                             {operations.map((operation) => (
+                                <div key={operation.id} className="border border-slate-200 rounded p-4 space-y-3 bg-slate-50">
+                                   <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                         <div className="font-semibold text-slate-900">{operation.missionType.toUpperCase()} • {operation.targetCoordinates}</div>
+                                         <div className="text-xs text-slate-500">Created {new Date(operation.createdAt).toLocaleString()} • Participants {operation.participants.length}</div>
+                                      </div>
+                                      <Badge className={cn(operation.status === "completed" && "bg-green-600", operation.status === "failed" && "bg-red-600", operation.status === "launched" && "bg-blue-600", operation.status === "draft" && "bg-slate-600")}>{operation.status.toUpperCase()}</Badge>
+                                   </div>
+
+                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                      <div className="bg-white border border-slate-200 rounded p-2"><div className="text-slate-500 uppercase">Total Power</div><div className="font-orbitron text-slate-900">{operation.totalPower.toLocaleString()}</div></div>
+                                      <div className="bg-white border border-slate-200 rounded p-2"><div className="text-slate-500 uppercase">Launch At</div><div className="font-orbitron text-slate-900">{operation.launchAt ? new Date(operation.launchAt).toLocaleTimeString() : "Pending"}</div></div>
+                                      <div className="bg-white border border-slate-200 rounded p-2"><div className="text-slate-500 uppercase">Resolve At</div><div className="font-orbitron text-slate-900">{operation.resolveAt ? new Date(operation.resolveAt).toLocaleTimeString() : "Pending"}</div></div>
+                                      <div className="bg-white border border-slate-200 rounded p-2"><div className="text-slate-500 uppercase">Reward</div><div className="font-orbitron text-slate-900">{operation.rewardCredits ? `${operation.rewardCredits.toLocaleString()} cr` : "Pending"}</div></div>
+                                   </div>
+
+                                   {operation.report && <div className="text-xs text-slate-700 bg-white border border-slate-200 rounded p-2">{operation.report}</div>}
+
+                                   <div className="flex flex-wrap gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => joinOperationMutation.mutate({ operationId: operation.id, contributionPower: 500 })} disabled={operation.status !== "draft" || joinOperationMutation.isPending}>Join (+500)</Button>
+                                      <Button size="sm" variant="outline" onClick={() => launchOperationMutation.mutate(operation.id)} disabled={operation.status !== "draft" || launchOperationMutation.isPending}>Launch</Button>
+                                      <Button size="sm" onClick={() => resolveOperationMutation.mutate(operation.id)} disabled={operation.status !== "launched" || resolveOperationMutation.isPending}>Resolve</Button>
+                                   </div>
+                                </div>
+                             ))}
                           </CardContent>
                        </Card>
                     </div>

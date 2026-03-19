@@ -195,25 +195,31 @@ export default function PlanetCommand() {
   }, [selectedPlanetId, planetsQuery.data?.planets]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const menuParam = params.get("tab") || params.get("menu");
-    const subParam = params.get("sub");
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const menuParam = params.get("tab") || params.get("menu");
+      const subParam = params.get("sub");
 
-    if (menuParam === "planet" || menuParam === "moon" || menuParam === "station") {
-      setMainMenu(menuParam);
+      if (menuParam === "planet" || menuParam === "moon" || menuParam === "station") {
+        setMainMenu(menuParam);
 
-      if (menuParam === "planet" && (subParam === "infrastructure" || subParam === "governance")) {
-        setPlanetSubMenu(subParam);
+        if (menuParam === "planet" && (subParam === "infrastructure" || subParam === "governance")) {
+          setPlanetSubMenu(subParam);
+        }
+
+        if (menuParam === "moon" && (subParam === "facilities" || subParam === "intel")) {
+          setMoonSubMenu(subParam);
+        }
+
+        if (menuParam === "station" && (subParam === "modules" || subParam === "operations")) {
+          setStationSubMenu(subParam);
+        }
       }
+    };
 
-      if (menuParam === "moon" && (subParam === "facilities" || subParam === "intel")) {
-        setMoonSubMenu(subParam);
-      }
-
-      if (menuParam === "station" && (subParam === "modules" || subParam === "operations")) {
-        setStationSubMenu(subParam);
-      }
-    }
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {

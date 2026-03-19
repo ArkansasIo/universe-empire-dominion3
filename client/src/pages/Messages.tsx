@@ -396,21 +396,27 @@ export default function Messages() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    const subParam = params.get("sub");
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      const subParam = params.get("sub");
 
-    if (tabParam === "messages" || tabParam === "trades") {
-      setMainTab(tabParam);
+      if (tabParam === "messages" || tabParam === "trades") {
+        setMainTab(tabParam);
 
-      if (tabParam === "messages" && (subParam === "inbox" || subParam === "sent" || subParam === "compose")) {
-        setMessagesSubTab(subParam);
+        if (tabParam === "messages" && (subParam === "inbox" || subParam === "sent" || subParam === "compose")) {
+          setMessagesSubTab(subParam);
+        }
+
+        if (tabParam === "trades" && (subParam === "incoming" || subParam === "outgoing" || subParam === "history")) {
+          setTradesSubTab(subParam);
+        }
       }
+    };
 
-      if (tabParam === "trades" && (subParam === "incoming" || subParam === "outgoing" || subParam === "history")) {
-        setTradesSubTab(subParam);
-      }
-    }
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {
@@ -485,6 +491,7 @@ export default function Messages() {
     onSuccess: () => {
       toast({ title: "Trade accepted! Resources exchanged." });
       refetchIncoming();
+      queryClient.invalidateQueries({ queryKey: ["/api/trades/outgoing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trades/history"] });
     },
     onError: (error: Error) => {
@@ -507,6 +514,7 @@ export default function Messages() {
     onSuccess: () => {
       toast({ title: "Trade declined." });
       refetchIncoming();
+      queryClient.invalidateQueries({ queryKey: ["/api/trades/history"] });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -515,8 +523,8 @@ export default function Messages() {
 
   const cancelTrade = useMutation({
     mutationFn: async (tradeId: string) => {
-      const res = await fetch(`/api/trades/${tradeId}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/trades/${tradeId}/cancel`, {
+        method: "POST",
         credentials: "include"
       });
       if (!res.ok) {
@@ -528,6 +536,7 @@ export default function Messages() {
     onSuccess: () => {
       toast({ title: "Trade cancelled." });
       refetchOutgoing();
+      queryClient.invalidateQueries({ queryKey: ["/api/trades/history"] });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });

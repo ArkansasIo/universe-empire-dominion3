@@ -54,15 +54,36 @@ const DEFAULT_RESOURCES: Resources = {
   water: 5000,
 };
 
+function parseFiniteNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.replace(/,/g, "").trim();
+    if (!normalized) return fallback;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeResourceValue(value: unknown, fallback: number, allowNegative: boolean = false): number {
+  const numericValue = parseFiniteNumber(value, fallback);
+  return allowNegative ? numericValue : Math.max(0, numericValue);
+}
+
 function normalizeResources(raw: any, fallback: Resources = DEFAULT_RESOURCES): Resources {
   return {
-    metal: Number(raw?.metal ?? fallback.metal),
-    crystal: Number(raw?.crystal ?? fallback.crystal),
-    deuterium: Number(raw?.deuterium ?? fallback.deuterium),
-    energy: Number(raw?.energy ?? fallback.energy),
-    credits: Number(raw?.credits ?? fallback.credits),
-    food: Number(raw?.food ?? fallback.food),
-    water: Number(raw?.water ?? fallback.water),
+    metal: normalizeResourceValue(raw?.metal, fallback.metal),
+    crystal: normalizeResourceValue(raw?.crystal, fallback.crystal),
+    deuterium: normalizeResourceValue(raw?.deuterium, fallback.deuterium),
+    energy: normalizeResourceValue(raw?.energy, fallback.energy, true),
+    credits: normalizeResourceValue(raw?.credits, fallback.credits),
+    food: normalizeResourceValue(raw?.food, fallback.food),
+    water: normalizeResourceValue(raw?.water, fallback.water),
   };
 }
 
@@ -204,6 +225,7 @@ interface GameState {
   unequipItem: (slot: "weapon" | "armor" | "module") => void;
   craftItem: (item: Item, cost: {metal: number, crystal: number, deuterium?: number}) => void;
   temperItem: (itemId: string) => void;
+  setCommanderName: (name: string) => void;
   setCommanderIdentity: (race: RaceId, cls: ClassId, subClass: SubClassId | null) => void;
   upgradeCommanderSkill: (skill: "warfare" | "logistics" | "science" | "engineering") => boolean;
   setGovernmentType: (type: GovernmentId) => void;
@@ -623,17 +645,36 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const createAllianceMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/alliances', data),
-    onSuccess: () => refetchAlliance()
+    onSuccess: () => {
+      refetchAlliance();
+      addEvent("Alliance Formed", "Your alliance was created successfully.", "success");
+    },
+    onError: (error: any) => {
+      addEvent("Alliance Creation Failed", error?.message || "Unable to create alliance.", "danger");
+    }
   });
 
   const joinAllianceMutation = useMutation({
     mutationFn: (id: string) => apiRequest('POST', `/api/alliances/${id}/join`, {}),
-    onSuccess: () => refetchAlliance()
+    onSuccess: () => {
+      refetchAlliance();
+      addEvent("Alliance Joined", "You have joined the alliance.", "success");
+    },
+    onError: (error: any) => {
+      addEvent("Alliance Join Failed", error?.message || "Unable to join alliance.", "danger");
+    }
   });
 
   const leaveAllianceMutation = useMutation({
     mutationFn: (id: string) => apiRequest('POST', `/api/alliances/${id}/leave`, {}),
-    onSuccess: () => refetchAlliance()
+    onSuccess: () => {
+      refetchAlliance();
+      setAlliance(null);
+      addEvent("Alliance Left", "You have left your alliance.", "warning");
+    },
+    onError: (error: any) => {
+      addEvent("Alliance Leave Failed", error?.message || "Unable to leave alliance.", "danger");
+    }
   });
 
   const saveGameStateMutation = useMutation({
@@ -744,21 +785,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [serverMessages]);
 
   useEffect(() => {
-    if (serverAlliance) {
-      const allianceData = serverAlliance.alliance;
-      if (allianceData) {
-        setAlliance({
-          id: allianceData.id,
-          name: allianceData.name,
-          tag: allianceData.tag,
-          description: allianceData.description || "A new alliance rises.",
-          announcement: allianceData.announcement || "Welcome to the alliance.",
-          members: [],
-          applications: [],
-          resources: allianceData.resources || { metal: 0, crystal: 0, deuterium: 0 }
-        });
-      }
+    if (serverAlliance === null) {
+      setAlliance(null);
+      return;
     }
+
+    if (!serverAlliance) return;
+
+    const allianceData = serverAlliance as any;
+    setAlliance({
+      id: allianceData.id,
+      name: allianceData.name,
+      tag: allianceData.tag,
+      description: allianceData.description || "A new alliance rises.",
+      announcement: allianceData.announcement || "Welcome to the alliance.",
+      members: Array.isArray(allianceData.members)
+        ? allianceData.members.map((member: any) => ({
+            id: member.id,
+            name: member.name || "Commander",
+            rank: member.rank,
+            points: member.points || 0,
+            status: member.status || "offline",
+            lastActive: Date.now(),
+          }))
+        : [],
+      applications: [],
+      resources: allianceData.resources || { metal: 0, crystal: 0, deuterium: 0 }
+    });
   }, [serverAlliance]);
 
   useEffect(() => {
@@ -1065,6 +1118,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      }
   };
 
+  const setCommanderName = (name: string) => {
+    const normalized = (name || "").trim().slice(0, 48);
+    if (!normalized) {
+      toast({ title: "Invalid name", description: "Commander name cannot be empty.", variant: "destructive" });
+      return;
+    }
+
+    setCommander(prev => ({ ...prev, name: normalized }));
+    addEvent("Commander Renamed", `High command now recognizes ${normalized}.`, "info");
+  };
+
   const setCommanderIdentity = (race: RaceId, cls: ClassId, subClass: SubClassId | null) => {
     setCommander(prev => ({ ...prev, race, class: cls, subClass }));
     addEvent("Identity Updated", `Commander identity re-sequenced to ${RACES[race].name} ${CLASSES[cls].name}.`, "info");
@@ -1241,20 +1305,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const createAlliance = (name: string, tag: string) => {
      createAllianceMutation.mutate({ name, tag, description: "A new power rises." });
-     addEvent("Alliance Formed", `You have founded the ${name} [${tag}].`, "success");
   };
 
   const joinAlliance = (id: string) => {
      joinAllianceMutation.mutate(id);
-     addEvent("Alliance Joined", `You have joined an alliance.`, "success");
   };
 
   const leaveAlliance = () => {
      if (alliance?.id) {
        leaveAllianceMutation.mutate(alliance.id);
      }
-     setAlliance(null);
-     addEvent("Alliance Left", "You have left your alliance.", "warning");
   };
 
   const activateArtifact = (id: string) => {
@@ -1379,9 +1439,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        addEvent,
        equipItem,
        unequipItem,
-       craftItem,
-       temperItem,
-       setCommanderIdentity,
+      craftItem,
+      temperItem,
+      setCommanderName,
+      setCommanderIdentity,
       upgradeCommanderSkill,
        setGovernmentType,
        completeSetup,

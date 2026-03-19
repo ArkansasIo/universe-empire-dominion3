@@ -1,4 +1,4 @@
-import GameLayout from "@/components/layout/GameLayout";
+﻿import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,7 +138,7 @@ export default function BattlePass() {
         <Card className="bg-white border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5 text-primary" /> {config?.name || "Loading Battle Pass"}</CardTitle>
-            <CardDescription>{config?.battlePassId || "battle-pass"} • aligned with {config?.seasonAlignment || "season"}</CardDescription>
+            <CardDescription>{config?.battlePassId || "battle-pass"} | aligned with {config?.seasonAlignment || "season"}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
@@ -209,7 +209,7 @@ export default function BattlePass() {
                   <div className="font-semibold text-slate-900 text-sm">{mission.title}</div>
                   <Badge variant="outline" className="capitalize">{mission.missionType}</Badge>
                 </div>
-                <div className="text-xs text-slate-500 uppercase">{mission.objectiveType} • target {mission.objectiveTarget}</div>
+                <div className="text-xs text-slate-500 uppercase">{mission.objectiveType} | target {mission.objectiveTarget}</div>
                 <div className="text-sm font-medium text-primary">+{mission.xpReward} XP</div>
               </div>
             ))}

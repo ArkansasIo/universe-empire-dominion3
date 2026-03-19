@@ -35,6 +35,20 @@ export default function Fleet() {
    const allowedMissions = new Set(["attack", "transport", "espionage", "sabotage", "colonize", "deploy"]);
    const allowedTargetTypes = new Set(["planet", "debris", "moon"]);
    const allowedTabs = new Set(["dispatch", "active", "templates", "combat"]);
+
+   const syncFleetStateFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const nextMission = params.get("mission");
+      const nextTargetType = params.get("targetType");
+      const nextTab = params.get("tab");
+
+      setTargetGalaxy(params.get("g") ?? "1");
+      setTargetSystem(params.get("s") ?? "102");
+      setTargetPlanet(params.get("p") ?? "8");
+      setMissionType(allowedMissions.has(nextMission || "") ? (nextMission ?? "attack") : "attack");
+      setTargetType(allowedTargetTypes.has(nextTargetType || "") ? (nextTargetType ?? "planet") : "planet");
+      setActiveTab(allowedTabs.has(nextTab || "") ? (nextTab as FleetTab) : "dispatch");
+   };
   
   const [selectedUnits, setSelectedUnits] = useState<{[key: string]: number}>({});
    const [targetGalaxy, setTargetGalaxy] = useState(searchParams.get("g") ?? "1");
@@ -76,7 +90,18 @@ export default function Fleet() {
    });
 
    useEffect(() => {
+      const handlePopState = () => syncFleetStateFromUrl();
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+   }, []);
+
+   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
+      params.set("g", targetGalaxy || "1");
+      params.set("s", targetSystem || "102");
+      params.set("p", targetPlanet || "8");
+      params.set("mission", missionType);
+      params.set("targetType", targetType);
       params.set("tab", activeTab);
 
       const nextUrl = `/fleet?${params.toString()}`;
@@ -85,7 +110,7 @@ export default function Fleet() {
       if (currentUrl !== nextUrl) {
          window.history.replaceState(null, "", nextUrl);
       }
-   }, [activeTab]);
+   }, [activeTab, missionType, targetGalaxy, targetPlanet, targetSystem, targetType]);
 
    const loadTemplate = (template: "attack" | "colony") => {
       if (template === "attack") {
