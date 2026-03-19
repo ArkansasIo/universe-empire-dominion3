@@ -14,6 +14,7 @@ import type {
   ExpeditionType,
   ExpeditionTier,
 } from "@shared/types/expeditions";
+import { useArtifactRelicSystems } from "@/lib/artifactRelicSystems";
 
 interface Expedition {
   id: string;
@@ -64,6 +65,11 @@ export default function Expeditions() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [tiersOpen, setTiersOpen] = useState(false);
   const [selectedCatalogCategory, setSelectedCatalogCategory] = useState<string | null>(null);
+
+  const {
+    state: artifactRelicState,
+    launchExpedition,
+  } = useArtifactRelicSystems();
 
   const { data: expeditionsData = {}, refetch } = useQuery({
     queryKey: ["expeditions"],
@@ -145,6 +151,9 @@ export default function Expeditions() {
   const tierBand = isNaN(tierNum) ? "" : tierBandLabel(tierNum);
 
   const selectedExp = expeditions.find(e => e.id === selectedExpedition);
+  const unlockedArtifacts = artifactRelicState.artifacts.filter((artifact) => artifact.unlocked);
+  const unlockedRelics = artifactRelicState.relics.filter((relic) => relic.unlockCost <= 0);
+  const activeArtifactOps = artifactRelicState.expeditions.filter((expedition) => expedition.status === "in_progress");
 
   return (
     <GameLayout>
@@ -194,6 +203,83 @@ export default function Expeditions() {
             </div>
           </div>
         )}
+
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+            <Compass className="w-5 h-5 text-violet-600" />
+            Artifact & Relic Expedition Operations
+          </h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Launch focused expeditions tied to your artifact and relic systems.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="rounded border border-slate-200 p-3 bg-slate-50">
+              <div className="text-xs uppercase text-slate-500 mb-2">Artifact Targets</div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {unlockedArtifacts.length === 0 ? (
+                  <p className="text-sm text-slate-500">No unlocked artifact targets.</p>
+                ) : (
+                  unlockedArtifacts.map((artifact) => (
+                    <div key={artifact.id} className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
+                      <div className="text-sm text-slate-700 truncate">{artifact.name}</div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => launchExpedition("artifact", artifact.id)}
+                        disabled={artifactRelicState.resources.archaeologyCrews <= 0}
+                        data-testid={`button-launch-artifact-op-${artifact.id}`}
+                      >
+                        Launch
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded border border-slate-200 p-3 bg-slate-50">
+              <div className="text-xs uppercase text-slate-500 mb-2">Relic Targets</div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {unlockedRelics.length === 0 ? (
+                  <p className="text-sm text-slate-500">No unlocked relic targets.</p>
+                ) : (
+                  unlockedRelics.map((relic) => (
+                    <div key={relic.id} className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
+                      <div className="text-sm text-slate-700 truncate">{relic.name}</div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => launchExpedition("relic", relic.id)}
+                        disabled={artifactRelicState.resources.archaeologyCrews <= 0}
+                        data-testid={`button-launch-relic-op-${relic.id}`}
+                      >
+                        Launch
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded border border-slate-200 p-3 bg-slate-50">
+            <div className="text-xs uppercase text-slate-500 mb-2">
+              Active Artifact/Relic Ops ({activeArtifactOps.length}) • Available Crews: {artifactRelicState.resources.archaeologyCrews}
+            </div>
+            <div className="space-y-2">
+              {activeArtifactOps.length === 0 ? (
+                <p className="text-sm text-slate-500">No active artifact/relic operations.</p>
+              ) : (
+                activeArtifactOps.map((expedition) => (
+                  <div key={expedition.id} className="rounded border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700">
+                    {expedition.name} • {(expedition.successChance * 100).toFixed(0)}% success chance • {expedition.status}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Launch New Expedition */}
         <div className="bg-white border border-slate-200 p-6 rounded-lg shadow-sm">

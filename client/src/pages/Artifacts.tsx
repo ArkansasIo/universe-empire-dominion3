@@ -1,421 +1,323 @@
 import GameLayout from "@/components/layout/GameLayout";
-import { useGame } from "@/lib/gameContext";
-import { TECH_BRANCH_ASSETS } from "@shared/config";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Hexagon, Play, Clock, Sparkles, Box, History, TrendingUp, Target, 
-  Zap, Shield, Sword, MapPin, Globe, Star, Award, Compass
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Compass,
+  FlaskConical,
+  Hexagon,
+  Layers,
+  Pickaxe,
+  Rocket,
+  ScrollText,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
-import { Artifact, ArtifactRarity } from "@/lib/artifactData";
-import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useArtifactRelicSystems } from "@/lib/artifactRelicSystems";
 
-const TEMP_THEME_IMAGE = "/theme-temp.png";
-
-const RarityBadge = ({ rarity }: { rarity: ArtifactRarity }) => {
-   const colors = {
-      common: "bg-slate-100 text-slate-600 border-slate-200",
-      uncommon: "bg-green-100 text-green-700 border-green-200",
-      rare: "bg-blue-100 text-blue-700 border-blue-200",
-      epic: "bg-purple-100 text-purple-700 border-purple-200",
-      legendary: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      ancient: "bg-red-100 text-red-700 border-red-200"
-   };
-   return <Badge variant="outline" className={cn("uppercase text-[10px]", colors[rarity])}>{rarity}</Badge>;
+const rarityClass = {
+  common: "bg-slate-100 text-slate-700 border-slate-300",
+  uncommon: "bg-green-100 text-green-700 border-green-300",
+  rare: "bg-blue-100 text-blue-700 border-blue-300",
+  epic: "bg-purple-100 text-purple-700 border-purple-300",
+  legendary: "bg-amber-100 text-amber-700 border-amber-300",
+  ancient: "bg-rose-100 text-rose-700 border-rose-300",
 };
 
-const setBonus = [
-  { set: "Precursor Set", pieces: 3, collected: 2, bonus: "+15% research speed when complete" },
-  { set: "Ancient Armory", pieces: 4, collected: 1, bonus: "+20% fleet attack when complete" },
-  { set: "Void Touched", pieces: 2, collected: 2, bonus: "+10% deuterium production (ACTIVE)" }
-];
-
-type ArtifactSummaryResponse = {
-   totalExpeditions: number;
-   successRate: number;
-   artifactsFound: number;
-   legendaryCount: number;
-};
-
-type DiscoveryLogResponse = {
-   discoveries: Array<{
-      id: string;
-      name: string;
-      location: string;
-      date: string;
-      rarity: ArtifactRarity;
-      discoveryType: string;
-      techId: string;
-      xpGained: number;
-   }>;
-};
-
-async function fetchJson<T>(url: string): Promise<T> {
-   const response = await fetch(url, { credentials: "include" });
-   const payload = await response.json().catch(() => null);
-   if (!response.ok) {
-      throw new Error(payload?.message || payload?.error || "Request failed");
-   }
-   return payload as T;
+function msToProgress(startedAt?: number, endsAt?: number) {
+  if (!startedAt || !endsAt) return 0;
+  const total = endsAt - startedAt;
+  const elapsed = Date.now() - startedAt;
+  if (total <= 0) return 100;
+  return Math.max(0, Math.min(100, Math.floor((elapsed / total) * 100)));
 }
 
 export default function Artifacts() {
-  const { artifacts, activateArtifact } = useGame();
+  const {
+    state,
+    summary,
+    upgradeArtifact,
+    startResearch,
+    startArchaeology,
+    launchExpedition,
+    resetSystems,
+  } = useArtifactRelicSystems();
 
-   const { data: artifactSummary } = useQuery<ArtifactSummaryResponse>({
-      queryKey: ["artifact-summary"],
-      queryFn: () => fetchJson<ArtifactSummaryResponse>("/api/artifacts/summary"),
-   });
-
-   const { data: discoveryLog } = useQuery<DiscoveryLogResponse>({
-      queryKey: ["artifact-discovery-log"],
-      queryFn: () => fetchJson<DiscoveryLogResponse>("/api/artifacts/discovery-log"),
-   });
-
-  const passiveArtifacts = artifacts.filter(a => a.type === "passive");
-  const activeArtifacts = artifacts.filter(a => a.type === "active");
-
-  const totalPower = artifacts.reduce((acc, a) => {
-    const rarityValue = { common: 10, uncommon: 25, rare: 50, epic: 100, legendary: 200, ancient: 500 };
-    return acc + (rarityValue[a.rarity] || 10);
-  }, 0);
+  const unlockedArtifacts = state.artifacts.filter((artifact) => artifact.unlocked);
+  const activeResearch = state.research.find((research) => research.status === "in_progress");
 
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-          <h2 className="text-3xl font-orbitron font-bold text-slate-900">Xeno-Archaeology Vault</h2>
-          <p className="text-muted-foreground font-rajdhani text-lg">Study and utilize powerful relics from lost civilizations.</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-3xl font-orbitron font-bold text-slate-900">Artifact & Relic Command</h2>
+            <p className="text-muted-foreground font-rajdhani text-lg">
+              Upgrade and research artifacts, run archaeology digs, and launch recovery expeditions.
+            </p>
+          </div>
+          <Button variant="outline" onClick={resetSystems} data-testid="button-reset-artifact-systems">
+            Reset System
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200" data-testid="card-stats-artifacts">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={TECH_BRANCH_ASSETS.COMPUTING.path} alt="artifacts" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }} />
-                </div>
-                <div>
-                  <div className="text-xs text-purple-600 uppercase">Total Artifacts</div>
-                  <div className="text-xl font-orbitron font-bold text-purple-900">{artifacts.length}</div>
-                </div>
-              </div>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-4">
+              <div className="text-xs uppercase text-slate-500">Relic Shards</div>
+              <div className="text-2xl font-bold text-slate-900">{state.resources.relicShards}</div>
             </CardContent>
           </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200" data-testid="card-stats-power">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={TECH_BRANCH_ASSETS.POWER.path} alt="power" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }} />
-                </div>
-                <div>
-                  <div className="text-xs text-yellow-600 uppercase">Artifact Power</div>
-                  <div className="text-xl font-orbitron font-bold text-yellow-900">{totalPower}</div>
-                </div>
-              </div>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-4">
+              <div className="text-xs uppercase text-slate-500">Relic Essence</div>
+              <div className="text-2xl font-bold text-slate-900">{state.resources.relicEssence}</div>
             </CardContent>
           </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200" data-testid="card-stats-active">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={TECH_BRANCH_ASSETS.HYPERSPACE.path} alt="active relics" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }} />
-                </div>
-                <div>
-                  <div className="text-xs text-blue-600 uppercase">Active Relics</div>
-                  <div className="text-xl font-orbitron font-bold text-blue-900">{activeArtifacts.length}</div>
-                </div>
-              </div>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-4">
+              <div className="text-xs uppercase text-slate-500">Research Data</div>
+              <div className="text-2xl font-bold text-slate-900">{state.resources.researchData}</div>
             </CardContent>
           </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200" data-testid="card-stats-sets">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={TECH_BRANCH_ASSETS.ENGINEERING.path} alt="sets complete" className="w-7 h-7 object-contain" onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }} />
-                </div>
-                <div>
-                  <div className="text-xs text-green-600 uppercase">Sets Complete</div>
-                  <div className="text-xl font-orbitron font-bold text-green-900">1/3</div>
-                </div>
-              </div>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-4">
+              <div className="text-xs uppercase text-slate-500">Archaeology Crews</div>
+              <div className="text-2xl font-bold text-slate-900">{state.resources.archaeologyCrews}</div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="collection" className="w-full">
-           <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">
-              <TabsTrigger value="collection" className="font-orbitron" data-testid="tab-collection"><Hexagon className="w-4 h-4 mr-2" /> Collection</TabsTrigger>
-              <TabsTrigger value="sets" className="font-orbitron" data-testid="tab-sets"><Award className="w-4 h-4 mr-2" /> Set Bonuses</TabsTrigger>
-              <TabsTrigger value="expeditions" className="font-orbitron" data-testid="tab-expeditions"><Compass className="w-4 h-4 mr-2" /> Expeditions</TabsTrigger>
-              <TabsTrigger value="history" className="font-orbitron" data-testid="tab-history"><History className="w-4 h-4 mr-2" /> Discovery Log</TabsTrigger>
-           </TabsList>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-white border-slate-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm uppercase tracking-widest text-slate-500">Artifacts</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-bold text-slate-900">
+              {summary.unlockedArtifacts}/{summary.totalArtifacts}
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm uppercase tracking-widest text-slate-500">Active Sites</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-bold text-slate-900">{summary.activeSites}</CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm uppercase tracking-widest text-slate-500">Expeditions</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-bold text-slate-900">{summary.activeExpeditions}</CardContent>
+          </Card>
+        </div>
 
-           <TabsContent value="collection" className="mt-6 space-y-6">
-              
-              {activeArtifacts.length > 0 && (
-                 <div className="space-y-4">
-                    <h3 className="text-xl font-bold font-orbitron text-slate-900 flex items-center gap-2">
-                       <Sparkles className="w-5 h-5 text-yellow-500" /> Active Relics
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {activeArtifacts.map(artifact => {
-                          const now = Date.now();
-                          const onCooldown = artifact.lastUsed && (now - artifact.lastUsed < (artifact.cooldown || 0));
-                          const timeLeft = onCooldown ? Math.ceil(((artifact.lastUsed! + artifact.cooldown!) - now) / 1000) : 0;
-                          
-                          return (
-                             <Card key={artifact.id} className="bg-white border-slate-200 overflow-hidden relative group" data-testid={`card-artifact-${artifact.id}`}>
-                                <div className="absolute top-0 right-0 p-4 z-10">
-                                   <RarityBadge rarity={artifact.rarity} />
-                                </div>
-                                <div className="h-2 bg-gradient-to-r from-yellow-400 to-yellow-600 w-full" />
-                                <CardHeader>
-                                   <CardTitle className="font-orbitron text-lg flex items-center gap-2">
-                                      <Sparkles className="w-5 h-5 text-yellow-500" />
-                                      {artifact.name}
-                                   </CardTitle>
-                                   <CardDescription>{artifact.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                   <div className="bg-slate-50 p-3 rounded text-sm italic text-slate-600 border border-slate-100">
-                                      "{artifact.lore}"
-                                   </div>
-                                   <div className="space-y-2">
-                                      <div className="text-xs font-bold uppercase text-slate-500">Effects</div>
-                                      {artifact.bonuses.map((b, i) => (
-                                         <div key={i} className="text-sm font-medium text-slate-900 flex items-center gap-2 bg-yellow-50 p-2 rounded border border-yellow-100">
-                                            <Sparkles className="w-3 h-3 text-yellow-500" /> {b}
-                                         </div>
-                                      ))}
-                                   </div>
-                                   {artifact.cooldown && (
-                                      <div className="text-xs text-slate-500 flex items-center gap-1">
-                                         <Clock className="w-3 h-3" /> Cooldown: {Math.floor(artifact.cooldown / 60000)} minutes
-                                      </div>
-                                   )}
-                                   <Button 
-                                      className={cn("w-full font-orbitron", onCooldown ? "bg-slate-100 text-slate-400" : "bg-yellow-500 hover:bg-yellow-600 text-white")}
-                                      disabled={!!onCooldown}
-                                      onClick={() => activateArtifact(artifact.id)}
-                                      data-testid={`button-activate-${artifact.id}`}
-                                   >
-                                      {onCooldown ? (
-                                         <><Clock className="w-4 h-4 mr-2" /> Cooldown: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s</>
-                                      ) : (
-                                         <><Play className="w-4 h-4 mr-2" /> ACTIVATE</>
-                                      )}
-                                   </Button>
-                                </CardContent>
-                             </Card>
-                          )
-                       })}
-                    </div>
-                 </div>
-              )}
+        <Tabs defaultValue="artifacts" className="w-full">
+          <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="artifacts"><Hexagon className="w-4 h-4 mr-2" /> Artifacts</TabsTrigger>
+            <TabsTrigger value="research"><FlaskConical className="w-4 h-4 mr-2" /> Research</TabsTrigger>
+            <TabsTrigger value="archaeology"><Pickaxe className="w-4 h-4 mr-2" /> Archaeology</TabsTrigger>
+            <TabsTrigger value="expeditions"><Rocket className="w-4 h-4 mr-2" /> Expeditions</TabsTrigger>
+            <TabsTrigger value="log"><ScrollText className="w-4 h-4 mr-2" /> Operations Log</TabsTrigger>
+          </TabsList>
 
-              <div className="space-y-4">
-                 <h3 className="text-xl font-bold font-orbitron text-slate-900 flex items-center gap-2">
-                    <Box className="w-5 h-5 text-blue-500" /> Passive Artifacts
-                 </h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {passiveArtifacts.map(artifact => (
-                       <Card key={artifact.id} className="bg-white border-slate-200 hover:shadow-md transition-shadow" data-testid={`card-artifact-${artifact.id}`}>
-                          <CardHeader className="pb-2">
-                             <div className="flex justify-between items-start">
-                                <CardTitle className="font-orbitron text-base flex items-center gap-2">
-                                   <Hexagon className="w-4 h-4 text-blue-500" />
-                                   {artifact.name}
-                                </CardTitle>
-                                <RarityBadge rarity={artifact.rarity} />
-                             </div>
-                             <CardDescription className="text-xs">{artifact.description}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                             <div className="bg-slate-50 p-2 rounded text-xs italic text-slate-500 border border-slate-100 mb-3">
-                                "{artifact.lore}"
-                             </div>
-                             <div className="space-y-2 mt-2">
-                                <div className="text-xs font-bold uppercase text-slate-500">Bonuses</div>
-                                {artifact.bonuses.map((b, i) => (
-                                   <div key={i} className="text-xs font-medium text-slate-700 bg-blue-50 px-2 py-1 rounded flex items-center gap-2 border border-blue-100">
-                                      <div className="w-1 h-1 bg-blue-500 rounded-full" /> {b}
-                                   </div>
-                                ))}
-                             </div>
-                          </CardContent>
-                       </Card>
-                    ))}
-                    {Array.from({ length: Math.max(0, 3 - passiveArtifacts.length) }).map((_, i) => (
-                       <div key={`empty-${i}`} className="border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center p-6 text-slate-300 min-h-[200px]">
-                          <Hexagon className="w-10 h-10 mb-2 opacity-20" />
-                          <span className="text-sm font-bold">Empty Slot</span>
-                          <span className="text-xs mt-1">Discover more artifacts</span>
-                       </div>
-                    ))}
-                 </div>
-              </div>
-
-           </TabsContent>
-
-           <TabsContent value="sets" className="mt-6">
-              <Card className="bg-white border-slate-200" data-testid="card-set-bonuses">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-slate-900">
-                       <Award className="w-5 h-5 text-green-600" /> Artifact Set Bonuses
-                    </CardTitle>
-                    <CardDescription>Collect complete sets for powerful bonuses.</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                    <div className="space-y-4">
-                       {setBonus.map((set, i) => {
-                          const isComplete = set.collected >= set.pieces;
-                          return (
-                             <div key={i} className={cn("p-4 rounded border", isComplete ? "bg-green-50 border-green-200" : "bg-slate-50 border-slate-200")}>
-                                <div className="flex items-center justify-between mb-2">
-                                   <div className="font-bold text-slate-900">{set.set}</div>
-                                   <Badge variant="outline" className={isComplete ? "bg-green-100 text-green-700 border-green-300" : "bg-slate-100 text-slate-600"}>
-                                      {set.collected}/{set.pieces}
-                                   </Badge>
-                                </div>
-                                <Progress value={(set.collected / set.pieces) * 100} className="h-2 mb-2" />
-                                <div className={cn("text-sm", isComplete ? "text-green-700 font-medium" : "text-slate-500")}>
-                                   {set.bonus}
-                                </div>
-                             </div>
-                          );
-                       })}
-                    </div>
-                 </CardContent>
-              </Card>
-           </TabsContent>
-
-           <TabsContent value="expeditions" className="mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <Card className="bg-white border-slate-200" data-testid="card-expeditions">
+          <TabsContent value="artifacts" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {state.artifacts.map((artifact) => {
+                const upgradeCost = Math.floor(24 * artifact.level * (artifact.rarity === "common" ? 1 : artifact.rarity === "uncommon" ? 1.2 : artifact.rarity === "rare" ? 1.45 : artifact.rarity === "epic" ? 1.8 : artifact.rarity === "legendary" ? 2.2 : 2.8));
+                return (
+                  <Card key={artifact.id} className="bg-white border-slate-200">
                     <CardHeader>
-                       <CardTitle className="flex items-center gap-2 text-slate-900">
-                          <Compass className="w-5 h-5 text-blue-600" /> Archaeological Expeditions
-                       </CardTitle>
-                       <CardDescription>Send teams to discover new artifacts in unexplored regions.</CardDescription>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <CardTitle className="text-slate-900 text-lg">{artifact.name}</CardTitle>
+                          <CardDescription>{artifact.description}</CardDescription>
+                        </div>
+                        <Badge variant="outline" className={rarityClass[artifact.rarity]}>{artifact.rarity}</Badge>
+                      </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                       <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                          <div className="flex items-center justify-between mb-2">
-                             <div className="font-bold text-blue-900">Active Expedition</div>
-                             <Badge className="bg-blue-600">In Progress</Badge>
+                    <CardContent className="space-y-3">
+                      <div className="text-xs text-slate-500 italic">{artifact.lore}</div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                          <span className="text-slate-500">Level:</span> <span className="font-semibold">{artifact.level}</span>
+                        </div>
+                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                          <span className="text-slate-500">Research:</span> <span className="font-semibold">{artifact.researchLevel}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {artifact.bonuses.map((bonus, index) => (
+                          <div key={`${artifact.id}-bonus-${index}`} className="text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded px-2 py-1">
+                            {bonus}
                           </div>
-                          <div className="text-sm text-blue-700 mb-2">Exploring: Andromeda Sector, Ruins of Zeta Prime</div>
-                          <Progress value={65} className="h-2 mb-2" />
-                          <div className="flex justify-between text-xs text-blue-600">
-                             <span>Progress: 65%</span>
-                             <span>ETA: 4h 32m</span>
-                          </div>
-                       </div>
-                       
-                       <Separator />
-                       
-                       <div className="space-y-3">
-                          <div className="text-sm font-bold text-slate-700">Available Sites</div>
-                          {[
-                            { name: "Nebula Graveyard", difficulty: "Medium", chance: "15% legendary", cost: 5000 },
-                            { name: "Ancient Monolith", difficulty: "Hard", chance: "25% legendary", cost: 10000 },
-                            { name: "Derelict Station", difficulty: "Easy", chance: "5% legendary", cost: 2000 }
-                          ].map((site, i) => (
-                             <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200">
-                                <div>
-                                   <div className="font-medium text-slate-900">{site.name}</div>
-                                   <div className="text-xs text-slate-500">{site.difficulty} • {site.chance}</div>
-                                </div>
-                                <Button size="sm" variant="outline" disabled>
-                                   {site.cost.toLocaleString()} Deut
-                                </Button>
-                             </div>
-                          ))}
-                       </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => upgradeArtifact(artifact.id)}
+                          disabled={!artifact.unlocked || state.resources.relicShards < upgradeCost}
+                          data-testid={`button-upgrade-artifact-${artifact.id}`}
+                        >
+                          <Wrench className="w-4 h-4 mr-1" /> Upgrade ({upgradeCost})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startResearch("artifact", artifact.id)}
+                          disabled={!artifact.unlocked || !!activeResearch}
+                          data-testid={`button-research-artifact-${artifact.id}`}
+                        >
+                          <Sparkles className="w-4 h-4 mr-1" /> Research
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => launchExpedition("artifact", artifact.id)}
+                          disabled={!artifact.unlocked || state.resources.archaeologyCrews <= 0}
+                          data-testid={`button-expedition-artifact-${artifact.id}`}
+                        >
+                          <Compass className="w-4 h-4 mr-1" /> Expedition
+                        </Button>
+                      </div>
+                      {!artifact.unlocked && (
+                        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                          Locked: discover this artifact through archaeology.
+                        </div>
+                      )}
                     </CardContent>
-                 </Card>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
 
-                 <Card className="bg-white border-slate-200" data-testid="card-expedition-stats">
-                    <CardHeader>
-                       <CardTitle className="flex items-center gap-2 text-slate-900">
-                          <TrendingUp className="w-5 h-5 text-green-600" /> Expedition Statistics
-                       </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-50 p-4 rounded border border-slate-200 text-center">
-                             <div className="text-xs text-slate-500 uppercase">Total Expeditions</div>
-                                <div className="text-2xl font-mono font-bold text-slate-900">{artifactSummary?.totalExpeditions ?? 0}</div>
-                          </div>
-                          <div className="bg-slate-50 p-4 rounded border border-slate-200 text-center">
-                             <div className="text-xs text-slate-500 uppercase">Success Rate</div>
-                                <div className="text-2xl font-mono font-bold text-green-600">{artifactSummary?.successRate ?? 0}%</div>
-                          </div>
-                          <div className="bg-slate-50 p-4 rounded border border-slate-200 text-center">
-                             <div className="text-xs text-slate-500 uppercase">Artifacts Found</div>
-                                <div className="text-2xl font-mono font-bold text-purple-600">{artifactSummary?.artifactsFound ?? artifacts.length}</div>
-                          </div>
-                          <div className="bg-slate-50 p-4 rounded border border-slate-200 text-center">
-                             <div className="text-xs text-slate-500 uppercase">Legendaries</div>
-                                <div className="text-2xl font-mono font-bold text-yellow-600">{artifactSummary?.legendaryCount ?? artifacts.filter(a => a.rarity === "legendary" || a.rarity === "ancient").length}</div>
-                          </div>
-                       </div>
-                    </CardContent>
-                 </Card>
-              </div>
-           </TabsContent>
+          <TabsContent value="research" className="mt-6 space-y-4">
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-slate-900 flex items-center gap-2"><FlaskConical className="w-5 h-5 text-indigo-600" /> Artifact Research Queue</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {state.research.length === 0 ? (
+                  <p className="text-sm text-slate-500">No research projects started yet.</p>
+                ) : (
+                  state.research.map((research) => (
+                    <div key={research.id} className="rounded border border-slate-200 p-3 bg-slate-50">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-slate-900">{research.targetName}</div>
+                          <div className="text-xs text-slate-500 capitalize">{research.targetType} research • {research.durationMinutes} min</div>
+                        </div>
+                        <Badge className={research.status === "in_progress" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
+                          {research.status}
+                        </Badge>
+                      </div>
+                      {research.status === "in_progress" && (
+                        <div className="mt-2">
+                          <Progress value={msToProgress(research.startedAt, research.endsAt)} className="h-2" />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-           <TabsContent value="history" className="mt-6">
-              <Card className="bg-white border-slate-200" data-testid="card-discovery-log">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-slate-900">
-                       <History className="w-5 h-5 text-purple-600" /> Discovery Log
-                    </CardTitle>
-                    <CardDescription>Record of all artifacts discovered through expeditions.</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                    {(discoveryLog?.discoveries || []).length === 0 ? (
-                       <div className="text-center py-12 text-slate-400">
-                          <History className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                          <p>No discoveries yet. Launch an expedition to find artifacts!</p>
-                       </div>
-                    ) : (
-                       <div className="space-y-3">
-                          {(discoveryLog?.discoveries || []).map(entry => (
-                             <div key={entry.id} className="flex items-center justify-between p-4 bg-slate-50 rounded border border-slate-200">
-                                <div className="flex items-center gap-4">
-                                   <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
-                                      <Hexagon className="w-5 h-5 text-purple-600" />
-                                   </div>
-                                   <div>
-                                      <div className="font-bold text-sm text-slate-900">{entry.name}</div>
-                                      <div className="text-xs text-slate-500 flex items-center gap-1">
-                                         <MapPin className="w-3 h-3" /> {entry.location}
-                                      </div>
-                                   </div>
-                                </div>
-                                <div className="text-right">
-                                   <RarityBadge rarity={entry.rarity} />
-                                   <div className="text-xs text-slate-400 mt-1">{new Date(entry.date).toLocaleDateString()}</div>
-                                </div>
-                             </div>
-                          ))}
-                       </div>
+          <TabsContent value="archaeology" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {state.sites.map((site) => (
+                <Card key={site.id} className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-slate-900 text-lg">{site.name}</CardTitle>
+                    <CardDescription>{site.rewardPreview}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Badge className={site.difficulty === "low" ? "bg-emerald-100 text-emerald-700" : site.difficulty === "medium" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}>
+                        {site.difficulty}
+                      </Badge>
+                      <Badge className={site.status === "in_progress" ? "bg-blue-100 text-blue-700" : site.status === "completed" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}>
+                        {site.status}
+                      </Badge>
+                    </div>
+                    {site.status === "in_progress" && (
+                      <Progress value={msToProgress(site.startedAt, site.endsAt)} className="h-2" />
                     )}
-                 </CardContent>
-              </Card>
-           </TabsContent>
+                    <Button
+                      className="w-full"
+                      onClick={() => startArchaeology(site.id)}
+                      disabled={site.status === "in_progress" || state.resources.archaeologyCrews <= 0}
+                      data-testid={`button-start-site-${site.id}`}
+                    >
+                      <Pickaxe className="w-4 h-4 mr-2" /> {site.status === "in_progress" ? "Excavating..." : "Start Excavation"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="expeditions" className="mt-6">
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-slate-900 flex items-center gap-2"><Layers className="w-5 h-5 text-violet-600" /> Artifact/Relic Expedition Ops</CardTitle>
+                <CardDescription>Expeditions are launched from Artifact and Relic control panels.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {state.expeditions.length === 0 ? (
+                  <p className="text-sm text-slate-500">No expeditions launched yet.</p>
+                ) : (
+                  state.expeditions.map((expedition) => (
+                    <div key={expedition.id} className="rounded border border-slate-200 p-3 bg-slate-50">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div>
+                          <div className="font-semibold text-slate-900">{expedition.name}</div>
+                          <div className="text-xs text-slate-500">Success chance: {(expedition.successChance * 100).toFixed(0)}%</div>
+                        </div>
+                        <Badge className={expedition.status === "in_progress" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
+                          {expedition.status}
+                        </Badge>
+                      </div>
+                      {expedition.status === "in_progress" && (
+                        <div className="mt-2">
+                          <Progress value={msToProgress(expedition.startedAt, expedition.endsAt)} className="h-2" />
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-500 mt-2">{expedition.notes}</div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="log" className="mt-6">
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-slate-900">Operations Log</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {state.log.length === 0 ? (
+                  <p className="text-sm text-slate-500">No operations logged.</p>
+                ) : (
+                  state.log.map((item) => (
+                    <div key={item.id} className="rounded border border-slate-200 p-2 bg-slate-50 text-sm text-slate-700">
+                      <span className="text-xs text-slate-500 mr-2">{new Date(item.timestamp).toLocaleTimeString()}</span>
+                      {item.message}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        <div className="text-xs text-slate-500">
+          Research, archaeology, and expedition outcomes automatically resolve over time while the page is open.
+        </div>
       </div>
     </GameLayout>
   );

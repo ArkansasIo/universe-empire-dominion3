@@ -18,6 +18,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+   fundAllianceTreasury,
+   getAllianceSystemsSnapshot,
+   MAX_ALLIANCE_MEMBERS,
+   researchAllianceSystem,
+   unlockAllianceTechnology,
+   upgradeAllianceSystem,
+} from "@/lib/allianceSystems";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
@@ -122,6 +130,7 @@ export default function Alliance() {
   const [createTag, setCreateTag] = useState("");
    const [targetAllianceTag, setTargetAllianceTag] = useState("");
    const [chatMessage, setChatMessage] = useState("");
+   const [allianceSystemsVersion, setAllianceSystemsVersion] = useState(0);
 
    const { data: myGuild } = useQuery<GuildInfo | null>({
       queryKey: ["guild-mine"],
@@ -215,10 +224,26 @@ export default function Alliance() {
            time: new Date(relation.updatedAt).toLocaleDateString(),
         })),
      ].slice(0, 4);
+     const allianceSystems = getAllianceSystemsSnapshot(alliance.id);
+     const unlockedTechnologyCount = allianceSystems.technologies.filter((technology) => technology.unlocked).length;
+
+     const executeAllianceSystemsAction = (callback: () => void, successTitle: string) => {
+        try {
+           callback();
+           setAllianceSystemsVersion((version) => version + 1);
+           toast({ title: successTitle, description: "Alliance systems updated." });
+        } catch (error) {
+           toast({
+              title: "Alliance systems action failed",
+              description: error instanceof Error ? error.message : "Unable to process alliance systems action.",
+              variant: "destructive",
+           });
+        }
+     };
      
      return (
         <GameLayout>
-           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" data-alliance-systems-version={allianceSystemsVersion}>
               <div className="flex justify-between items-start">
                  <div>
                     <div className="flex items-center gap-3 mb-1">
@@ -241,7 +266,7 @@ export default function Alliance() {
                       </div>
                       <div>
                         <div className="text-xs text-blue-600 uppercase">Members</div>
-                        <div className="text-xl font-orbitron font-bold text-blue-900">{alliance.members.length}/50</div>
+                                    <div className="text-xl font-orbitron font-bold text-blue-900">{alliance.members.length}/{allianceSystems.memberCap}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -305,6 +330,7 @@ export default function Alliance() {
                  <TabsList className="bg-white border border-slate-200 h-12 w-full justify-start overflow-x-auto">
                     <TabsTrigger value="overview" className="font-orbitron" data-testid="tab-overview"><Globe className="w-4 h-4 mr-2" /> Overview</TabsTrigger>
                     <TabsTrigger value="members" className="font-orbitron" data-testid="tab-members"><Users className="w-4 h-4 mr-2" /> Members</TabsTrigger>
+                    <TabsTrigger value="systems" className="font-orbitron" data-testid="tab-systems"><Settings className="w-4 h-4 mr-2" /> Systems</TabsTrigger>
                     <TabsTrigger value="diplomacy" className="font-orbitron" data-testid="tab-diplomacy"><Handshake className="w-4 h-4 mr-2" /> Diplomacy</TabsTrigger>
                     <TabsTrigger value="wars" className="font-orbitron" data-testid="tab-wars"><Swords className="w-4 h-4 mr-2" /> Wars</TabsTrigger>
                     <TabsTrigger value="comms" className="font-orbitron" data-testid="tab-comms"><MessageSquare className="w-4 h-4 mr-2" /> Comms</TabsTrigger>
@@ -402,6 +428,154 @@ export default function Alliance() {
                           </div>
                        </CardContent>
                     </Card>
+                 </TabsContent>
+
+                 <TabsContent value="systems" className="mt-6">
+                    <div className="space-y-6">
+                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <Card className="bg-white border-slate-200">
+                             <CardContent className="p-4">
+                                <div className="text-xs uppercase text-slate-500">Member Capacity</div>
+                                <div className="text-2xl font-orbitron font-bold text-slate-900">{alliance.members.length}/{allianceSystems.memberCap}</div>
+                                <Progress value={Math.min(100, (alliance.members.length / allianceSystems.memberCap) * 100)} className="mt-3 h-2" />
+                             </CardContent>
+                          </Card>
+                          <Card className="bg-white border-slate-200">
+                             <CardContent className="p-4">
+                                <div className="text-xs uppercase text-slate-500">Unlocked Technologies</div>
+                                <div className="text-2xl font-orbitron font-bold text-indigo-700">{unlockedTechnologyCount}/{allianceSystems.technologies.length}</div>
+                             </CardContent>
+                          </Card>
+                          <Card className="bg-white border-slate-200">
+                             <CardContent className="p-4">
+                                <div className="text-xs uppercase text-slate-500">Research Speed Bonus</div>
+                                <div className="text-2xl font-orbitron font-bold text-purple-700">+{allianceSystems.bonuses.researchSpeed.toFixed(1)}%</div>
+                             </CardContent>
+                          </Card>
+                          <Card className="bg-white border-slate-200">
+                             <CardContent className="p-4">
+                                <div className="text-xs uppercase text-slate-500">Defense Matrix Bonus</div>
+                                <div className="text-2xl font-orbitron font-bold text-emerald-700">+{allianceSystems.bonuses.defenseMatrix.toFixed(1)}%</div>
+                             </CardContent>
+                          </Card>
+                       </div>
+
+                       <Card className="bg-white border-slate-200">
+                          <CardHeader>
+                             <CardTitle className="text-slate-900">Alliance Treasury</CardTitle>
+                             <CardDescription>Fund alliance upgrades, research tracks, and strategic technology unlocks.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm"><div className="text-xs uppercase text-slate-500">Metal</div><div className="font-orbitron text-slate-900">{allianceSystems.treasury.metal.toLocaleString()}</div></div>
+                                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm"><div className="text-xs uppercase text-slate-500">Crystal</div><div className="font-orbitron text-slate-900">{allianceSystems.treasury.crystal.toLocaleString()}</div></div>
+                                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm"><div className="text-xs uppercase text-slate-500">Deuterium</div><div className="font-orbitron text-slate-900">{allianceSystems.treasury.deuterium.toLocaleString()}</div></div>
+                                <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm"><div className="text-xs uppercase text-slate-500">Credits</div><div className="font-orbitron text-slate-900">{allianceSystems.treasury.credits.toLocaleString()}</div></div>
+                             </div>
+                             <Button
+                                variant="outline"
+                                onClick={() => executeAllianceSystemsAction(() => {
+                                   fundAllianceTreasury(alliance.id, { metal: 15000, crystal: 12000, deuterium: 10000, credits: 9000 });
+                                }, "Treasury reinforced")}
+                             >
+                                <TrendingUp className="w-4 h-4 mr-2" /> Contribute strategic funding
+                             </Button>
+                          </CardContent>
+                       </Card>
+
+                       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                          <Card className="bg-white border-slate-200">
+                             <CardHeader>
+                                <CardTitle className="text-slate-900">Upgrade Systems</CardTitle>
+                                <CardDescription>Permanent alliance infrastructure growth.</CardDescription>
+                             </CardHeader>
+                             <CardContent className="space-y-3">
+                                {allianceSystems.upgrades.map((upgrade) => (
+                                   <div key={upgrade.id} className="rounded border border-slate-200 p-3 bg-slate-50 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                         <div className="font-semibold text-slate-900 text-sm">{upgrade.name}</div>
+                                         <Badge variant="outline">Lv {upgrade.level}/{upgrade.maxLevel}</Badge>
+                                      </div>
+                                      <div className="text-xs text-slate-600">{upgrade.description}</div>
+                                      {upgrade.nextCost ? (
+                                         <div className="text-[11px] text-slate-500">Next: {upgrade.nextCost.metal.toLocaleString()} M • {upgrade.nextCost.crystal.toLocaleString()} C • {upgrade.nextCost.deuterium.toLocaleString()} D • {upgrade.nextCost.credits.toLocaleString()} Cr</div>
+                                      ) : (
+                                         <div className="text-[11px] text-emerald-700 font-semibold">MAXED</div>
+                                      )}
+                                      <Button size="sm" className="w-full" disabled={!upgrade.nextCost} onClick={() => executeAllianceSystemsAction(() => upgradeAllianceSystem(alliance.id, upgrade.id), `${upgrade.name} upgraded`)}>
+                                         Upgrade
+                                      </Button>
+                                   </div>
+                                ))}
+                             </CardContent>
+                          </Card>
+
+                          <Card className="bg-white border-slate-200">
+                             <CardHeader>
+                                <CardTitle className="text-slate-900">Research Systems</CardTitle>
+                                <CardDescription>Alliance research doctrine and scaling bonuses.</CardDescription>
+                             </CardHeader>
+                             <CardContent className="space-y-3">
+                                {allianceSystems.research.map((track) => (
+                                   <div key={track.id} className="rounded border border-slate-200 p-3 bg-slate-50 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                         <div className="font-semibold text-slate-900 text-sm">{track.name}</div>
+                                         <Badge variant="outline">Lv {track.level}/{track.maxLevel}</Badge>
+                                      </div>
+                                      <div className="text-xs text-slate-600">{track.description}</div>
+                                      {track.nextCost ? (
+                                         <div className="text-[11px] text-slate-500">Next: {track.nextCost.metal.toLocaleString()} M • {track.nextCost.crystal.toLocaleString()} C • {track.nextCost.deuterium.toLocaleString()} D • {track.nextCost.credits.toLocaleString()} Cr</div>
+                                      ) : (
+                                         <div className="text-[11px] text-emerald-700 font-semibold">MAXED</div>
+                                      )}
+                                      <Button size="sm" className="w-full" disabled={!track.nextCost} onClick={() => executeAllianceSystemsAction(() => researchAllianceSystem(alliance.id, track.id), `${track.name} advanced`)}>
+                                         Research
+                                      </Button>
+                                   </div>
+                                ))}
+                             </CardContent>
+                          </Card>
+
+                          <Card className="bg-white border-slate-200">
+                             <CardHeader>
+                                <CardTitle className="text-slate-900">Technology Systems</CardTitle>
+                                <CardDescription>Unique strategic unlocks with alliance-wide impact.</CardDescription>
+                             </CardHeader>
+                             <CardContent className="space-y-3">
+                                {allianceSystems.technologies.map((technology) => (
+                                   <div key={technology.id} className="rounded border border-slate-200 p-3 bg-slate-50 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                         <div className="font-semibold text-slate-900 text-sm">{technology.name}</div>
+                                         <Badge className={technology.unlocked ? "bg-emerald-600" : "bg-slate-500"}>{technology.unlocked ? "UNLOCKED" : "LOCKED"}</Badge>
+                                      </div>
+                                      <div className="text-xs text-slate-600">{technology.description}</div>
+                                      {!technology.unlocked && (
+                                         <div className="text-[11px] text-slate-500">Cost: {technology.baseCost.metal.toLocaleString()} M • {technology.baseCost.crystal.toLocaleString()} C • {technology.baseCost.deuterium.toLocaleString()} D • {technology.baseCost.credits.toLocaleString()} Cr</div>
+                                      )}
+                                      <Button size="sm" className="w-full" variant={technology.unlocked ? "outline" : "default"} disabled={technology.unlocked} onClick={() => executeAllianceSystemsAction(() => unlockAllianceTechnology(alliance.id, technology.id), `${technology.name} unlocked`)}>
+                                         {technology.unlocked ? "Online" : "Unlock Technology"}
+                                      </Button>
+                                   </div>
+                                ))}
+                             </CardContent>
+                          </Card>
+                       </div>
+
+                       <Card className="bg-white border-slate-200">
+                          <CardHeader>
+                             <CardTitle className="text-slate-900">Alliance Bonus Matrix</CardTitle>
+                             <CardDescription>Different alliance system bonuses from upgrades, research, and technologies.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Economy Boost</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.economyBoost.toFixed(1)}%</div></div>
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Research Speed</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.researchSpeed.toFixed(1)}%</div></div>
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Fleet Coordination</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.fleetCoordination.toFixed(1)}%</div></div>
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Defense Matrix</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.defenseMatrix.toFixed(1)}%</div></div>
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Diplomacy Strength</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.diplomacyStrength.toFixed(1)}%</div></div>
+                             <div className="rounded border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Expedition Intel</div><div className="text-lg font-orbitron text-slate-900">+{allianceSystems.bonuses.expeditionIntel.toFixed(1)}%</div></div>
+                          </CardContent>
+                       </Card>
+                    </div>
                  </TabsContent>
 
                  <TabsContent value="diplomacy" className="mt-6">
@@ -649,7 +823,7 @@ export default function Alliance() {
                                    <div className="font-bold text-slate-900 text-lg">[{entry.tag || "ALLY"}] {entry.name}</div>
                                    <div className="text-sm text-slate-500">{entry.description}</div>
                                    <div className="flex gap-2 mt-1">
-                                      <Badge variant="outline" className="text-[10px]">{entry.memberCount || 0} members</Badge>
+                                      <Badge variant="outline" className="text-[10px]">{entry.memberCount || 0}/{MAX_ALLIANCE_MEMBERS} members</Badge>
                                       <Badge variant="outline" className="text-[10px]">{entry.activeWars || 0} active wars</Badge>
                                    </div>
                                 </div>

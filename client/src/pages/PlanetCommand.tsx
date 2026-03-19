@@ -9,11 +9,21 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Box, Cpu, Database, Droplets, Factory, Gem, Globe, Moon, Orbit, Shield, TrendingUp, Users, Wheat, Zap } from "lucide-react";
+import {
+  applyManagementProfile,
+  ColonyManagementProfile,
+  COLONIES_PER_PAGE,
+  getEmpireColoniesPage,
+  getSameSystemKey,
+  getSystemOverview,
+  TOTAL_COLONY_PAGES,
+} from "@/lib/colonySystems";
 
 type MainMenu = "planet" | "moon" | "station";
 type PlanetSubMenu = "infrastructure" | "governance";
 type MoonSubMenu = "facilities" | "intel";
 type StationSubMenu = "modules" | "operations";
+type ManagementScope = "individual" | "system" | "page" | "all";
 
 interface PlanetSummary {
   id: string;
@@ -167,6 +177,12 @@ export default function PlanetCommand() {
   const [planetSubMenu, setPlanetSubMenu] = useState<PlanetSubMenu>("infrastructure");
   const [moonSubMenu, setMoonSubMenu] = useState<MoonSubMenu>("facilities");
   const [stationSubMenu, setStationSubMenu] = useState<StationSubMenu>("modules");
+  const [commandPage, setCommandPage] = useState(1);
+  const [selectedCommandColonyId, setSelectedCommandColonyId] = useState("");
+  const [activeProfile, setActiveProfile] = useState<ColonyManagementProfile>("balanced");
+  const [managementScope, setManagementScope] = useState<ManagementScope>("individual");
+  const [profileOverrides, setProfileOverrides] = useState<Record<string, ColonyManagementProfile>>({});
+  const [globalProfile, setGlobalProfile] = useState<ColonyManagementProfile | null>(null);
 
   const planetsQuery = useQuery<{ planets: PlanetSummary[] }>({
     queryKey: ["/api/planets"],
@@ -302,6 +318,68 @@ export default function PlanetCommand() {
   const planet = planetDetailsQuery.data;
   const subPlanes = subPlaneQuery.data;
   const snapshot = populationSnapshotQuery.data?.snapshot;
+  const commandPageData = useMemo(() => getEmpireColoniesPage(commandPage, COLONIES_PER_PAGE), [commandPage]);
+  const effectiveCommandItems = useMemo(
+    () =>
+      commandPageData.items.map((item) => {
+        const profile = profileOverrides[item.id] || globalProfile || "balanced";
+        return applyManagementProfile(item, profile);
+      }),
+    [commandPageData.items, globalProfile, profileOverrides],
+  );
+
+  useEffect(() => {
+    if (!selectedCommandColonyId || !effectiveCommandItems.some((item) => item.id === selectedCommandColonyId)) {
+      setSelectedCommandColonyId(effectiveCommandItems[0]?.id || "");
+    }
+  }, [effectiveCommandItems, selectedCommandColonyId]);
+
+  const selectedCommandColony = effectiveCommandItems.find((item) => item.id === selectedCommandColonyId) || null;
+  const commandSystemBodies = selectedCommandColony ? getSystemOverview(selectedCommandColony) : [];
+
+  const applyCommandManagement = () => {
+    if (managementScope === "individual") {
+      if (!selectedCommandColony) {
+        toast({ title: "No command colony selected", description: "Select a colony first.", variant: "destructive" });
+        return;
+      }
+      setProfileOverrides((current) => ({ ...current, [selectedCommandColony.id]: activeProfile }));
+      toast({ title: "Command profile applied", description: `${selectedCommandColony.name} set to ${activeProfile}.` });
+      return;
+    }
+
+    if (managementScope === "system") {
+      if (!selectedCommandColony) {
+        toast({ title: "No command colony selected", description: "Select a colony first.", variant: "destructive" });
+        return;
+      }
+
+      const key = getSameSystemKey(selectedCommandColony);
+      const updates: Record<string, ColonyManagementProfile> = {};
+      for (const item of effectiveCommandItems) {
+        if (getSameSystemKey(item) === key) updates[item.id] = activeProfile;
+      }
+      setProfileOverrides((current) => ({ ...current, ...updates }));
+      toast({ title: "System profile applied", description: `Applied ${activeProfile} to this system on current page.` });
+      return;
+    }
+
+    if (managementScope === "page") {
+      const updates: Record<string, ColonyManagementProfile> = {};
+      for (const item of effectiveCommandItems) updates[item.id] = activeProfile;
+      setProfileOverrides((current) => ({ ...current, ...updates }));
+      toast({ title: "Page profile applied", description: `Applied ${activeProfile} to ${effectiveCommandItems.length} records.` });
+      return;
+    }
+
+    setGlobalProfile(activeProfile);
+    setProfileOverrides({});
+    toast({ title: "Global profile applied", description: `${activeProfile} applied to all command records.` });
+  };
+
+  const goToCommandPage = (target: number) => {
+    setCommandPage(Math.max(1, Math.min(TOTAL_COLONY_PAGES, target)));
+  };
 
   return (
     <GameLayout>
@@ -361,6 +439,110 @@ export default function PlanetCommand() {
             </Card>
           </div>
         )}
+
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-slate-900">
+              <Globe className="w-5 h-5 text-blue-600" /> Empire Command Layer (Scalable)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div>
+                <div className="text-xs text-slate-500 uppercase mb-1">Scope</div>
+                <select
+                  value={managementScope}
+                  onChange={(event) => setManagementScope(event.target.value as ManagementScope)}
+                  className="w-full border border-slate-200 rounded px-3 py-2 text-sm"
+                >
+                  <option value="individual">Individual</option>
+                  <option value="system">System</option>
+                  <option value="page">Page</option>
+                  <option value="all">All</option>
+                </select>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 uppercase mb-1">Profile</div>
+                <select
+                  value={activeProfile}
+                  onChange={(event) => setActiveProfile(event.target.value as ColonyManagementProfile)}
+                  className="w-full border border-slate-200 rounded px-3 py-2 text-sm"
+                >
+                  <option value="balanced">Balanced</option>
+                  <option value="industry">Industry</option>
+                  <option value="defense">Defense</option>
+                  <option value="science">Science</option>
+                </select>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 uppercase mb-1">Page</div>
+                <div className="text-sm border border-slate-200 rounded px-3 py-2 bg-slate-50">
+                  {commandPage.toLocaleString()} / {TOTAL_COLONY_PAGES.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 uppercase mb-1">Selection</div>
+                <select
+                  value={selectedCommandColonyId}
+                  onChange={(event) => setSelectedCommandColonyId(event.target.value)}
+                  className="w-full border border-slate-200 rounded px-3 py-2 text-sm"
+                >
+                  {effectiveCommandItems.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.name} [{item.coordinates}]
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button className="w-full" onClick={applyCommandManagement} data-testid="button-apply-planet-command-management">
+                  Apply
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
+              <Button variant="outline" size="sm" onClick={() => goToCommandPage(1)} disabled={commandPage === 1}>First</Button>
+              <Button variant="outline" size="sm" onClick={() => goToCommandPage(commandPage - 1)} disabled={commandPage === 1}>Prev</Button>
+              <Button variant="outline" size="sm" onClick={() => goToCommandPage(commandPage + 1)} disabled={commandPage >= TOTAL_COLONY_PAGES}>Next</Button>
+              <Button variant="outline" size="sm" onClick={() => goToCommandPage(TOTAL_COLONY_PAGES)} disabled={commandPage >= TOTAL_COLONY_PAGES}>Last</Button>
+              <span className="text-xs text-slate-500">Records {commandPageData.startIndex + 1}-{commandPageData.endIndex + 1} • {COLONIES_PER_PAGE}/page</span>
+            </div>
+
+            {selectedCommandColony && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-sm font-bold text-slate-800 mb-2">Planet Status + Sub Stats</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Stability</span><span className="font-bold">{selectedCommandColony.planetStatus.stability}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Security</span><span className="font-bold">{selectedCommandColony.planetStatus.security}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Infrastructure</span><span className="font-bold">{selectedCommandColony.planetStatus.infrastructure}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Logistics</span><span className="font-bold">{selectedCommandColony.planetStatus.logistics}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Mining</span><span className="font-bold">{selectedCommandColony.subStats.miningRate}</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Research</span><span className="font-bold">{selectedCommandColony.subStats.researchOutput}</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Trade</span><span className="font-bold">{selectedCommandColony.subStats.tradeIndex}</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Automation</span><span className="font-bold">{selectedCommandColony.subStats.droneAutomation}%</span></div>
+                  </div>
+                </div>
+
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-sm font-bold text-slate-800 mb-2">Moon and Sol System Overview</div>
+                  <div className="text-xs text-slate-600 mb-2">
+                    System {selectedCommandColony.solarOverview.galaxy}:{selectedCommandColony.solarOverview.sector}:{selectedCommandColony.solarOverview.system} • Star {selectedCommandColony.solarOverview.starClass}
+                  </div>
+                  <div className="max-h-44 overflow-y-auto space-y-1">
+                    {commandSystemBodies.map((body) => (
+                      <div key={`${body.coordinates}-${body.type}`} className="bg-white rounded border border-slate-200 px-2 py-1 text-xs flex items-center justify-between">
+                        <span className="font-medium">{body.type === "moon" ? "Moon" : "Planet"} O{body.orbit}</span>
+                        <span className="text-slate-500">{body.coordinates}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
           <Card className="bg-slate-950 text-white border-slate-800">

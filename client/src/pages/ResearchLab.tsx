@@ -40,88 +40,119 @@ export default function ResearchLabPage() {
   const queryClient = useQueryClient();
   const [selectedTech, setSelectedTech] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("normal");
+  const [actionError, setActionError] = useState<string>("");
+
+  const apiRequest = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
+    const response = await fetch(url, {
+      credentials: "include",
+      ...options,
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload?.message || "Request failed");
+    }
+
+    return payload as T;
+  };
 
   const { data: labData, isLoading: labLoading } = useQuery({
     queryKey: ["activeLab"],
-    queryFn: async () => {
-      const res = await fetch("/api/research/labs/active");
-      return res.json();
-    }
+    queryFn: () => apiRequest("/api/research/labs/active"),
   });
 
   const { data: queueData, isLoading: queueLoading } = useQuery({
     queryKey: ["researchQueue"],
-    queryFn: async () => {
-      const res = await fetch("/api/research/queue");
-      return res.json();
-    }
+    queryFn: () => apiRequest("/api/research/queue"),
   });
 
   const { data: bonusesData } = useQuery({
     queryKey: ["activeBonuses"],
-    queryFn: async () => {
-      const res = await fetch("/api/research/bonuses/active");
-      return res.json();
-    }
+    queryFn: () => apiRequest("/api/research/bonuses/active"),
   });
 
   const { data: multiplierData } = useQuery({
     queryKey: ["speedMultiplier"],
-    queryFn: async () => {
-      const res = await fetch("/api/research/speed-multiplier");
-      return res.json();
-    }
+    queryFn: () => apiRequest("/api/research/speed-multiplier"),
   });
 
   const { data: diagnosticsData } = useQuery({
     queryKey: ["labDiagnostics"],
-    queryFn: async () => {
-      const res = await fetch("/api/research/diagnostics");
-      return res.json();
-    }
+    queryFn: () => apiRequest("/api/research/diagnostics"),
   });
 
   const addToQueueMutation = useMutation({
     mutationFn: async (data: { techId: string; priority: string }) => {
-      const res = await fetch("/api/research/queue/add", {
+      return apiRequest("/api/research/queue/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      return res.json();
     },
     onSuccess: () => {
+      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
       queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
       setSelectedTech("");
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to add research to queue");
     },
   });
 
   const removeFromQueueMutation = useMutation({
     mutationFn: async (queueItemId: string) => {
-      const res = await fetch("/api/research/queue/remove", {
+      return apiRequest("/api/research/queue/remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ queueItemId }),
       });
-      return res.json();
     },
     onSuccess: () => {
+      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
+      queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to remove queue item");
     },
   });
 
   const accelerateMutation = useMutation({
     mutationFn: async (data: { queueItemId: string; speedupPercent: number }) => {
-      const res = await fetch("/api/research/accelerate", {
+      return apiRequest("/api/research/accelerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      return res.json();
     },
     onSuccess: () => {
+      setActionError("");
       queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
+      queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
+      queryClient.invalidateQueries({ queryKey: ["speedMultiplier"] });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to accelerate research");
+    },
+  });
+
+  const reorderQueueMutation = useMutation({
+    mutationFn: async (data: { queueItemId: string; newPosition: number }) => {
+      return apiRequest("/api/research/queue/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      setActionError("");
+      queryClient.invalidateQueries({ queryKey: ["researchQueue"] });
+      queryClient.invalidateQueries({ queryKey: ["labDiagnostics"] });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to reorder queue");
     },
   });
 
@@ -223,6 +254,14 @@ export default function ResearchLabPage() {
           </Card>
         </div>
 
+        {actionError && (
+          <Card className="bg-red-50 border-red-200 shadow-sm">
+            <CardContent className="pt-4">
+              <p className="text-sm text-red-700 font-medium">{actionError}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Active Research Progress */}
         {activeResearch && (
           <Card className="bg-white border-primary/20 shadow-sm">
@@ -308,9 +347,9 @@ export default function ResearchLabPage() {
               <Button
                 className="w-full font-orbitron tracking-wider"
                 onClick={() =>
-                  addToQueueMutation.mutate({ techId: selectedTech, priority: selectedPriority })
+                  addToQueueMutation.mutate({ techId: selectedTech.trim(), priority: selectedPriority })
                 }
-                disabled={addToQueueMutation.isPending || !selectedTech}
+                disabled={addToQueueMutation.isPending || !selectedTech.trim()}
               >
                 {addToQueueMutation.isPending ? "Adding..." : "Add to Queue"}
               </Button>
@@ -366,9 +405,32 @@ export default function ResearchLabPage() {
                           {idx > 0 && (
                             <>
                               <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={() =>
+                                  reorderQueueMutation.mutate({
+                                    queueItemId: item.id,
+                                    newPosition: idx - 1,
+                                  })
+                                }
+                                disabled={reorderQueueMutation.isPending || idx <= 1}
+                              >
                                 <ChevronUp className="w-3 h-3" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={() =>
+                                  reorderQueueMutation.mutate({
+                                    queueItemId: item.id,
+                                    newPosition: idx + 1,
+                                  })
+                                }
+                                disabled={reorderQueueMutation.isPending || idx >= queue.length - 1}
+                              >
                                 <ChevronDown className="w-3 h-3" />
                               </Button>
                             </>

@@ -29,6 +29,8 @@ type AllianceWar = {
   updatedAt: string;
 };
 
+const ALLIANCE_MEMBER_CAP = 150;
+
 function getUserId(req: Request): string {
   return (req.session as any)?.userId || "";
 }
@@ -233,6 +235,11 @@ export function registerAllianceRoutes(app: Express) {
       const alliance = await storage.getAllianceById(allianceId);
       if (!alliance) {
         return res.status(404).json({ message: "Alliance not found" });
+      }
+
+      const members = await storage.getAllianceMembers(allianceId);
+      if (members.length >= ALLIANCE_MEMBER_CAP) {
+        return res.status(409).json({ message: `Alliance is at max capacity (${ALLIANCE_MEMBER_CAP} players)` });
       }
 
       await storage.addAllianceMember({

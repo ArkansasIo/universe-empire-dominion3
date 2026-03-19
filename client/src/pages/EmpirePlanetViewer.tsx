@@ -4,7 +4,16 @@ import GameLayout from "@/components/layout/GameLayout";
 import { TECH_BRANCH_ASSETS } from "@shared/config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Globe, Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Globe, Layers, Moon, Settings2 } from "lucide-react";
+import {
+  applyManagementProfile,
+  ColonyManagementProfile,
+  COLONIES_PER_PAGE,
+  getEmpireColoniesPage,
+  getSystemOverview,
+  TOTAL_COLONY_PAGES,
+} from "@/lib/colonySystems";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
@@ -37,6 +46,12 @@ type TravelStateResponse = {
 export default function EmpirePlanetViewer() {
   const [rarityFilter, setRarityFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [selectedColonyId, setSelectedColonyId] = useState("");
+  const [scope, setScope] = useState<"individual" | "page" | "all">("individual");
+  const [profile, setProfile] = useState<ColonyManagementProfile>("balanced");
+  const [profileOverrides, setProfileOverrides] = useState<Record<string, ColonyManagementProfile>>({});
+  const [globalProfile, setGlobalProfile] = useState<ColonyManagementProfile | null>(null);
 
   const planetsQuery = useQuery<PlanetResponse>({
     queryKey: ["planet-types"],
@@ -86,6 +101,41 @@ export default function EmpirePlanetViewer() {
   const avgHabitability = filteredPlanets.length
     ? Math.round(stats.habitability / filteredPlanets.length)
     : 0;
+
+  const pageData = useMemo(() => getEmpireColoniesPage(page, COLONIES_PER_PAGE), [page]);
+  const effectiveColonies = useMemo(
+    () =>
+      pageData.items.map((item) => {
+        const active = profileOverrides[item.id] || globalProfile || "balanced";
+        return applyManagementProfile(item, active);
+      }),
+    [globalProfile, pageData.items, profileOverrides],
+  );
+
+  const selectedColony = useMemo(() => {
+    if (!selectedColonyId) return effectiveColonies[0] || null;
+    return effectiveColonies.find((item) => item.id === selectedColonyId) || effectiveColonies[0] || null;
+  }, [effectiveColonies, selectedColonyId]);
+
+  const systemBodies = useMemo(() => (selectedColony ? getSystemOverview(selectedColony) : []), [selectedColony]);
+
+  const applyViewerProfile = () => {
+    if (scope === "individual") {
+      if (!selectedColony) return;
+      setProfileOverrides((current) => ({ ...current, [selectedColony.id]: profile }));
+      return;
+    }
+
+    if (scope === "page") {
+      const updates: Record<string, ColonyManagementProfile> = {};
+      for (const item of effectiveColonies) updates[item.id] = profile;
+      setProfileOverrides((current) => ({ ...current, ...updates }));
+      return;
+    }
+
+    setGlobalProfile(profile);
+    setProfileOverrides({});
+  };
 
   const getRarityBadgeClass = (rarity: string) => {
     switch (rarity) {
@@ -219,6 +269,72 @@ export default function EmpirePlanetViewer() {
                 </select>
               </label>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-slate-500" /> Colony Viewer Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <select className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={scope} onChange={(e) => setScope(e.target.value as "individual" | "page" | "all") }>
+                <option value="individual">Individual</option>
+                <option value="page">Page</option>
+                <option value="all">All</option>
+              </select>
+              <select className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={profile} onChange={(e) => setProfile(e.target.value as ColonyManagementProfile)}>
+                <option value="balanced">Balanced</option>
+                <option value="industry">Industry</option>
+                <option value="defense">Defense</option>
+                <option value="science">Science</option>
+              </select>
+              <select className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={selectedColony?.id || ""} onChange={(e) => setSelectedColonyId(e.target.value)}>
+                {effectiveColonies.map((colony) => (
+                  <option key={colony.id} value={colony.id}>{colony.name} [{colony.coordinates}]</option>
+                ))}
+              </select>
+              <div className="h-10 rounded-md border border-input bg-slate-50 px-3 py-2 text-sm">Page {page.toLocaleString()} / {TOTAL_COLONY_PAGES.toLocaleString()}</div>
+              <Button onClick={applyViewerProfile} data-testid="button-apply-viewer-profile">Apply Profile</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={page === 1}>First</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(TOTAL_COLONY_PAGES, p + 1))} disabled={page >= TOTAL_COLONY_PAGES}>Next</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(TOTAL_COLONY_PAGES)} disabled={page >= TOTAL_COLONY_PAGES}>Last</Button>
+              <div className="text-xs text-slate-500 self-center">Records {pageData.startIndex + 1}-{pageData.endIndex + 1} of {pageData.totalItems.toLocaleString()} ({COLONIES_PER_PAGE}/page)</div>
+            </div>
+            {selectedColony && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-sm font-semibold text-slate-800 mb-2">Selected Colony Status</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Stability</span><span className="font-bold">{selectedColony.planetStatus.stability}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Security</span><span className="font-bold">{selectedColony.planetStatus.security}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Infrastructure</span><span className="font-bold">{selectedColony.planetStatus.infrastructure}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Logistics</span><span className="font-bold">{selectedColony.planetStatus.logistics}%</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Mining</span><span className="font-bold">{selectedColony.subStats.miningRate}</span></div>
+                    <div className="bg-white rounded border border-slate-200 px-2 py-1 flex justify-between"><span>Research</span><span className="font-bold">{selectedColony.subStats.researchOutput}</span></div>
+                  </div>
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-sm font-semibold text-slate-800 mb-2">System + Moon Overview</div>
+                  <div className="text-xs text-slate-600 mb-2">
+                    {selectedColony.solarOverview.galaxy}:{selectedColony.solarOverview.sector}:{selectedColony.solarOverview.system} • Star {selectedColony.solarOverview.starClass}
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {systemBodies.map((body) => (
+                      <div key={`${body.coordinates}-${body.type}`} className="bg-white rounded border border-slate-200 px-2 py-1 text-xs flex justify-between">
+                        <span className="flex items-center gap-1">{body.type === "moon" ? <Moon className="w-3 h-3 text-indigo-600" /> : <Layers className="w-3 h-3 text-blue-600" />} {body.type} O{body.orbit}</span>
+                        <span className="font-mono text-slate-500">{body.coordinates}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
