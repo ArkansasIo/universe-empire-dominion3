@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Globe, 
   Zap, 
@@ -35,7 +36,6 @@ import {
   getSolSystemMoons,
   getSolSystemDwarfPlanets,
   getMoonsOfPlanet,
-  UniverseGenerator,
   DEFAULT_UNIVERSE_SEED
 } from "@/lib/universeSeed";
 
@@ -81,6 +81,7 @@ function getPlanetTypeColor(type: string): string {
 }
 
 export default function UniverseGeneratorPage() {
+  const { toast } = useToast();
   const [galaxyX, setGalaxyX] = useState(1);
   const [galaxyY, setGalaxyY] = useState(1);
   const [galaxyZ, setGalaxyZ] = useState(1);
@@ -88,16 +89,19 @@ export default function UniverseGeneratorPage() {
   const [systemY, setSystemY] = useState(0);
   const [systemZ, setSystemZ] = useState(0);
   const [customSeed, setCustomSeed] = useState(DEFAULT_UNIVERSE_SEED.masterSeed);
+  const [appliedSeed, setAppliedSeed] = useState(DEFAULT_UNIVERSE_SEED.masterSeed);
   const [objects, setObjects] = useState<CelestialObject[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
+  const [lastGenerationMode, setLastGenerationMode] = useState<"system" | "galaxy" | null>(null);
 
   const handleGenerateSystem = () => {
     setLoading(true);
     setTimeout(() => {
       const coords = { x: systemX, y: systemY, z: systemZ };
-      const generated = generateSystem(coords);
+      const generated = generateSystem(coords, appliedSeed);
       setObjects(generated);
+      setLastGenerationMode("system");
       setLoading(false);
     }, 100);
   };
@@ -105,10 +109,32 @@ export default function UniverseGeneratorPage() {
   const handleGenerateGalaxy = () => {
     setLoading(true);
     setTimeout(() => {
-      const generated = generateGalaxy(galaxyX, galaxyY, galaxyZ);
+      const generated = generateGalaxy(galaxyX, galaxyY, galaxyZ, appliedSeed);
       setObjects(generated);
+      setLastGenerationMode("galaxy");
       setLoading(false);
     }, 500);
+  };
+
+  const handleApplySeed = () => {
+    const nextSeed = customSeed.trim() || DEFAULT_UNIVERSE_SEED.masterSeed;
+    setCustomSeed(nextSeed);
+    setAppliedSeed(nextSeed);
+
+    if (lastGenerationMode === "system") {
+      const coords = { x: systemX, y: systemY, z: systemZ };
+      setObjects(generateSystem(coords, nextSeed));
+    } else if (lastGenerationMode === "galaxy") {
+      setObjects(generateGalaxy(galaxyX, galaxyY, galaxyZ, nextSeed));
+    }
+
+    toast({
+      title: "Universe seed applied",
+      description:
+        lastGenerationMode === null
+          ? "Future procedural generations will use this seed."
+          : "Current procedural results were regenerated with the new seed.",
+    });
   };
 
   const planets = objects.filter(obj => obj.type === "planet");
@@ -706,6 +732,7 @@ export default function UniverseGeneratorPage() {
                       data-testid="input-universe-seed"
                     />
                     <Button 
+                      onClick={handleApplySeed}
                       className="bg-emerald-600 hover:bg-emerald-700"
                       data-testid="button-apply-seed"
                     >
@@ -778,7 +805,7 @@ export default function UniverseGeneratorPage() {
 
                 <div className="p-4 bg-slate-100 rounded-lg">
                   <h5 className="font-bold mb-2">Current Master Seed</h5>
-                  <p className="font-mono text-lg text-emerald-700 break-all">{customSeed}</p>
+                  <p className="font-mono text-lg text-emerald-700 break-all">{appliedSeed}</p>
                   <p className="text-xs text-slate-500 mt-2">
                     Total potential objects: ~{(
                       DEFAULT_UNIVERSE_SEED.galaxyCount * 

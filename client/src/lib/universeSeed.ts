@@ -153,8 +153,8 @@ function parseCoordinatesLegacy(coordStr: string): Vector3 {
   return { x: 0, y: 0, z: 0 };
 }
 
-function createSeedString(coords: Vector3, suffix: string = ""): string {
-  return `${coords.x}:${coords.y}:${coords.z}${suffix}`;
+function createSeedString(coords: Vector3, suffix: string = "", masterSeed: string = UNIVERSE_CONFIG.seed.default): string {
+  return `${masterSeed}:${coords.x}:${coords.y}:${coords.z}${suffix}`;
 }
 
 const PLANET_CLASSES: PlanetClass[] = ["M", "G", "D", "R", "V", "T", "A", "K"];
@@ -196,8 +196,12 @@ export {
 
 export type { CelestialBody, CelestialCoordinates };
 
-export function generatePlanet(systemCoords: Vector3, planetIndex: number): CelestialObject {
-  const seed = createSeedString(systemCoords, `:planet:${planetIndex}`);
+export function generatePlanet(
+  systemCoords: Vector3,
+  planetIndex: number,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject {
+  const seed = createSeedString(systemCoords, `:planet:${planetIndex}`, masterSeed);
   const planetClass = PLANET_CLASSES[seededRandomInt(seed, 0, PLANET_CLASSES.length, 1)];
   
   const habitabilityRoll = seededRandom(seed, 2);
@@ -243,10 +247,15 @@ export function generatePlanet(systemCoords: Vector3, planetIndex: number): Cele
   };
 }
 
-export function generateMoons(systemCoords: Vector3, planetIndex: number, moonCount: number): CelestialObject[] {
+export function generateMoons(
+  systemCoords: Vector3,
+  planetIndex: number,
+  moonCount: number,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject[] {
   const moons: CelestialObject[] = [];
   for (let i = 0; i < moonCount; i++) {
-    const seed = createSeedString(systemCoords, `:moon:${planetIndex}:${i}`);
+    const seed = createSeedString(systemCoords, `:moon:${planetIndex}:${i}`, masterSeed);
     moons.push({
       id: `moon-${seed}`,
       name: `${MOON_NAMES[i % MOON_NAMES.length]}`,
@@ -257,7 +266,7 @@ export function generateMoons(systemCoords: Vector3, planetIndex: number, moonCo
         y: systemCoords.y + seededRandomRange(seed, -0.3, 0.3, 2),
         z: systemCoords.z + seededRandomRange(seed, -0.1, 0.1, 3)
       },
-      parentPlanetId: `planet-${createSeedString(systemCoords, `:planet:${planetIndex}`)}`,
+      parentPlanetId: `planet-${createSeedString(systemCoords, `:planet:${planetIndex}`, masterSeed)}`,
       diameter: seededRandomInt(seed, 500, 5000, 4),
       gravity: seededRandomRange(seed, 0.1, 1.5, 5),
       habitability: "barren",
@@ -275,10 +284,14 @@ export function generateMoons(systemCoords: Vector3, planetIndex: number, moonCo
   return moons;
 }
 
-export function generateAsteroids(systemCoords: Vector3, asteroidCount: number): CelestialObject[] {
+export function generateAsteroids(
+  systemCoords: Vector3,
+  asteroidCount: number,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject[] {
   const asteroids: CelestialObject[] = [];
   for (let i = 0; i < asteroidCount; i++) {
-    const seed = createSeedString(systemCoords, `:asteroid:${i}`);
+    const seed = createSeedString(systemCoords, `:asteroid:${i}`, masterSeed);
     const asteroidType = ASTEROID_TYPES[seededRandomInt(seed, 0, ASTEROID_TYPES.length, 1)];
     
     const compositionMetal = asteroidType === "M" ? 0.9 : asteroidType === "F" ? 0.7 : 0.4;
@@ -311,8 +324,11 @@ export function generateAsteroids(systemCoords: Vector3, asteroidCount: number):
   return asteroids;
 }
 
-export function generateStar(galaxyCoords: Vector3): CelestialObject {
-  const seed = createSeedString(galaxyCoords, ":star");
+export function generateStar(
+  galaxyCoords: Vector3,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject {
+  const seed = createSeedString(galaxyCoords, ":star", masterSeed);
   const starType = STAR_TYPES[seededRandomInt(seed, 0, STAR_TYPES.length, 1)];
   
   const luminosityByType: Record<string, [number, number]> = {
@@ -347,30 +363,38 @@ export function generateStar(galaxyCoords: Vector3): CelestialObject {
   };
 }
 
-export function generateSystem(systemCoords: Vector3): CelestialObject[] {
+export function generateSystem(
+  systemCoords: Vector3,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject[] {
   const objects: CelestialObject[] = [];
   
-  objects.push(generateStar(systemCoords));
+  objects.push(generateStar(systemCoords, masterSeed));
   
-  const planetCount = seededRandomInt(createSeedString(systemCoords, ":planet:count"), 3, 12, 0);
+  const planetCount = seededRandomInt(createSeedString(systemCoords, ":planet:count", masterSeed), 3, 12, 0);
   for (let i = 0; i < planetCount; i++) {
-    const planet = generatePlanet(systemCoords, i);
+    const planet = generatePlanet(systemCoords, i, masterSeed);
     objects.push(planet);
     
-    const moonRoll = seededRandom(createSeedString(systemCoords, `:planet:${i}:moons`), 0);
-    const moonCount = moonRoll > 0.7 ? seededRandomInt(createSeedString(systemCoords, `:planet:${i}:mooncount`), 1, 8, 0) : 0;
-    const moons = generateMoons(systemCoords, i, moonCount);
+    const moonRoll = seededRandom(createSeedString(systemCoords, `:planet:${i}:moons`, masterSeed), 0);
+    const moonCount = moonRoll > 0.7 ? seededRandomInt(createSeedString(systemCoords, `:planet:${i}:mooncount`, masterSeed), 1, 8, 0) : 0;
+    const moons = generateMoons(systemCoords, i, moonCount, masterSeed);
     objects.push(...moons);
   }
   
-  const asteroidCount = seededRandomInt(createSeedString(systemCoords, ":asteroid:count"), 10, 50, 0);
-  const asteroids = generateAsteroids(systemCoords, asteroidCount);
+  const asteroidCount = seededRandomInt(createSeedString(systemCoords, ":asteroid:count", masterSeed), 10, 50, 0);
+  const asteroids = generateAsteroids(systemCoords, asteroidCount, masterSeed);
   objects.push(...asteroids);
   
   return objects;
 }
 
-export function generateGalaxy(galaxyX: number, galaxyY: number, galaxyZ: number): CelestialObject[] {
+export function generateGalaxy(
+  galaxyX: number,
+  galaxyY: number,
+  galaxyZ: number,
+  masterSeed: string = UNIVERSE_CONFIG.seed.default,
+): CelestialObject[] {
   const galaxyCoords: Vector3 = { x: galaxyX, y: galaxyY, z: galaxyZ };
   const objects: CelestialObject[] = [];
   
@@ -383,15 +407,15 @@ export function generateGalaxy(galaxyX: number, galaxyY: number, galaxyZ: number
           z: galaxyZ * 100 + sz * 30
         };
         
-        const systemCount = seededRandomInt(createSeedString(sectorCoords, ":system:count"), 2, 5, 0);
+          const systemCount = seededRandomInt(createSeedString(sectorCoords, ":system:count", masterSeed), 2, 5, 0);
         for (let i = 0; i < systemCount; i++) {
           const systemCoords: Vector3 = {
-            x: sectorCoords.x + i * 10 + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:offset`), -3, 3, 0),
-            y: sectorCoords.y + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:y`), -5, 5, 0),
-            z: sectorCoords.z + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:z`), -2, 2, 0)
+            x: sectorCoords.x + i * 10 + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:offset`, masterSeed), -3, 3, 0),
+            y: sectorCoords.y + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:y`, masterSeed), -5, 5, 0),
+            z: sectorCoords.z + seededRandomInt(createSeedString(sectorCoords, `:system:${i}:z`, masterSeed), -2, 2, 0)
           };
           
-          const system = generateSystem(systemCoords);
+          const system = generateSystem(systemCoords, masterSeed);
           objects.push(...system);
         }
       }

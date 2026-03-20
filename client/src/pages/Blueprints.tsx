@@ -1,24 +1,36 @@
 import GameLayout from "@/components/layout/GameLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Zap, Cog, Copy, AlertCircle, Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { BookOpen, Zap, Copy, AlertCircle, Star } from "lucide-react";
 import { useState } from "react";
-import { BASE_BLUEPRINTS, Blueprint, calculateManufacturingCost, calculateManufacturingTime, calculateSuccessRate, createBlueprintCopy, rarityColors } from "@/lib/blueprintSystem";
+import { BASE_BLUEPRINTS, Blueprint, calculateManufacturingCost, calculateManufacturingTime, calculateSuccessRate, createBlueprintCopy } from "@/lib/blueprintSystem";
 import { cn } from "@/lib/utils";
 import Navigation from "./Navigation";
 
+type ManufacturingLogEntry = {
+  id: string;
+  blueprintName: string;
+  quantity: number;
+  outputQuantity: number;
+  wasSuccessful: boolean;
+  durationSeconds: number;
+};
+
 export default function Blueprints() {
+  const { toast } = useToast();
   const [blueprints, setBlueprints] = useState<Blueprint[]>(BASE_BLUEPRINTS);
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [copyRuns, setCopyRuns] = useState("10");
   const [copyQuality, setCopyQuality] = useState("85");
   const [manufacturingQty, setManufacturingQty] = useState("1");
+  const [manufacturingLog, setManufacturingLog] = useState<ManufacturingLogEntry[]>([]);
 
   const originals = blueprints.filter(bp => bp.isOriginal);
   const copies = blueprints.filter(bp => bp.isCopy && bp.remainingRuns > 0);
@@ -26,17 +38,92 @@ export default function Blueprints() {
 
   const handleCreateCopy = () => {
     if (!selectedBlueprint) return;
+    if (!selectedBlueprint.isOriginal) {
+      toast({
+        title: "Copy creation blocked",
+        description: "Only original blueprints can be duplicated.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const runs = Math.max(1, parseInt(copyRuns) || 1);
+    const quality = Math.min(100, Math.max(1, parseInt(copyQuality) || 85));
     
     const newCopy = createBlueprintCopy(
       selectedBlueprint,
-      parseInt(copyRuns),
-      parseInt(copyQuality)
+      runs,
+      quality
     );
     
     setBlueprints([...blueprints, newCopy]);
     setShowCopyDialog(false);
     setCopyRuns("10");
     setCopyQuality("85");
+    toast({
+      title: "Blueprint copy created",
+      description: `${newCopy.displayName} copy prepared with ${runs} runs at ${quality}% quality.`,
+    });
+  };
+
+  const handleManufacture = () => {
+    if (!selectedBlueprint) {
+      return;
+    }
+
+    const quantity = Math.max(1, parseInt(manufacturingQty) || 1);
+    if (selectedBlueprint.isCopy && selectedBlueprint.remainingRuns < quantity) {
+      toast({
+        title: "Not enough blueprint runs",
+        description: `${selectedBlueprint.displayName} only has ${selectedBlueprint.remainingRuns} run(s) left.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const successRate = calculateSuccessRate(selectedBlueprint);
+    const durationSeconds = calculateManufacturingTime(selectedBlueprint, quantity);
+    const outputQuantity = quantity * selectedBlueprint.outputQuantity;
+    const wasSuccessful = Math.random() * 100 <= successRate;
+
+    let nextSelectedBlueprint: Blueprint | null = selectedBlueprint;
+    setBlueprints((current) =>
+      current.map((blueprint) => {
+        if (blueprint.id !== selectedBlueprint.id || !blueprint.isCopy) {
+          return blueprint;
+        }
+
+        const remainingRuns = Math.max(0, blueprint.remainingRuns - quantity);
+        const updatedBlueprint = {
+          ...blueprint,
+          currentRuns: remainingRuns,
+          remainingRuns,
+          status: remainingRuns === 0 ? "used_up" as const : blueprint.status,
+        };
+        nextSelectedBlueprint = updatedBlueprint;
+        return updatedBlueprint;
+      }),
+    );
+    setSelectedBlueprint(nextSelectedBlueprint);
+    setManufacturingLog((current) => [
+      {
+        id: `${selectedBlueprint.id}-${Date.now()}`,
+        blueprintName: selectedBlueprint.displayName,
+        quantity,
+        outputQuantity: wasSuccessful ? outputQuantity : 0,
+        wasSuccessful,
+        durationSeconds,
+      },
+      ...current,
+    ].slice(0, 6));
+
+    toast({
+      title: wasSuccessful ? "Manufacturing completed" : "Manufacturing failed",
+      description: wasSuccessful
+        ? `${selectedBlueprint.displayName} produced ${outputQuantity.toLocaleString()} ${selectedBlueprint.outputName}(s).`
+        : `${selectedBlueprint.displayName} run failed after ${(durationSeconds / 60).toFixed(1)} minutes.`,
+      variant: wasSuccessful ? "default" : "destructive",
+    });
   };
 
   const rarityBadgeStyle = (bp: Blueprint) => {
@@ -267,6 +354,7 @@ export default function Blueprints() {
                     <Button 
                       size="lg" 
                       className="bg-green-600 hover:bg-green-700" 
+                      onClick={handleManufacture}
                       data-testid="btn-manufacture"
                     >
                       <Zap className="w-4 h-4 mr-2" /> Manufacture Now
@@ -340,6 +428,32 @@ export default function Blueprints() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {manufacturingLog.length > 0 && (
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="p-4 space-y-3">
+              <div>
+                <div className="text-xs uppercase text-slate-500 font-bold">Production Queue Feedback</div>
+                <div className="font-orbitron text-lg text-slate-900">Recent Manufacturing Jobs</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {manufacturingLog.map((job) => (
+                  <div key={job.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-bold text-slate-900">{job.blueprintName}</div>
+                      <Badge className={job.wasSuccessful ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                        {job.wasSuccessful ? "Success" : "Failed"}
+                      </Badge>
+                    </div>
+                    <div className="text-slate-600">Quantity queued: {job.quantity.toLocaleString()}</div>
+                    <div className="text-slate-600">Output delivered: {job.outputQuantity.toLocaleString()}</div>
+                    <div className="text-slate-500">Build time: {(job.durationSeconds / 60).toFixed(1)} minutes</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Copy Dialog */}
         <Dialog open={showCopyDialog} onOpenChange={setShowCopyDialog}>

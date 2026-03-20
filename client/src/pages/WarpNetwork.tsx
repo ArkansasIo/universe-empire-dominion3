@@ -2,12 +2,13 @@ import GameLayout from "@/components/layout/GameLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { WARP_GATES, TRADE_ROUTES, WarpGate, TradeRoute, calculateWarpTime, calculateWarpCost } from "@/lib/warpNetwork";
 import { Orbit, Zap, Clock, Link2, TrendingUp, AlertTriangle, Navigation, Truck, ArrowRight, MapPin } from "lucide-react";
+import { useState } from "react";
 
-function WarpGateCard({ gate }: { gate: WarpGate }) {
+function WarpGateCard({ gate, onAction }: { gate: WarpGate; onAction: (gate: WarpGate) => void }) {
   const linkedGateNames = gate.linkedGates.map(id => 
     WARP_GATES.find(g => g.id === id)?.name || id
   );
@@ -84,6 +85,7 @@ function WarpGateCard({ gate }: { gate: WarpGate }) {
         <Button 
           className="w-full" 
           variant={gate.owned ? "default" : "outline"}
+          onClick={() => onAction(gate)}
           data-testid={`button-gate-${gate.id}`}
         >
           {gate.owned ? (
@@ -103,15 +105,9 @@ function WarpGateCard({ gate }: { gate: WarpGate }) {
   );
 }
 
-function TradeRouteCard({ route }: { route: TradeRoute }) {
+function TradeRouteCard({ route, onAction }: { route: TradeRoute; onAction: (route: TradeRoute) => void }) {
   const riskColor = route.risk <= 3 ? 'text-green-600' : route.risk <= 6 ? 'text-yellow-600' : 'text-red-600';
   const riskBg = route.risk <= 3 ? 'bg-green-100' : route.risk <= 6 ? 'bg-yellow-100' : 'bg-red-100';
-  
-  const resourceColors: Record<string, string> = {
-    metal: 'text-slate-600',
-    crystal: 'text-blue-600',
-    deuterium: 'text-green-600'
-  };
   
   const resourceIcons: Record<string, string> = {
     metal: '🔩',
@@ -175,6 +171,7 @@ function TradeRouteCard({ route }: { route: TradeRoute }) {
         <Button 
           className="w-full" 
           variant={route.active ? "default" : "outline"}
+          onClick={() => onAction(route)}
           data-testid={`button-route-${route.id}`}
         >
           {route.active ? 'Manage Route' : 'Activate Route'}
@@ -185,13 +182,73 @@ function TradeRouteCard({ route }: { route: TradeRoute }) {
 }
 
 export default function WarpNetwork() {
-  const ownedGates = WARP_GATES.filter(g => g.owned).length;
-  const activeRoutes = TRADE_ROUTES.filter(r => r.active).length;
-  const totalProfit = TRADE_ROUTES.filter(r => r.active).reduce((sum, r) => sum + r.profit, 0);
-  const averageRisk = TRADE_ROUTES.length > 0
-    ? Math.round(TRADE_ROUTES.reduce((sum, route) => sum + route.risk, 0) / TRADE_ROUTES.length)
+  const { toast } = useToast();
+  const [gates, setGates] = useState<WarpGate[]>(WARP_GATES);
+  const [routes, setRoutes] = useState<TradeRoute[]>(TRADE_ROUTES);
+
+  const ownedGates = gates.filter(g => g.owned).length;
+  const activeRoutes = routes.filter(r => r.active).length;
+  const totalProfit = routes.filter(r => r.active).reduce((sum, r) => sum + r.profit, 0);
+  const averageRisk = routes.length > 0
+    ? Math.round(routes.reduce((sum, route) => sum + route.risk, 0) / routes.length)
     : 0;
-  const connectedGateLinks = WARP_GATES.reduce((sum, gate) => sum + gate.linkedGates.length, 0);
+  const connectedGateLinks = gates.reduce((sum, gate) => sum + gate.linkedGates.length, 0);
+
+  const handleGateAction = (gate: WarpGate) => {
+    if (!gate.owned) {
+      setGates((current) =>
+        current.map((entry) =>
+          entry.id === gate.id
+            ? { ...entry, owned: true, owner: "Commander", constructionTime: 0 }
+            : entry,
+        ),
+      );
+      toast({
+        title: "Warp gate claimed",
+        description: `${gate.name} is now part of your operational network.`,
+      });
+      return;
+    }
+
+    const jumpDistance = Math.max(1, gate.linkedGates.length);
+    const travelSeconds = calculateWarpTime(gate.level, jumpDistance);
+    const deuteriumCost = calculateWarpCost(gate.level, jumpDistance);
+    const destinationName = gates.find((entry) => entry.id === gate.linkedGates[0])?.name ?? "linked destination";
+    toast({
+      title: "Warp jump initiated",
+      description: `${gate.name} is routing to ${destinationName}. ETA ${Math.ceil(travelSeconds / 60)}m for ${deuteriumCost.toLocaleString()} deuterium.`,
+    });
+  };
+
+  const handleRouteAction = (route: TradeRoute) => {
+    if (!route.active) {
+      setRoutes((current) => current.map((entry) => (
+        entry.id === route.id ? { ...entry, active: true } : entry
+      )));
+      toast({
+        title: "Trade route activated",
+        description: `${route.from} to ${route.to} now ships ${route.resource}.`,
+      });
+      return;
+    }
+
+    const optimizedRoute: TradeRoute = {
+      ...route,
+      profit: Math.min(route.profit + 5, 150),
+      risk: Math.max(route.risk - 1, 1),
+      frequency: Math.max(route.frequency - 1, 1),
+    };
+    setRoutes((current) =>
+      current.map((entry) => (
+        entry.id === route.id ? optimizedRoute : entry
+      )),
+    );
+
+    toast({
+      title: "Route management updated",
+      description: `${optimizedRoute.from} to ${optimizedRoute.to} now yields +${optimizedRoute.profit}% at risk ${optimizedRoute.risk}/10.`,
+    });
+  };
   
   return (
     <GameLayout>
@@ -215,7 +272,7 @@ export default function WarpNetwork() {
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
             <CardContent className="p-4 text-center">
               <Link2 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-900">{WARP_GATES.length}</p>
+              <p className="text-2xl font-bold text-blue-900">{gates.length}</p>
               <p className="text-xs text-blue-700">Total Gates</p>
             </CardContent>
           </Card>
@@ -255,16 +312,16 @@ export default function WarpNetwork() {
 
           <TabsContent value="gates" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {WARP_GATES.map(gate => (
-                <WarpGateCard key={gate.id} gate={gate} />
+              {gates.map(gate => (
+                <WarpGateCard key={gate.id} gate={gate} onAction={handleGateAction} />
               ))}
             </div>
           </TabsContent>
 
           <TabsContent value="routes" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {TRADE_ROUTES.map(route => (
-                <TradeRouteCard key={route.id} route={route} />
+              {routes.map(route => (
+                <TradeRouteCard key={route.id} route={route} onAction={handleRouteAction} />
               ))}
             </div>
           </TabsContent>

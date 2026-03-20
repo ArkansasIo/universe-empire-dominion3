@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { ORBITAL_BUILDINGS, StationBuilding } from "@/lib/stationData";
 import {
   ORBITAL_STATION_CATEGORIES,
@@ -45,7 +46,17 @@ function formatTime(seconds: number): string {
   return `${seconds}s`;
 }
 
-function BuildingCard({ building, level = 0 }: { building: StationBuilding; level?: number }) {
+function BuildingCard({
+  building,
+  level = 0,
+  onConstruct,
+  requirementLabel,
+}: {
+  building: StationBuilding;
+  level?: number;
+  onConstruct: (building: StationBuilding) => void;
+  requirementLabel?: string | null;
+}) {
   const imagePath = STATION_IMAGE_MAP[building.id] ?? MENU_ASSETS.BUILDINGS.SPACEPORT.path;
   const cost = {
     metal: Math.round(building.baseCost.metal * Math.pow(building.costFactor, level)),
@@ -125,7 +136,13 @@ function BuildingCard({ building, level = 0 }: { building: StationBuilding; leve
           <span>Cost Factor: x{building.costFactor}</span>
         </div>
 
-        <Button className="w-full" data-testid={`button-build-${building.id}`}>
+        {requirementLabel && (
+          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {requirementLabel}
+          </div>
+        )}
+
+        <Button className="w-full" onClick={() => onConstruct(building)} data-testid={`button-build-${building.id}`}>
           <TrendingUp className="w-4 h-4 mr-2" />
           {level === 0 ? 'Construct' : 'Upgrade to Level ' + (level + 1)}
         </Button>
@@ -168,7 +185,17 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ─── OrbitalStationCard ───────────────────────────────────────────────────────
-function OrbitalStationCard({ station }: { station: OrbitalStation }) {
+function OrbitalStationCard({
+  station,
+  buildCount,
+  onConstruct,
+  requirementLabel,
+}: {
+  station: OrbitalStation;
+  buildCount: number;
+  onConstruct: (station: OrbitalStation) => void;
+  requirementLabel?: string | null;
+}) {
   const [expanded, setExpanded] = useState(false);
   const colors = CLASS_COLORS[station.class] ?? CLASS_COLORS.common;
 
@@ -336,9 +363,15 @@ function OrbitalStationCard({ station }: { station: OrbitalStation }) {
           </div>
         )}
 
-        <Button className="w-full text-sm" size="sm" data-testid={`button-build-station-${station.id}`}>
+        {requirementLabel && (
+          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {requirementLabel}
+          </div>
+        )}
+
+        <Button className="w-full text-sm" size="sm" onClick={() => onConstruct(station)} data-testid={`button-build-station-${station.id}`}>
           <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
-          Construct {station.title}
+          {buildCount > 0 ? `Expand ${station.title} (${buildCount})` : `Construct ${station.title}`}
         </Button>
       </CardContent>
     </Card>
@@ -346,7 +379,17 @@ function OrbitalStationCard({ station }: { station: OrbitalStation }) {
 }
 
 // ─── CategorySection: one accordion-style category ───────────────────────────
-function CategorySection({ category }: { category: OrbitalCategoryMeta }) {
+function CategorySection({
+  category,
+  buildCounts,
+  onConstruct,
+  getRequirementLabel,
+}: {
+  category: OrbitalCategoryMeta;
+  buildCounts: Record<string, number>;
+  onConstruct: (station: OrbitalStation) => void;
+  getRequirementLabel: (station: OrbitalStation) => string | null;
+}) {
   const [open, setOpen] = useState(false);
   const stations = getOrbitalStationsByCategory(category.id);
   const icon = CATEGORY_ICONS[category.id] ?? <Satellite className="w-4 h-4" />;
@@ -384,7 +427,13 @@ function CategorySection({ category }: { category: OrbitalCategoryMeta }) {
           {stations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {stations.map(s => (
-                <OrbitalStationCard key={s.id} station={s} />
+                <OrbitalStationCard
+                  key={s.id}
+                  station={s}
+                  buildCount={buildCounts[s.id] ?? 0}
+                  onConstruct={onConstruct}
+                  requirementLabel={getRequirementLabel(s)}
+                />
               ))}
             </div>
           ) : (
@@ -397,14 +446,80 @@ function CategorySection({ category }: { category: OrbitalCategoryMeta }) {
 }
 
 export default function Stations() {
+  const { toast } = useToast();
   const moonBuildings = ORBITAL_BUILDINGS.filter(b => b.type === 'moon');
   const stationBuildings = ORBITAL_BUILDINGS.filter(b => b.type === 'station');
   const [activeTab, setActiveTab] = useState<StationsTab>("moon");
+  const [buildingLevels, setBuildingLevels] = useState<Record<string, number>>({});
+  const [infrastructureBuildCounts, setInfrastructureBuildCounts] = useState<Record<string, number>>({});
   const activeBuildingPool = activeTab === "moon" ? moonBuildings : stationBuildings;
+  const totalFacilityLevels = Object.values(buildingLevels).reduce((sum, level) => sum + level, 0);
+  const totalInfrastructureBuilt = Object.values(infrastructureBuildCounts).reduce((sum, count) => sum + count, 0);
   const averageCostFactor =
     activeBuildingPool.length > 0
       ? (activeBuildingPool.reduce((sum, building) => sum + building.costFactor, 0) / activeBuildingPool.length).toFixed(2)
       : "0.00";
+
+  const getBuildingRequirementLabel = (building: StationBuilding) => {
+    if (building.type === "moon" && building.id !== "lunarBase" && (buildingLevels.lunarBase ?? 0) === 0) {
+      return "Requires Lunar Base level 1 before this structure can be built.";
+    }
+    if (building.type === "station" && building.id !== "starbaseHub" && (buildingLevels.starbaseHub ?? 0) === 0) {
+      return "Requires Starbase Command Hub level 1 before advanced station modules.";
+    }
+    return null;
+  };
+
+  const handleConstructBuilding = (building: StationBuilding) => {
+    const requirementLabel = getBuildingRequirementLabel(building);
+    if (requirementLabel) {
+      toast({ title: "Construction blocked", description: requirementLabel, variant: "destructive" });
+      return;
+    }
+
+    const currentLevel = buildingLevels[building.id] ?? 0;
+    const nextLevel = currentLevel + 1;
+    const multiplier = Math.pow(building.costFactor, currentLevel);
+    const cost = {
+      metal: Math.round(building.baseCost.metal * multiplier),
+      crystal: Math.round(building.baseCost.crystal * multiplier),
+      deuterium: Math.round(building.baseCost.deuterium * multiplier),
+    };
+
+    setBuildingLevels((current) => ({ ...current, [building.id]: nextLevel }));
+    toast({
+      title: currentLevel === 0 ? "Construction queued" : "Upgrade queued",
+      description: `${building.name} now targeting level ${nextLevel}. Cost ${cost.metal.toLocaleString()} metal, ${cost.crystal.toLocaleString()} crystal, ${cost.deuterium.toLocaleString()} deuterium.`,
+    });
+  };
+
+  const getStationRequirementLabel = (station: OrbitalStation) => {
+    if (station.attributes.requiresMoon && (buildingLevels.lunarBase ?? 0) === 0) {
+      return "Requires an established Lunar Base before orbital deployment.";
+    }
+
+    const currentCount = infrastructureBuildCounts[station.id] ?? 0;
+    if (station.attributes.maxInstances && currentCount >= station.attributes.maxInstances) {
+      return `Maximum instances reached (${station.attributes.maxInstances}).`;
+    }
+
+    return null;
+  };
+
+  const handleConstructInfrastructure = (station: OrbitalStation) => {
+    const requirementLabel = getStationRequirementLabel(station);
+    if (requirementLabel) {
+      toast({ title: "Deployment blocked", description: requirementLabel, variant: "destructive" });
+      return;
+    }
+
+    const nextCount = (infrastructureBuildCounts[station.id] ?? 0) + 1;
+    setInfrastructureBuildCounts((current) => ({ ...current, [station.id]: nextCount }));
+    toast({
+      title: "Infrastructure deployed",
+      description: `${station.title} online. Total deployed: ${nextCount}.`,
+    });
+  };
 
   useEffect(() => {
     const syncFromUrl = () => {
@@ -482,14 +597,14 @@ export default function Stations() {
           </Card>
           <Card className="bg-white border-slate-200">
             <CardContent className="pt-6">
-              <div className="text-xs uppercase text-slate-500">Categories</div>
-              <div className="text-2xl font-bold text-purple-700">{ORBITAL_STATION_STATS.totalCategories}</div>
+              <div className="text-xs uppercase text-slate-500">Facility Levels</div>
+              <div className="text-2xl font-bold text-purple-700">{totalFacilityLevels}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-slate-200">
             <CardContent className="pt-6">
-              <div className="text-xs uppercase text-slate-500">Sub-Categories</div>
-              <div className="text-2xl font-bold text-rose-700">{ORBITAL_STATION_STATS.totalSubCategories}</div>
+              <div className="text-xs uppercase text-slate-500">Infrastructure Built</div>
+              <div className="text-2xl font-bold text-rose-700">{totalInfrastructureBuilt}</div>
             </CardContent>
           </Card>
         </div>
@@ -523,7 +638,13 @@ export default function Stations() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {moonBuildings.map(building => (
-                <BuildingCard key={building.id} building={building} />
+                <BuildingCard
+                  key={building.id}
+                  building={building}
+                  level={buildingLevels[building.id] ?? 0}
+                  onConstruct={handleConstructBuilding}
+                  requirementLabel={getBuildingRequirementLabel(building)}
+                />
               ))}
             </div>
           </TabsContent>
@@ -541,7 +662,13 @@ export default function Stations() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {stationBuildings.map(building => (
-                <BuildingCard key={building.id} building={building} />
+                <BuildingCard
+                  key={building.id}
+                  building={building}
+                  level={buildingLevels[building.id] ?? 0}
+                  onConstruct={handleConstructBuilding}
+                  requirementLabel={getBuildingRequirementLabel(building)}
+                />
               ))}
             </div>
           </TabsContent>
@@ -592,7 +719,13 @@ export default function Stations() {
             {/* Category accordion list */}
             <div className="space-y-2">
               {ORBITAL_STATION_CATEGORIES.map(cat => (
-                <CategorySection key={cat.id} category={cat} />
+                <CategorySection
+                  key={cat.id}
+                  category={cat}
+                  buildCounts={infrastructureBuildCounts}
+                  onConstruct={handleConstructInfrastructure}
+                  getRequirementLabel={getStationRequirementLabel}
+                />
               ))}
             </div>
           </TabsContent>
