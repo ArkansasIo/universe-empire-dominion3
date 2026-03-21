@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { PLANET_ASSETS } from "@shared/config";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   type LucideIcon,
   LayoutDashboard, 
@@ -56,6 +58,9 @@ import {
   Image,
   Award,
   Store,
+  TowerControl,
+  Menu,
+  MonitorSmartphone,
 } from "lucide-react";
 
 interface NavItem {
@@ -90,6 +95,20 @@ interface ActivePageContext {
   siblings: NavItem[];
 }
 
+interface LayoutPlayerOptions {
+  display?: {
+    compactView?: boolean;
+    showAnimations?: boolean;
+    showResourceRates?: boolean;
+    deviceProfile?: string;
+    mobileOptimized?: boolean;
+    touchControls?: boolean;
+    touchTargetSize?: string;
+    browserWidth?: string;
+    stickyMobileBars?: boolean;
+  };
+}
+
 const isNavItemActive = (item: NavItem, location: string) => {
   if (location === item.href) {
     return true;
@@ -109,6 +128,8 @@ const SidebarItem = ({
   active,
   className,
   indentLevel = 1,
+  onSelect,
+  touchMode = false,
 }: {
   href: string;
   icon: LucideIcon;
@@ -116,16 +137,19 @@ const SidebarItem = ({
   active: boolean;
   className?: string;
   indentLevel?: 1 | 2;
+  onSelect?: () => void;
+  touchMode?: boolean;
 }) => (
   <Link href={href} data-testid={`link-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}>
     <div className={cn(
-      "flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2",
+      "flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
       indentLevel === 2 ? "px-8 py-2 text-xs" : "px-6 py-2.5 text-xs",
+      touchMode && (indentLevel === 2 ? "min-h-[46px]" : "min-h-[50px]"),
       active 
         ? "bg-primary/10 border-primary text-primary font-bold" 
         : "border-transparent hover:bg-slate-200 hover:text-primary hover:border-primary/50 text-muted-foreground",
       className
-    )}>
+    )} onClick={onSelect}>
       <Icon className="w-4 h-4" />
       <span className="font-rajdhani font-semibold tracking-wider uppercase text-xs">{label}</span>
     </div>
@@ -138,12 +162,16 @@ const CollapsibleMenu = ({
   groups,
   location,
   defaultOpen = false,
+  onSelect,
+  touchMode = false,
 }: {
   title: string;
   icon: LucideIcon;
   groups: NavGroup[];
   location: string;
   defaultOpen?: boolean;
+  onSelect?: () => void;
+  touchMode?: boolean;
 }) => {
   const hasActiveChild = groups.some((group) => group.items.some((item) => isNavItemActive(item, location)));
   const [isOpen, setIsOpen] = useState(defaultOpen || hasActiveChild);
@@ -160,7 +188,8 @@ const CollapsibleMenu = ({
         onClick={() => setIsOpen(!isOpen)}
         data-testid={`button-menu-${title.toLowerCase().replace(/\s+/g, '-')}`}
         className={cn(
-          "w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-all duration-200 border-l-2",
+          "w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
+          touchMode && "min-h-[50px]",
           hasActiveChild 
             ? "bg-primary/5 border-primary/50 text-primary" 
             : "border-transparent hover:bg-slate-100 text-muted-foreground hover:text-slate-700"
@@ -187,6 +216,8 @@ const CollapsibleMenu = ({
                   label={item.label} 
                   active={isNavItemActive(item, location)}
                   indentLevel={2}
+                  onSelect={onSelect}
+                  touchMode={touchMode}
                 />
               ))}
             </div>
@@ -288,6 +319,7 @@ const menuSections: MenuSection[] = [
         items: [
           { href: "/expeditions", icon: Compass, label: "Expeditions", description: "Launch deep-space missions for risk, reward, and discovery." },
           { href: "/combat", icon: ShieldAlert, label: "Combat Center", description: "Engage combat systems and active battle mechanics." },
+          { href: "/planet-occupation", icon: TowerControl, label: "Planet Occupation", description: "Control captured worlds through garrisons, suppression, extraction, and fortifications." },
           { href: "/battle-logs", icon: ScrollText, label: "Battle Logs", description: "Review previous engagements and combat outcomes." },
         ],
       },
@@ -455,7 +487,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
   const safeValue = Number.isFinite(value) ? value : 0;
 
   return (
-    <div className="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded shadow-sm min-w-[140px]">
+    <div className="flex shrink-0 items-center gap-3 bg-white border border-slate-200 px-3 py-2 rounded shadow-sm min-w-[126px] sm:min-w-[140px]">
       <div className={cn("p-2 rounded-full bg-slate-100", colorClass)}>
         <Icon className="w-4 h-4" />
       </div>
@@ -470,7 +502,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 };
 
 const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: number, totalTurns: number, isLoading: boolean }) => (
-  <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-4 py-2 rounded shadow-sm min-w-[180px]" data-testid="display-turns">
+  <div className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-3 py-2 rounded shadow-sm min-w-[170px] sm:min-w-[180px]" data-testid="display-turns">
     <div className="p-2 rounded-full bg-indigo-100 text-indigo-600">
       {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
     </div>
@@ -490,14 +522,120 @@ const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: nu
   </div>
 );
 
+function GameSidebar({
+  location,
+  planetName,
+  coordinates,
+  isAdmin,
+  logout,
+  onNavigate,
+  touchMode,
+}: {
+  location: string;
+  planetName: string;
+  coordinates: string;
+  isAdmin: boolean;
+  logout: () => void;
+  onNavigate?: () => void;
+  touchMode: boolean;
+}) {
+  const sidebarPlanetImage = PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path;
+  const fallbackPlanetImage = "/theme-temp.png";
+
+  return (
+    <>
+      <div className="p-4 sm:p-6">
+        <div className="bg-slate-100 border border-slate-200 p-4 rounded text-center">
+          <div className="w-16 h-16 mx-auto bg-white rounded-full border-2 border-primary mb-3 shadow-sm overflow-hidden">
+            <img
+              src={sidebarPlanetImage}
+              alt={planetName || "Planet"}
+              className="w-full h-full object-cover"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = fallbackPlanetImage;
+              }}
+            />
+          </div>
+          <h3 className="font-orbitron font-bold text-slate-900">{planetName}</h3>
+          <p className="text-xs text-muted-foreground">[{coordinates}]</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 py-2 overflow-y-auto scrollbar-hide">
+        <SidebarItem href="/" icon={LayoutDashboard} label="Overview" active={location === "/"} onSelect={onNavigate} touchMode={touchMode} />
+
+        {menuSections.map((section) => (
+          <CollapsibleMenu
+            key={section.title}
+            title={section.title}
+            icon={section.icon}
+            groups={section.groups}
+            location={location}
+            defaultOpen={section.title === "Empire"}
+            onSelect={onNavigate}
+            touchMode={touchMode}
+          />
+        ))}
+
+        <div className="px-4 mt-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>
+        {systemItems.map((item) => (
+          <SidebarItem
+            key={item.href}
+            href={item.href}
+            icon={item.icon}
+            label={item.label}
+            active={isNavItemActive(item, location)}
+            onSelect={onNavigate}
+            touchMode={touchMode}
+          />
+        ))}
+
+        {isAdmin && (
+          <>
+            <div className="px-4 mt-4 mb-2 text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
+              <ShieldAlert className="w-3 h-3" /> Administration
+            </div>
+            {adminItems.map((item) => (
+              <SidebarItem
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                active={isNavItemActive(item, location)}
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                onSelect={onNavigate}
+                touchMode={touchMode}
+              />
+            ))}
+          </>
+        )}
+      </nav>
+
+      <div className="p-4 border-t border-slate-200">
+        <button
+          onClick={logout}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded transition-colors text-sm font-bold uppercase tracking-wider touch-manipulation",
+            touchMode && "min-h-[48px]",
+          )}
+        >
+          <LogOut className="w-4 h-4" /> Logout
+        </button>
+      </div>
+    </>
+  );
+}
+
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { resources, planetName, coordinates, isAdmin, logout, username } = useGame();
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
   const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
   const buildId = import.meta.env.VITE_BUILD_ID || "dev";
   const buildTime = import.meta.env.VITE_BUILD_TIME || "local";
-  const sidebarPlanetImage = PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path;
-  const fallbackPlanetImage = "/theme-temp.png";
   const activePageContext = getActivePageContext(location, isAdmin);
 
   const { data: turnData, isLoading: turnsLoading } = useQuery({
@@ -510,22 +648,150 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     refetchInterval: 10000,
   });
 
+  const { data: playerOptions } = useQuery<LayoutPlayerOptions>({
+    queryKey: ["player-options"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/player/options", { credentials: "include" });
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const updatePointerState = () => {
+      setHasCoarsePointer(coarsePointerQuery.matches || navigator.maxTouchPoints > 0);
+    };
+
+    updatePointerState();
+    coarsePointerQuery.addEventListener("change", updatePointerState);
+    return () => coarsePointerQuery.removeEventListener("change", updatePointerState);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsSidebarOpen(false);
+    }
+  }, [isMobile]);
+
+  const displayPreferences = {
+    compactView: Boolean(playerOptions?.display?.compactView),
+    showAnimations: playerOptions?.display?.showAnimations ?? true,
+    showResourceRates: playerOptions?.display?.showResourceRates ?? true,
+    deviceProfile: playerOptions?.display?.deviceProfile ?? "auto",
+    mobileOptimized: playerOptions?.display?.mobileOptimized ?? true,
+    touchControls: playerOptions?.display?.touchControls ?? true,
+    touchTargetSize: playerOptions?.display?.touchTargetSize ?? "comfortable",
+    browserWidth: playerOptions?.display?.browserWidth ?? "standard",
+    stickyMobileBars: playerOptions?.display?.stickyMobileBars ?? true,
+  };
+
+  const touchMode = displayPreferences.touchControls && hasCoarsePointer;
+  const contentWidthClass =
+    displayPreferences.browserWidth === "full"
+      ? "max-w-none"
+      : displayPreferences.browserWidth === "wide"
+        ? "max-w-7xl"
+        : displayPreferences.browserWidth === "compact"
+          ? "max-w-5xl"
+          : "max-w-6xl";
+  const contentPaddingClass = displayPreferences.compactView ? "p-3 sm:p-4 lg:p-6" : "p-4 sm:p-6 lg:p-8";
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.deviceProfile = displayPreferences.deviceProfile;
+    root.dataset.browserWidth = displayPreferences.browserWidth;
+    root.dataset.touchUi = touchMode ? "true" : "false";
+    root.dataset.mobileOptimized = displayPreferences.mobileOptimized ? "true" : "false";
+    root.dataset.touchTargetSize = displayPreferences.touchTargetSize;
+    root.classList.toggle("compact-ui", displayPreferences.compactView);
+    root.classList.toggle("reduced-motion-ui", !displayPreferences.showAnimations);
+
+    return () => {
+      root.classList.remove("compact-ui", "reduced-motion-ui");
+      delete root.dataset.deviceProfile;
+      delete root.dataset.browserWidth;
+      delete root.dataset.touchUi;
+      delete root.dataset.mobileOptimized;
+      delete root.dataset.touchTargetSize;
+    };
+  }, [
+    displayPreferences.browserWidth,
+    displayPreferences.compactView,
+    displayPreferences.deviceProfile,
+    displayPreferences.mobileOptimized,
+    displayPreferences.showAnimations,
+    displayPreferences.touchTargetSize,
+    touchMode,
+  ]);
+
   return (
-    <div className="min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50">
+    <div className={cn(
+      "min-h-screen text-slate-900 overflow-hidden flex flex-col bg-slate-50",
+      touchMode && "touch-manipulation",
+      !displayPreferences.showAnimations && "motion-reduce",
+    )}>
       
       {/* Top Bar - Resources */}
-      <header className="relative z-20 h-24 border-b border-slate-200 bg-white flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary rounded flex items-center justify-center shadow-sm">
+      <header className={cn(
+        "relative z-20 border-b border-slate-200 bg-white shadow-sm",
+        isMobile && displayPreferences.stickyMobileBars && "sticky top-0",
+      )}>
+        <div className={cn(
+          "flex flex-col gap-3 px-4 py-3 sm:px-6",
+          !isMobile && "h-24 flex-row items-center justify-between",
+        )}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {isMobile && (
+              <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className={cn("shrink-0", touchMode && "h-11 w-11")} data-testid="button-open-mobile-menu">
+                    <Menu className="w-5 h-5" />
+                    <span className="sr-only">Open navigation</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[88vw] max-w-[360px] p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Game Navigation</SheetTitle>
+                    <SheetDescription>Browse all in-game menus and submenus on mobile devices.</SheetDescription>
+                  </SheetHeader>
+                  <div className="h-full bg-white flex flex-col">
+                    <GameSidebar
+                      location={location}
+                      planetName={planetName}
+                      coordinates={coordinates}
+                      isAdmin={isAdmin}
+                      logout={logout}
+                      onNavigate={() => setIsSidebarOpen(false)}
+                      touchMode={touchMode}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
+           <div className="w-10 h-10 bg-primary rounded flex items-center justify-center shadow-sm shrink-0">
              <Rocket className="text-white w-6 h-6" />
            </div>
            <div>
-             <h1 className="font-orbitron font-bold text-xl tracking-wider text-slate-900">Universe-<span className="text-primary text-sm font-normal">Empires-Dominions</span></h1>
-             <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">Server: Nexus-Alpha // User: {username || "Commander"}</p>
+             <h1 className={cn("font-orbitron font-bold tracking-wider text-slate-900", isMobile ? "text-base" : "text-xl")}>Universe-<span className="text-primary text-sm font-normal">Empires-Dominions</span></h1>
+             <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">
+               Server: Nexus-Alpha // User: {username || "Commander"}
+             </p>
            </div>
+          </div>
+
+          {isMobile && (
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-[0.2em]">
+              <MonitorSmartphone className="w-4 h-4 text-primary" />
+              <span>{displayPreferences.deviceProfile === "auto" ? "Auto" : displayPreferences.deviceProfile}</span>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className={cn("flex flex-col gap-2", !isMobile && "items-end")}>
           <div className="hidden lg:flex items-center gap-1">
               {[
               { href: "/forums", label: "Forums" },
@@ -548,7 +814,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             ))}
           </div>
 
-          <div className="flex gap-3">
+          <div className={cn(
+            "flex gap-2 overflow-x-auto scrollbar-hide pb-1",
+            isMobile ? "w-full" : "justify-end",
+          )}>
             <TurnDisplay 
               currentTurns={turnData?.currentTurns || 0} 
               totalTurns={turnData?.totalTurns || 0} 
@@ -563,92 +832,28 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             <ResourceDisplay icon={Droplets} label="Water" value={resources.water} colorClass="text-cyan-600" />
           </div>
         </div>
+        </div>
       </header>
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col overflow-y-auto scrollbar-hide">
-          
-          <div className="p-6">
-             <div className="bg-slate-100 border border-slate-200 p-4 rounded text-center">
-                <div className="w-16 h-16 mx-auto bg-white rounded-full border-2 border-primary mb-3 shadow-sm overflow-hidden">
-                  <img
-                    src={sidebarPlanetImage}
-                    alt={planetName || "Planet"}
-                    className="w-full h-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src = fallbackPlanetImage;
-                    }}
-                  />
-                </div>
-                <h3 className="font-orbitron font-bold text-slate-900">{planetName}</h3>
-                <p className="text-xs text-muted-foreground">[{coordinates}]</p>
-             </div>
-          </div>
-
-          <nav className="flex-1 py-2">
-            {/* Main Overview */}
-            <SidebarItem href="/" icon={LayoutDashboard} label="Overview" active={location === "/"} />
-            
-            {menuSections.map((section) => (
-              <CollapsibleMenu
-                key={section.title}
-                title={section.title}
-                icon={section.icon}
-                groups={section.groups}
-                location={location}
-                defaultOpen={section.title === "Empire"}
-              />
-            ))}
-            
-            {/* System */}
-            <div className="px-4 mt-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>
-            {systemItems.map((item) => (
-              <SidebarItem
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                active={isNavItemActive(item, location)}
-              />
-            ))}
-            
-            {isAdmin && (
-               <>
-                  <div className="px-4 mt-4 mb-2 text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
-                     <ShieldAlert className="w-3 h-3" /> Administration
-                  </div>
-                  {adminItems.map((item) => (
-                    <SidebarItem
-                      key={item.href}
-                      href={item.href}
-                      icon={item.icon}
-                      label={item.label}
-                      active={isNavItemActive(item, location)}
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                    />
-                  ))}
-               </>
-            )}
-          </nav>
-
-          <div className="p-4 border-t border-slate-200">
-             <button 
-               onClick={logout}
-               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded transition-colors text-sm font-bold uppercase tracking-wider"
-             >
-               <LogOut className="w-4 h-4" /> Logout
-             </button>
-          </div>
+        <aside className="hidden w-64 bg-white border-r border-slate-200 md:flex md:flex-col md:overflow-y-auto md:scrollbar-hide">
+          <GameSidebar
+            location={location}
+            planetName={planetName}
+            coordinates={coordinates}
+            isAdmin={isAdmin}
+            logout={logout}
+            touchMode={touchMode}
+          />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent bg-slate-50">
-           <div className="max-w-6xl mx-auto">
+        <main className={cn("flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent bg-slate-50", contentPaddingClass)}>
+           <div className={cn(contentWidthClass, "mx-auto")}>
              {activePageContext && (
                <section className="mb-6 rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
-                 <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-6 py-5 text-white">
+                 <div className={cn("border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 text-white", isMobile ? "px-4 py-4" : "px-6 py-5")}>
                    <div className="flex flex-wrap items-start justify-between gap-4">
                      <div className="space-y-2">
                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/80">
@@ -670,7 +875,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          </div>
                        </div>
                      </div>
-                     <div className="rounded-xl border border-cyan-200/15 bg-white/5 px-4 py-3 text-right">
+                     <div className={cn("rounded-xl border border-cyan-200/15 bg-white/5 px-4 py-3 text-right", isMobile && "w-full text-left")}>
                        <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Current Submenu</div>
                        <div className="mt-1 font-rajdhani text-lg font-semibold uppercase tracking-wider text-cyan-100">
                          {activePageContext.group}
@@ -679,8 +884,8 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                    </div>
                  </div>
 
-                 <div className="px-6 py-4">
-                   <div className="mb-3 flex items-center justify-between gap-3">
+                 <div className={cn(isMobile ? "px-4 py-4" : "px-6 py-4")}>
+                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                      <div>
                        <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Sub Pages</div>
                        <div className="text-sm text-slate-600">
@@ -731,9 +936,9 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </main>
       </div>
 
-      <footer className="h-8 border-t border-slate-200 bg-white px-6 flex items-center justify-between text-[11px] text-slate-500 font-mono" data-testid="footer-build-info">
+      <footer className="border-t border-slate-200 bg-white px-4 py-2 sm:px-6 flex flex-col gap-1 sm:h-8 sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-500 font-mono" data-testid="footer-build-info">
         <div>universe-empire-domions</div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <span>Version: {appVersion}</span>
           <span>Build: {buildId}</span>
           <span>Time: {buildTime}</span>

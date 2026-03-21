@@ -67,6 +67,54 @@ body {
   min-height: 100vh;
 }
 
+html[data-touch-ui="true"] button,
+html[data-touch-ui="true"] [role="button"],
+html[data-touch-ui="true"] a,
+html[data-touch-ui="true"] input,
+html[data-touch-ui="true"] select,
+html[data-touch-ui="true"] textarea,
+html[data-touch-ui="true"] [data-radix-collection-item] {
+  touch-action: manipulation;
+}
+
+html[data-touch-ui="true"][data-touch-target-size="comfortable"] button,
+html[data-touch-ui="true"][data-touch-target-size="comfortable"] [role="button"],
+html[data-touch-ui="true"][data-touch-target-size="comfortable"] a[data-testid^="link-"] {
+  min-height: 44px;
+}
+
+html[data-touch-ui="true"][data-touch-target-size="large"] button,
+html[data-touch-ui="true"][data-touch-target-size="large"] [role="button"],
+html[data-touch-ui="true"][data-touch-target-size="large"] a[data-testid^="link-"] {
+  min-height: 50px;
+}
+
+html.compact-ui .glass-panel,
+html.compact-ui .card {
+  border-radius: calc(var(--radius) - 2px);
+}
+
+html.reduced-motion-ui *,
+html.reduced-motion-ui *::before,
+html.reduced-motion-ui *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (max-width: 767px) {
+  body {
+    overscroll-behavior-y: contain;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Custom Scrollbar for that futuristic feel */
 ::-webkit-scrollbar {
   width: 8px;

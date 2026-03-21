@@ -54,6 +54,12 @@ type PlayerOptions = {
       language: string;
       timeFormat: string;
       numberFormat: string;
+      deviceProfile: string;
+      mobileOptimized: boolean;
+      touchControls: boolean;
+      touchTargetSize: string;
+      browserWidth: string;
+      stickyMobileBars: boolean;
    };
    sound: {
       enabled: boolean;
@@ -146,6 +152,21 @@ export default function Settings() {
       language: "en",
       timeFormat: "24h",
       numberFormat: "comma",
+      deviceProfile: "auto",
+      mobileOptimized: true,
+      touchControls: true,
+      touchTargetSize: "comfortable",
+      browserWidth: "standard",
+      stickyMobileBars: true,
+  });
+
+  const [viewportInfo, setViewportInfo] = useState({
+    width: 0,
+    height: 0,
+    orientation: "landscape",
+    breakpoint: "desktop",
+    touch: false,
+    pixelRatio: 1,
   });
 
   const [soundSettings, setSoundSettings] = useState({
@@ -205,10 +226,47 @@ export default function Settings() {
          language: playerOptions.display.language,
          timeFormat: playerOptions.display.timeFormat,
          numberFormat: playerOptions.display.numberFormat,
+         deviceProfile: playerOptions.display.deviceProfile,
+         mobileOptimized: playerOptions.display.mobileOptimized,
+         touchControls: playerOptions.display.touchControls,
+         touchTargetSize: playerOptions.display.touchTargetSize,
+         browserWidth: playerOptions.display.browserWidth,
+         stickyMobileBars: playerOptions.display.stickyMobileBars,
       });
       setSoundSettings(playerOptions.sound);
       setPrivacySettings(playerOptions.privacy);
    }, [playerOptions]);
+
+   useEffect(() => {
+      const updateViewportInfo = () => {
+         const width = window.innerWidth;
+         const height = window.innerHeight;
+         const breakpoint =
+            width < 480 ? "small-phone" :
+            width < 768 ? "phone" :
+            width < 1024 ? "tablet" :
+            width < 1440 ? "desktop" :
+            "wide";
+
+         setViewportInfo({
+            width,
+            height,
+            orientation: width >= height ? "landscape" : "portrait",
+            breakpoint,
+            touch: window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
+            pixelRatio: Number(window.devicePixelRatio || 1),
+         });
+      };
+
+      updateViewportInfo();
+      window.addEventListener("resize", updateViewportInfo);
+      window.addEventListener("orientationchange", updateViewportInfo);
+
+      return () => {
+         window.removeEventListener("resize", updateViewportInfo);
+         window.removeEventListener("orientationchange", updateViewportInfo);
+      };
+   }, []);
 
    const saveProfileMutation = useMutation({
       mutationFn: () => fetchJson("/api/account/profile", {
@@ -298,7 +356,7 @@ export default function Settings() {
          body: JSON.stringify({ confirmText: "RESET" }),
       }),
       onSuccess: (result) => {
-         toast({ title: "Universe reset queued", description: result.message, variant: "destructive" });
+         toast({ title: "Universe reset complete", description: result.message, variant: "destructive" });
          queryClient.invalidateQueries({ queryKey: ["admin-operations"] });
       },
       onError: (error: Error) => {
@@ -651,7 +709,7 @@ export default function Settings() {
 
            {/* DISPLAY TAB */}
            <TabsContent value="display" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                  <Card className="bg-white border-slate-200" data-testid="card-display-theme">
                     <CardHeader>
                        <CardTitle className="flex items-center gap-2 text-slate-900">
@@ -758,6 +816,126 @@ export default function Settings() {
                        <Button className="w-full" onClick={() => savePlayerOptionsMutation.mutate()} disabled={savePlayerOptionsMutation.isPending}>
                           <Save className="w-4 h-4 mr-2" /> Save Display Settings
                        </Button>
+                    </CardContent>
+                 </Card>
+
+                 <Card className="bg-white border-slate-200" data-testid="card-display-mobile-touch">
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2 text-slate-900">
+                          <Smartphone className="w-5 h-5 text-emerald-600" /> Mobile, Touch & Browser
+                       </CardTitle>
+                       <CardDescription>Optimize layout behavior for phones, tablets, touch screens, and browser widths.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                       <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700">Device Profile</label>
+                          <Select value={displaySettings.deviceProfile} onValueChange={(v) => setDisplaySettings({ ...displaySettings, deviceProfile: v })}>
+                             <SelectTrigger className="bg-slate-50 border-slate-200">
+                                <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="auto">Auto Detect</SelectItem>
+                                <SelectItem value="phone">Phone Layout</SelectItem>
+                                <SelectItem value="tablet">Tablet Layout</SelectItem>
+                                <SelectItem value="desktop">Desktop Layout</SelectItem>
+                                <SelectItem value="wide">Wide Browser Layout</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+
+                       <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700">Browser Width</label>
+                          <Select value={displaySettings.browserWidth} onValueChange={(v) => setDisplaySettings({ ...displaySettings, browserWidth: v })}>
+                             <SelectTrigger className="bg-slate-50 border-slate-200">
+                                <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="compact">Compact Command</SelectItem>
+                                <SelectItem value="standard">Standard Browser</SelectItem>
+                                <SelectItem value="wide">Wide Browser</SelectItem>
+                                <SelectItem value="full">Full Width</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+
+                       <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700">Touch Target Size</label>
+                          <Select value={displaySettings.touchTargetSize} onValueChange={(v) => setDisplaySettings({ ...displaySettings, touchTargetSize: v })}>
+                             <SelectTrigger className="bg-slate-50 border-slate-200">
+                                <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="compact">Compact</SelectItem>
+                                <SelectItem value="comfortable">Comfortable</SelectItem>
+                                <SelectItem value="large">Large</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+
+                       <div className="grid grid-cols-1 gap-3">
+                          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                             <div>
+                                <div className="font-medium text-slate-900">Mobile Optimized Layout</div>
+                                <div className="text-xs text-slate-500">Use drawer navigation, compact spacing, and mobile-friendly stacks.</div>
+                             </div>
+                             <Switch checked={displaySettings.mobileOptimized} onCheckedChange={(v) => setDisplaySettings({ ...displaySettings, mobileOptimized: v })} />
+                          </div>
+
+                          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                             <div>
+                                <div className="font-medium text-slate-900">Touch Controls</div>
+                                <div className="text-xs text-slate-500">Increase touch hit zones and enable touch-oriented interactions.</div>
+                             </div>
+                             <Switch checked={displaySettings.touchControls} onCheckedChange={(v) => setDisplaySettings({ ...displaySettings, touchControls: v })} />
+                          </div>
+
+                          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                             <div>
+                                <div className="font-medium text-slate-900">Sticky Mobile Bars</div>
+                                <div className="text-xs text-slate-500">Keep the top command and resource bar visible on small screens.</div>
+                             </div>
+                             <Switch checked={displaySettings.stickyMobileBars} onCheckedChange={(v) => setDisplaySettings({ ...displaySettings, stickyMobileBars: v })} />
+                          </div>
+                       </div>
+
+                       <Button className="w-full" onClick={() => savePlayerOptionsMutation.mutate()} disabled={savePlayerOptionsMutation.isPending}>
+                          <Save className="w-4 h-4 mr-2" /> Save Mobile & Touch Settings
+                       </Button>
+                    </CardContent>
+                 </Card>
+
+                 <Card className="bg-white border-slate-200 xl:col-span-3" data-testid="card-display-viewport-diagnostics">
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2 text-slate-900">
+                          <Monitor className="w-5 h-5 text-cyan-600" /> Viewport Diagnostics
+                       </CardTitle>
+                       <CardDescription>Live screen and browser data so you can confirm how the interface is being classified.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Resolution</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{viewportInfo.width} x {viewportInfo.height}</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Breakpoint</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{viewportInfo.breakpoint}</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Orientation</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{viewportInfo.orientation}</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Touch</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{viewportInfo.touch ? "Enabled" : "No"}</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Pixel Ratio</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{viewportInfo.pixelRatio.toFixed(2)}x</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">Saved Layout</div>
+                          <div className="mt-2 text-xl font-bold text-slate-900">{displaySettings.browserWidth}</div>
+                       </div>
                     </CardContent>
                  </Card>
               </div>

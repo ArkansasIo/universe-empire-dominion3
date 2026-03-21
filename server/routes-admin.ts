@@ -4,6 +4,7 @@ import { db } from "./db";
 import { isAuthenticated } from "./basicAuth";
 import { storage } from "./storage";
 import { adminUsers, users, playerStates } from "../shared/schema";
+import { UniverseResetService } from "./services/universeResetService";
 
 type ModerationStatus = "active" | "muted" | "banned";
 
@@ -154,6 +155,15 @@ async function loadOperations(): Promise<AdminOperation[]> {
   return (setting.value as AdminOperation[]).slice(-200);
 }
 
+async function saveOperations(operations: AdminOperation[]): Promise<void> {
+  await storage.setSetting(
+    getOperationsKey(),
+    operations.slice(-200),
+    "Admin operation queue and history",
+    "admin"
+  );
+}
+
 async function appendOperation(operation: Omit<AdminOperation, "id" | "requestedAt">): Promise<AdminOperation> {
   const operations = await loadOperations();
   const nextOperation: AdminOperation = {
@@ -170,6 +180,26 @@ async function appendOperation(operation: Omit<AdminOperation, "id" | "requested
   );
 
   return nextOperation;
+}
+
+async function updateOperation(
+  operationId: string,
+  updates: Partial<Pick<AdminOperation, "status" | "completedAt" | "notes">>,
+): Promise<AdminOperation | null> {
+  const operations = await loadOperations();
+  const operationIndex = operations.findIndex((operation) => operation.id === operationId);
+
+  if (operationIndex === -1) {
+    return null;
+  }
+
+  operations[operationIndex] = {
+    ...operations[operationIndex],
+    ...updates,
+  };
+
+  await saveOperations(operations);
+  return operations[operationIndex];
 }
 
 export function registerAdminRoutes(app: Express) {
@@ -719,7 +749,15 @@ export function registerAdminRoutes(app: Express) {
         type: "reset_universe",
         status: "queued",
         requestedBy: actorId,
-        notes: "Universe reset queued by admin",
+        notes: "Universe reset started by admin",
+      });
+
+      const summary = await UniverseResetService.resetUniverse();
+      const completedAt = Date.now();
+      const completedOperation = await updateOperation(operation.id, {
+        status: "completed",
+        completedAt,
+        notes: `Universe reset completed for ${summary.accountCount} accounts`,
       });
 
       await storage.setSetting(
@@ -728,26 +766,34 @@ export function registerAdminRoutes(app: Express) {
           operationId: operation.id,
           requestedAt: operation.requestedAt,
           requestedBy: actorId,
-          status: "queued",
+          status: "completed",
+          completedAt,
+          summary,
         },
-        "Queued universe reset request",
+        "Most recent universe reset request",
         "admin"
       );
 
       await appendAudit({
         actorId,
-        action: "queue_universe_reset",
-        details: `operationId=${operation.id}`,
+        action: "execute_universe_reset",
+        details: `operationId=${operation.id};accounts=${summary.accountCount}`,
       });
 
       res.json({
         success: true,
-        operation,
-        message: "Universe reset has been queued",
+        operation: completedOperation || {
+          ...operation,
+          status: "completed",
+          completedAt,
+          notes: `Universe reset completed for ${summary.accountCount} accounts`,
+        },
+        message: `Universe reset completed for ${summary.accountCount} account${summary.accountCount === 1 ? "" : "s"}`,
+        summary,
       });
     } catch (error) {
-      console.error("Failed to queue universe reset:", error);
-      res.status(500).json({ message: "Failed to queue universe reset" });
+      console.error("Failed to reset universe:", error);
+      res.status(500).json({ message: "Failed to reset universe" });
     }
   });
 

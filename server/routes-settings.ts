@@ -12,6 +12,8 @@ const DEFAULT_PLAYER_OPTIONS = {
     fleetArrival: true,
     messages: true,
     allianceActivity: false,
+    browserNotifications: true,
+    emailNotifications: false,
   },
   display: {
     darkMode: false,
@@ -21,6 +23,12 @@ const DEFAULT_PLAYER_OPTIONS = {
     language: "en",
     timeFormat: "24h",
     numberFormat: "comma",
+    deviceProfile: "auto",
+    mobileOptimized: true,
+    touchControls: true,
+    touchTargetSize: "comfortable",
+    browserWidth: "standard",
+    stickyMobileBars: true,
   },
   sound: {
     enabled: true,

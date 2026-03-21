@@ -14,6 +14,10 @@ import {
   BUILDING_COSTS,
   SHIP_COSTS,
 } from "./gameEngine";
+import {
+  calculateOgameMissionDistance,
+  calculateOgameTravelTimeSeconds,
+} from "./services/ogameMissionService";
 
 type FleetUnits = Record<string, number>;
 type MissionResources = {
@@ -87,28 +91,8 @@ function normalizeFleetUnits(raw: unknown): FleetUnits {
   return fleet;
 }
 
-function parseCoordinateVector(raw: unknown): [number, number, number] {
-  const matches = String(raw || "")
-    .match(/\d+/g)
-    ?.map((part) => Number(part))
-    .filter((value) => Number.isFinite(value) && value >= 0) || [];
-
-  return [
-    matches[0] || 0,
-    matches[1] || 0,
-    matches[2] || 0,
-  ];
-}
-
 function calculateMissionDistance(origin: unknown, destination: unknown): number {
-  const [originGalaxy, originSystem, originPlanet] = parseCoordinateVector(origin);
-  const [targetGalaxy, targetSystem, targetPlanet] = parseCoordinateVector(destination);
-
-  return (
-    Math.abs(originGalaxy - targetGalaxy) * 20000 +
-    Math.abs(originSystem - targetSystem) * 95 +
-    Math.abs(originPlanet - targetPlanet) * 5
-  );
+  return calculateOgameMissionDistance(origin, destination);
 }
 
 function getFleetMissionStats(units: FleetUnits) {
@@ -138,11 +122,12 @@ function getFleetMissionStats(units: FleetUnits) {
 }
 
 function calculateTravelTimeSeconds(origin: unknown, destination: unknown, units: FleetUnits): number {
-  const distance = calculateMissionDistance(origin, destination);
   const fleetStats = getFleetMissionStats(units);
-  const distanceFactor = 1 + distance / 400;
-  const speedFactor = Math.max(0.35, 10000 / Math.max(1, fleetStats.slowestSpeed));
-  return Math.max(30, Math.min(5400, Math.ceil(distanceFactor * speedFactor * 60)));
+  return calculateOgameTravelTimeSeconds({
+    origin,
+    destination,
+    slowestSpeed: fleetStats.slowestSpeed,
+  });
 }
 
 function splitRewardPool(total: number, weights: { metal: number; crystal: number; deuterium: number }) {
@@ -200,8 +185,10 @@ function normalizeMissionRecord(mission: any) {
   const target = mission?.target || mission?.destination || "";
   const status = mission?.status === "in-transit" ? "outbound" : (mission?.status || "outbound");
   const departureTime = Number(mission?.departureTime || Date.now());
-  const arrivalTime = Number(mission?.arrivalTime || departureTime);
-  const returnTime = Number(mission?.returnTime || arrivalTime);
+  const distance = Number(mission?.distance || calculateMissionDistance(mission?.origin, target));
+  const travelTimeSeconds = Number(mission?.travelTimeSeconds || calculateTravelTimeSeconds(mission?.origin, target, units));
+  const arrivalTime = Number(mission?.arrivalTime || (departureTime + travelTimeSeconds * 1000));
+  const returnTime = Number(mission?.returnTime || (arrivalTime + travelTimeSeconds * 1000));
 
   return {
     ...mission,
@@ -210,6 +197,8 @@ function normalizeMissionRecord(mission: any) {
     units,
     ships: units,
     status,
+    distance,
+    travelTimeSeconds,
     departureTime,
     arrivalTime,
     returnTime,
@@ -448,6 +437,7 @@ export function registerGameActionRoutes(app: Express) {
       }
       
       const origin = playerState.coordinates || "1:1:1";
+      const distance = calculateMissionDistance(origin, destination);
       const travelTime = calculateTravelTimeSeconds(origin, destination, requestedShips);
       const now = Date.now();
       const arrivalTime = now + travelTime * 1000;
@@ -464,6 +454,7 @@ export function registerGameActionRoutes(app: Express) {
         units: requestedShips,
         ships: requestedShips,
         cargo: missionType === "transport" ? normalizeMissionResources(cargo) : undefined,
+        distance,
         departureTime: now,
         arrivalTime,
         returnTime,
@@ -487,6 +478,7 @@ export function registerGameActionRoutes(app: Express) {
         destination,
         ships: requestedShips,
         mission: missionRecord,
+        distance,
         arrivalTime,
         travelTime,
       });

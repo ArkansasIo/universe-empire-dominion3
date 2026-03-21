@@ -285,7 +285,7 @@ export default function Admin() {
       onSuccess: () => {
          queryClient.invalidateQueries({ queryKey: ["admin-operations"] });
          queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
-         toast({ title: "Universe reset queued", description: "Reset operation has been queued." });
+         toast({ title: "Universe reset complete", description: "Reset operation completed and starter states were rebuilt." });
       },
       onError: (error: Error) => {
          toast({ title: "Reset request failed", description: error.message, variant: "destructive" });

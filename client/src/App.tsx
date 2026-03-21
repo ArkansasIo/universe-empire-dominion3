@@ -76,6 +76,7 @@ const ResearchLab = lazy(() => import("@/pages/ResearchLab"));
 const GameAssetsGallery = lazy(() => import("@/pages/GameAssetsGallery"));
 const PlanetDetail = lazy(() => import("@/pages/PlanetDetail"));
 const PlanetCommand = lazy(() => import("@/pages/PlanetCommand"));
+const PlanetaryOccupation = lazy(() => import("@/pages/PlanetaryOccupation"));
 const OgameCompendium = lazy(() => import("@/pages/OgameCompendium"));
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
 
@@ -246,6 +247,7 @@ function RouterContent() {
       <Route path="/empire-command-center" component={EmpireCommandCenter} />
       <Route path="/planet/:id" component={PlanetDetail} />
       <Route path="/planet-command" component={PlanetCommand} />
+      <Route path="/planet-occupation" component={PlanetaryOccupation} />
       <Route path="/research-lab" component={ResearchLab} />
       <Route path="/ogame-compendium" component={OgameCompendium} />
       <Route path="/leaderboard" component={Leaderboard} />

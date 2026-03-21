@@ -156,19 +156,6 @@ export default function ResearchLabPage() {
     },
   });
 
-  if (labLoading || queueLoading) {
-    return (
-      <GameLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-            <p className="text-muted-foreground font-rajdhani">Loading research labs...</p>
-          </div>
-        </div>
-      </GameLayout>
-    );
-  }
-
   const activeResearch = queueData?.queue?.[0];
   const allBonuses = bonusesData?.bonuses || [];
   const queue = queueData?.queue || [];
@@ -244,6 +231,19 @@ export default function ResearchLabPage() {
     if (p === "normal") return "secondary";
     return "outline";
   };
+
+  if (labLoading || queueLoading) {
+    return (
+      <GameLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+            <p className="text-muted-foreground font-rajdhani">Loading research labs...</p>
+          </div>
+        </div>
+      </GameLayout>
+    );
+  }
 
   return (
     <GameLayout>
