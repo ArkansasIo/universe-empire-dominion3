@@ -11,6 +11,29 @@ import { TURN_CONFIG, RESEARCH_TURN_MECHANICS } from '../shared/config/turnSyste
 
 const router = express.Router();
 
+router.get('/api/turns', isAuthenticated, async (req, res) => {
+  try {
+    const userId = (req.session as any)?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const turnInfo = await TurnSystemService.getTurnInfo(userId);
+    res.json({
+      success: true,
+      ...turnInfo,
+      currentTurns: turnInfo.currentTurns ?? turnInfo.turnsAvailable ?? 0,
+      totalTurns: turnInfo.totalTurns ?? turnInfo.totalTurnsGenerated ?? 0,
+      config: {
+        turnsPerMinute: TURN_CONFIG.TURNS_PER_MINUTE,
+        turnIntervalMs: TURN_CONFIG.TURN_INTERVAL_MS,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to get turn info',
+    });
+  }
+});
+
 /**
  * GET /api/turns/info
  * Get current turn information for player
@@ -24,6 +47,8 @@ router.get('/api/turns/info', isAuthenticated, async (req, res) => {
     res.json({
       success: true,
       ...turnInfo,
+      currentTurns: turnInfo.currentTurns ?? turnInfo.turnsAvailable ?? 0,
+      totalTurns: turnInfo.totalTurns ?? turnInfo.totalTurnsGenerated ?? 0,
       config: {
         turnsPerMinute: TURN_CONFIG.TURNS_PER_MINUTE,
         turnIntervalMs: TURN_CONFIG.TURN_INTERVAL_MS,
@@ -54,6 +79,25 @@ router.post('/api/turns/generate', isAuthenticated, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to generate turns',
+    });
+  }
+});
+
+router.post('/api/turns/spend', isAuthenticated, async (req, res) => {
+  try {
+    const userId = (req.session as any)?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const amount = Number(req.body?.amount ?? 0);
+    if (!Number.isInteger(amount) || amount < 1) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    const result = await TurnSystemService.spendTurns(userId, amount);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to spend turns',
     });
   }
 });

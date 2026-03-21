@@ -17,6 +17,38 @@ import {
 import { pool } from '../db';
 
 export class TurnSystemService {
+  private static normalizeTurnsData(rawTurnsData: any = {}) {
+    return {
+      totalTurnsGenerated: Number(rawTurnsData.totalTurnsGenerated || 0),
+      currentTurn: Number(rawTurnsData.currentTurn || 0),
+      lastTurnTimestamp: Number(rawTurnsData.lastTurnTimestamp || Date.now()),
+      turnsAvailable: Number(rawTurnsData.turnsAvailable || 0),
+      currentResearchTurns: Number(rawTurnsData.currentResearchTurns || 0),
+      researchTurnHistory: Array.isArray(rawTurnsData.researchTurnHistory) ? rawTurnsData.researchTurnHistory : [],
+    };
+  }
+
+  private static accrueOfflineTurns(rawTurnsData: any = {}) {
+    const turnsData = this.normalizeTurnsData(rawTurnsData);
+    const offlineTurns = calculateOfflineTurns(turnsData.lastTurnTimestamp);
+
+    if (offlineTurns <= 0) {
+      return { turnsData, offlineTurns };
+    }
+
+    const totalTurnsGenerated = turnsData.totalTurnsGenerated + offlineTurns;
+    return {
+      offlineTurns,
+      turnsData: {
+        ...turnsData,
+        turnsAvailable: Math.min(turnsData.turnsAvailable + offlineTurns, TURN_CONFIG.MAX_OFFLINE_TURNS),
+        totalTurnsGenerated,
+        currentTurn: Math.floor(totalTurnsGenerated / TURN_CONFIG.TURNS_PER_MINUTE),
+        lastTurnTimestamp: Date.now(),
+      },
+    };
+  }
+
   /**
    * Generate new turns for a player
    * Called by turn generation loop or on player login
@@ -32,24 +64,11 @@ export class TurnSystemService {
         throw new Error(`Player ${userId} not found`);
       }
 
-      const turnsData = result.rows[0].turns_data || {};
-      const lastTurnTime = turnsData.lastTurnTimestamp || Date.now();
-      const offlineTurns = calculateOfflineTurns(lastTurnTime);
+      const { turnsData, offlineTurns } = this.accrueOfflineTurns(result.rows[0].turns_data || {});
 
       if (offlineTurns === 0) {
         return turnsData.turnsAvailable || 0;
       }
-
-      // Cap available turns
-      const newAvailable = Math.min(
-        (turnsData.turnsAvailable || 0) + offlineTurns,
-        TURN_CONFIG.MAX_OFFLINE_TURNS
-      );
-
-      // Update turns data
-      turnsData.turnsAvailable = newAvailable;
-      turnsData.lastTurnTimestamp = Date.now();
-      turnsData.totalTurnsGenerated = (turnsData.totalTurnsGenerated || 0) + offlineTurns;
 
       await pool.query(
         `UPDATE player_states 
@@ -58,9 +77,55 @@ export class TurnSystemService {
         [JSON.stringify(turnsData), userId]
       );
 
-      return newAvailable;
+      return turnsData.turnsAvailable;
     } catch (error) {
       console.error('Error generating turns:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Consume turns for general gameplay actions
+   */
+  static async spendTurns(userId: string, turnsToConsume: number) {
+    try {
+      const playerResult = await pool.query(
+        `SELECT turns_data FROM player_states WHERE user_id = $1`,
+        [userId]
+      );
+
+      if (!playerResult.rows[0]) {
+        throw new Error(`Player ${userId} not found`);
+      }
+
+      const { turnsData } = this.accrueOfflineTurns(playerResult.rows[0].turns_data || {});
+
+      if (turnsData.turnsAvailable < turnsToConsume) {
+        throw new Error(`Insufficient turns. Have ${turnsData.turnsAvailable}, need ${turnsToConsume}`);
+      }
+
+      const nextTurnsData = {
+        ...turnsData,
+        turnsAvailable: turnsData.turnsAvailable - turnsToConsume,
+      };
+
+      await pool.query(
+        `UPDATE player_states
+         SET turns_data = $1, updated_at = NOW()
+         WHERE user_id = $2`,
+        [JSON.stringify(nextTurnsData), userId]
+      );
+
+      return {
+        success: true,
+        turnsSpent: turnsToConsume,
+        turnsAvailable: nextTurnsData.turnsAvailable,
+        currentTurns: nextTurnsData.turnsAvailable,
+        totalTurns: nextTurnsData.totalTurnsGenerated,
+        currentTurn: nextTurnsData.currentTurn,
+      };
+    } catch (error) {
+      console.error('Error spending turns:', error);
       throw error;
     }
   }
@@ -80,7 +145,7 @@ export class TurnSystemService {
         throw new Error(`Player ${userId} not found`);
       }
 
-      const turnsData = playerResult.rows[0].turns_data || {};
+      const { turnsData } = this.accrueOfflineTurns(playerResult.rows[0].turns_data || {});
       const researchQueue = playerResult.rows[0].research_queue || [];
 
       // Check if player has enough turns
@@ -127,6 +192,8 @@ export class TurnSystemService {
         success: true,
         turnsConsumed: turnsToConsume,
         turnsRemaining: turnsData.turnsAvailable,
+        currentTurns: turnsData.turnsAvailable,
+        totalTurns: turnsData.totalTurnsGenerated,
         progressGained: totalProgress,
         researchProgress: activeResearch.progressPercent,
         researchCompleted,
@@ -152,17 +219,16 @@ export class TurnSystemService {
         throw new Error(`Player ${userId} not found`);
       }
 
-      const turnsData = result.rows[0].turns_data || {};
+      const { turnsData, offlineTurns } = this.accrueOfflineTurns(result.rows[0].turns_data || {});
       const researchQueue = result.rows[0].research_queue || [];
       const activeResearch = researchQueue.find((r: any) => r.active);
-
-      // Generate any pending offline turns
-      const offlineTurns = calculateOfflineTurns(turnsData.lastTurnTimestamp || Date.now());
 
       return {
         totalTurnsGenerated: turnsData.totalTurnsGenerated || 0,
         currentTurn: turnsData.currentTurn || Math.floor((turnsData.totalTurnsGenerated || 0) / TURN_CONFIG.TURNS_PER_MINUTE),
-        turnsAvailable: (turnsData.turnsAvailable || 0) + offlineTurns,
+        turnsAvailable: turnsData.turnsAvailable || 0,
+        currentTurns: turnsData.turnsAvailable || 0,
+        totalTurns: turnsData.totalTurnsGenerated || 0,
         lastTurnTimestamp: turnsData.lastTurnTimestamp,
         offlineTurnsPending: offlineTurns,
         currentResearchTurns: turnsData.currentResearchTurns || 0,
