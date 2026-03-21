@@ -1,0 +1,57 @@
+@import "./sub/button-system.css";
+@import "./sub/panel-system.css";
+@import "./sub/sidebar-system.css";
+@import "./sub/background-system.css";
+@import "./sub/navigation-system.css";
+@import "./sub/form-system.css";
+@import "./sub/data-system.css";
+
+:root {
+  --sd-cut-corner: 6px;
+  --sd-font-display: "Orbitron", sans-serif;
+  --sd-font-ui: "Rajdhani", sans-serif;
+
+  --sd-text-primary: #e8f4ff;
+  --sd-text-secondary: #9bb6c9;
+  --sd-text-highlight: #4fd4ff;
+
+  --sd-button-top: #2f3c4d;
+  --sd-button-bottom: #1c2633;
+  --sd-button-top-hover: #3f5f7a;
+  --sd-button-bottom-hover: #20354a;
+  --sd-button-top-active: #00a8ff;
+  --sd-button-bottom-active: #005a8d;
+  --sd-button-frame: #4f6b86;
+  --sd-button-frame-active: #2bd1ff;
+
+  --sd-panel-top: rgba(20, 30, 40, 0.95);
+  --sd-panel-bottom: rgba(10, 15, 20, 0.95);
+  --sd-panel-border: #3a5168;
+  --sd-panel-glow: rgba(0, 150, 255, 0.15);
+
+  --sd-star-glow: #ffb347;
+  --sd-orbit-lines: #6ec5ff;
+  --sd-hyperlanes: #3bd1ff;
+  --sd-nebula-a: rgba(80, 110, 255, 0.16);
+  --sd-nebula-b: rgba(168, 78, 255, 0.12);
+
+  --sd-resource-metal: #cfd8dc;
+  --sd-resource-energy: #ffd54f;
+  --sd-resource-crystal: #ff5252;
+  --sd-resource-science: #64b5f6;
+  --sd-resource-alloy: #81c784;
+}
+
+.sd-future-text {
+  font-family: var(--sd-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sd-muted-text {
+  color: var(--sd-text-secondary);
+}
+
+.sd-highlight-text {
+  color: var(--sd-text-highlight);
+}

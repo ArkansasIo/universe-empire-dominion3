@@ -10,7 +10,7 @@ interface SceneLayerProps {
 
 export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayerProps) {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" data-testid="scene-layer">
+    <div className="sd-scene-layer pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" data-testid="scene-layer">
       <BrowserStrategyScene preset={preset} animate={animate} />
 
       <div
@@ -34,7 +34,7 @@ export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayer
       ) : null}
 
       <div
-        className="absolute inset-y-0 right-[-6vw] hidden w-[42vw] min-w-[340px] max-w-[620px] opacity-70 lg:block"
+        className="sd-scene-hero absolute inset-y-0 right-[-6vw] hidden w-[42vw] min-w-[340px] max-w-[620px] opacity-70 lg:block"
         style={{
           backgroundImage: `url(${preset.assetLayout.hero.path})`,
           backgroundRepeat: "no-repeat",
@@ -45,7 +45,7 @@ export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayer
       />
 
       <div
-        className="absolute bottom-[18%] left-[-3vw] hidden h-[30vw] w-[30vw] min-h-[200px] min-w-[200px] max-h-[420px] max-w-[420px] opacity-35 md:block"
+        className="sd-scene-support absolute bottom-[18%] left-[-3vw] hidden h-[30vw] w-[30vw] min-h-[200px] min-w-[200px] max-h-[420px] max-w-[420px] opacity-35 md:block"
         style={{
           backgroundImage: `url(${preset.assetLayout.support.path})`,
           backgroundRepeat: "no-repeat",
@@ -55,7 +55,7 @@ export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayer
       />
 
       <div
-        className="absolute left-[22%] top-[10%] hidden h-[180px] w-[340px] opacity-25 xl:block"
+        className="sd-scene-fleet absolute left-[22%] top-[10%] hidden h-[180px] w-[340px] opacity-25 xl:block"
         style={{
           backgroundImage: `url(${preset.assetLayout.fleet.path})`,
           backgroundRepeat: "no-repeat",
@@ -66,7 +66,7 @@ export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayer
       />
 
       <div
-        className="absolute inset-0 opacity-[0.14]"
+        className="sd-scene-grid absolute inset-0 opacity-[0.14]"
         style={{
           backgroundImage: `url(${preset.assetLayout.grid.path})`,
           backgroundSize: "cover",
@@ -76,7 +76,7 @@ export function SceneLayer({ preset, backdropImage, animate = true }: SceneLayer
 
       <div
         className={cn(
-          "absolute right-[12%] top-[18%] hidden h-[220px] w-[220px] rounded-full xl:block",
+          "sd-scene-ring absolute right-[12%] top-[18%] hidden h-[220px] w-[220px] rounded-full xl:block",
           "border border-white/10 bg-white/[0.03] backdrop-blur-[1px]",
         )}
         style={{

@@ -171,11 +171,11 @@ const SidebarItem = ({
 }) => (
   <Link href={href} data-testid={`link-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}>
     <div className={cn(
-      "flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
+      "sd-sidebar-item flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
       indentLevel === 2 ? "px-7 py-1.5 text-[11px]" : "px-5 py-2 text-[11px]",
       touchMode && (indentLevel === 2 ? "min-h-[46px]" : "min-h-[50px]"),
       active 
-        ? "bg-primary/10 border-primary text-primary font-bold" 
+        ? "sd-sidebar-item--active bg-primary/10 border-primary text-primary font-bold" 
         : "border-transparent hover:bg-slate-200 hover:text-primary hover:border-primary/50 text-muted-foreground",
       className
     )} onClick={onSelect}>
@@ -216,16 +216,16 @@ const CollapsibleMenu = ({
     <div className="mb-1">
       <div
         className={cn(
-          "flex items-stretch border-l-2 transition-all duration-200",
+          "sd-sidebar-section flex items-stretch border-l-2 transition-all duration-200",
           hasActiveChild
-            ? "bg-primary/5 border-primary/50 text-primary"
+            ? "sd-sidebar-section--active bg-primary/5 border-primary/50 text-primary"
             : "border-transparent text-muted-foreground hover:text-slate-700"
         )}
       >
         <Link href={sectionHref} data-testid={`link-menu-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           <div
             className={cn(
-              "flex flex-1 items-center gap-3 px-4 py-2 cursor-pointer touch-manipulation transition-colors duration-200",
+              "sd-sidebar-section-link flex flex-1 items-center gap-3 px-4 py-2 cursor-pointer touch-manipulation transition-colors duration-200",
               touchMode && "min-h-[50px]",
               hasActiveChild ? "text-primary" : "hover:bg-slate-100"
             )}
@@ -243,7 +243,7 @@ const CollapsibleMenu = ({
           onClick={() => setIsOpen(!isOpen)}
           data-testid={`button-menu-toggle-${title.toLowerCase().replace(/\s+/g, '-')}`}
           className={cn(
-            "flex w-12 items-center justify-center border-l border-slate-200/70 transition-colors duration-200",
+            "sd-sidebar-toggle flex w-12 items-center justify-center border-l border-slate-200/70 transition-colors duration-200",
             touchMode && "min-h-[50px]",
             hasActiveChild ? "bg-primary/5 text-primary" : "hover:bg-slate-100 text-slate-500"
           )}
@@ -257,7 +257,7 @@ const CollapsibleMenu = ({
             <div key={group.title} className="py-1">
               <Link href={getGroupHref(group)} data-testid={`link-group-${group.title.toLowerCase().replace(/\s+/g, '-')}`}>
                 <div
-                  className="px-6 py-2 text-[10px] font-bold tracking-[0.24em] text-slate-400 uppercase cursor-pointer transition-colors duration-200 hover:bg-white/70 hover:text-primary"
+                  className="sd-sidebar-group-link px-6 py-2 text-[10px] font-bold tracking-[0.24em] text-slate-400 uppercase cursor-pointer transition-colors duration-200 hover:bg-white/70 hover:text-primary"
                   onClick={onSelect}
                 >
                   {group.title}
@@ -605,13 +605,13 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
   const safeValue = Number.isFinite(value) ? value : 0;
 
   return (
-    <div className="flex shrink-0 items-center gap-2 rounded border border-slate-200 bg-white px-2.5 py-2 shadow-sm min-w-[112px] sm:min-w-[124px]">
+    <div className="sd-resource-chip flex shrink-0 items-center gap-2 rounded border border-slate-200 bg-white px-2.5 py-2 shadow-sm min-w-[112px] sm:min-w-[124px]" data-resource={label.toLowerCase()}>
       <div className={cn("rounded-full bg-slate-100 p-1.5", colorClass)}>
         <Icon className="w-3.5 h-3.5" />
       </div>
       <div className="flex flex-col">
         <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
-        <span className={cn("font-orbitron text-xs font-medium tabular-nums sm:text-sm", colorClass)}>
+        <span className={cn("sd-resource-value font-orbitron text-xs font-medium tabular-nums sm:text-sm", colorClass)}>
           {Math.floor(safeValue).toLocaleString()}
         </span>
       </div>
@@ -620,7 +620,7 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 };
 
 const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: number, totalTurns: number, isLoading: boolean }) => (
-  <div className="flex shrink-0 items-center gap-2 rounded border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-2.5 py-2 shadow-sm min-w-[148px] sm:min-w-[164px]" data-testid="display-turns">
+  <div className="sd-turn-chip flex shrink-0 items-center gap-2 rounded border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-2.5 py-2 shadow-sm min-w-[148px] sm:min-w-[164px]" data-testid="display-turns">
     <div className="rounded-full bg-indigo-100 p-1.5 text-indigo-600">
       {isLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
     </div>
@@ -665,7 +665,7 @@ function GameSidebar({
 
   return (
     <>
-      <div className="p-4">
+      <div className="sd-sidebar-console p-4">
         <div className="relative overflow-hidden rounded border border-slate-200 text-center">
           <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{ backgroundImage: `url(${sidebarBackdropImage})` }} />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 via-white/80 to-white/95" />
@@ -686,7 +686,7 @@ function GameSidebar({
             </div>
             <h3 className="font-orbitron text-sm font-bold text-slate-900">{planetName}</h3>
             <p className="text-xs text-muted-foreground">[{coordinates}]</p>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            <div className="sd-sidebar-status-pill mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
               <span>OGameX Assets</span>
               <span className="text-primary">Linked</span>
             </div>
@@ -710,7 +710,7 @@ function GameSidebar({
           />
         ))}
 
-        <div className="px-4 mt-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>
+        <div className="sd-sidebar-label px-4 mt-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">System</div>
         {systemItems.map((item) => (
           <SidebarItem
             key={item.href}
@@ -725,7 +725,7 @@ function GameSidebar({
 
         {isAdmin && (
           <>
-            <div className="px-4 mt-4 mb-2 text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
+            <div className="sd-sidebar-admin-label px-4 mt-4 mb-2 text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
               <ShieldAlert className="w-3 h-3" /> Administration
             </div>
             {adminItems.map((item) => (
@@ -782,7 +782,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
-  const [showPageCommandDeck, setShowPageCommandDeck] = useState(true);
+  const [showPageCommandDeck, setShowPageCommandDeck] = useState(false);
   const appVersion = import.meta.env.VITE_APP_VERSION || "Alpha 1.5.0";
   const buildId = import.meta.env.VITE_BUILD_ID || "dev";
   const buildTime = import.meta.env.VITE_BUILD_TIME || "local";
@@ -827,6 +827,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     coarsePointerQuery.addEventListener("change", updatePointerState);
     return () => coarsePointerQuery.removeEventListener("change", updatePointerState);
   }, []);
+
+  useEffect(() => {
+    setShowPageCommandDeck(false);
+  }, [location]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -981,7 +985,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className={cn(
-      "relative isolate min-h-screen overflow-hidden bg-slate-950/80 text-slate-900 flex flex-col",
+      "sd-game-shell relative isolate min-h-screen overflow-hidden bg-slate-950/80 text-slate-900 flex flex-col",
       touchMode && "touch-manipulation",
       !displayPreferences.showAnimations && "motion-reduce",
     )}>
@@ -993,7 +997,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       
       {/* Top Bar - Resources */}
       <header className={cn(
-        "relative z-20 border-b border-slate-200 bg-white/88 shadow-sm backdrop-blur-md",
+        "sd-topbar relative z-20 border-b border-slate-200 bg-white/88 shadow-sm backdrop-blur-md",
         isMobile && displayPreferences.stickyMobileBars && "sticky top-0",
       )}>
         <div className={cn(
@@ -1053,7 +1057,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className={cn("flex flex-col gap-2", !isMobile && "items-end")}>
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="sd-top-link-bar hidden lg:flex items-center gap-1">
               {[
               { href: "/forums", label: "Forums" },
               { href: "/about", label: "About" },
@@ -1079,11 +1083,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             "flex items-center gap-2",
             isMobile ? "w-full flex-wrap" : "justify-end"
           )}>
-            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+            <div className="sd-realm-label text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
               Active Realm
             </div>
             <div className={cn(
-              "flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2",
+              "sd-realm-shell flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2",
               isMobile ? "w-full" : "min-w-[270px]"
             )}>
               <Globe className="h-4 w-4 text-primary shrink-0" />
@@ -1105,7 +1109,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 </SelectContent>
               </Select>
               {selectedRealm && (
-                <div className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-700">
+                <div className="sd-realm-status rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-700">
                   {selectedRealm.status}
                 </div>
               )}
@@ -1135,7 +1139,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="hidden w-[17rem] border-r border-slate-200 bg-white/84 backdrop-blur-md md:flex md:w-[18rem] md:flex-col md:overflow-y-auto md:scrollbar-hide xl:w-[19rem]">
+        <aside className="sd-sidebar-shell hidden w-[17rem] border-r border-slate-200 bg-white/84 backdrop-blur-md md:flex md:w-[18rem] md:flex-col md:overflow-y-auto md:scrollbar-hide xl:w-[19rem]">
           <GameSidebar
             location={location}
             empireName={empireName}
@@ -1148,11 +1152,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </aside>
 
         {/* Main Content */}
-        <main className={cn("min-w-0 flex-1 overflow-y-auto bg-slate-50/55 backdrop-blur-[2px] scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent", contentPaddingClass)}>
+        <main className={cn("sd-main-stage min-w-0 flex-1 overflow-y-auto bg-slate-50/55 backdrop-blur-[2px] scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent", contentPaddingClass)}>
            <div className={cn(contentWidthClass, "mx-auto")}>
              {activePageContext && (
-               <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
-                 <div className={cn("border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 bg-cover bg-center text-white", isMobile ? "px-4 py-4" : "px-5 py-4")} style={{ backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.88)), url(${contextBackdropImage})` }}>
+               <section className="sd-panel mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
+                 <div className={cn("sd-panel-header border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 bg-cover bg-center text-white", isMobile ? "px-4 py-4" : "px-5 py-4")} style={{ backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.88)), url(${contextBackdropImage})` }}>
                    <div className="flex flex-wrap items-start justify-between gap-4">
                      <div className="space-y-2">
                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/80">
@@ -1175,22 +1179,24 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                        </div>
                      </div>
                      <div className={cn("flex items-start gap-3", isMobile && "w-full justify-between")}>
-                       <div className={cn("rounded-xl border border-cyan-200/15 bg-white/5 px-3 py-2.5 text-right", isMobile && "flex-1 text-left")}>
-                         <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Current Submenu</div>
+                       <div className={cn("sd-submenu-indicator rounded-xl border border-cyan-200/15 bg-white/5 px-3 py-2.5 text-right", isMobile && "flex-1 text-left")}>
+                         <div className="sd-eyebrow text-[10px] uppercase tracking-[0.24em] text-slate-400">Current Submenu</div>
                          <div className="mt-1 font-rajdhani text-lg font-semibold uppercase tracking-wider text-cyan-100">
                            {activePageContext.group}
                          </div>
                        </div>
-                       <Button
-                         type="button"
-                         variant="outline"
-                         size="icon"
-                         className="h-11 w-11 shrink-0 border-white/15 bg-white/5 text-cyan-100 hover:bg-white/10 hover:text-white"
-                         onClick={() => setShowPageCommandDeck(false)}
-                       >
-                         <X className="h-4 w-4" />
-                         <span className="sr-only">Collapse page menu deck</span>
-                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-11 w-11 shrink-0 border-white/15 bg-white/5 text-cyan-100 hover:bg-white/10 hover:text-white"
+                        onClick={() => setShowPageCommandDeck((current) => !current)}
+                      >
+                        {showPageCommandDeck ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                        <span className="sr-only">
+                          {showPageCommandDeck ? "Collapse page menu deck" : "Open page menu deck"}
+                        </span>
+                      </Button>
                      </div>
                    </div>
                  </div>
@@ -1198,8 +1204,8 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                  {showPageCommandDeck ? (
                  <div className={cn(isMobile ? "px-4 py-4" : "px-5 py-4")}>
                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                     <div>
-                       <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Sub Pages</div>
+                       <div>
+                         <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Sub Pages</div>
                        <div className="text-sm text-slate-600">
                          {activePageContext.groupDescription || "Jump between related pages in this submenu group."}
                        </div>
@@ -1217,7 +1223,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          <Link key={item.href} href={item.href}>
                            <div
                              className={cn(
-                               "h-full min-w-0 cursor-pointer rounded-xl border px-3 py-3 transition-all duration-200",
+                               "sd-subpage-card h-full min-w-0 cursor-pointer rounded-xl border px-3 py-3 transition-all duration-200",
                                itemActive
                                  ? "border-primary bg-primary/10 shadow-sm"
                                  : "border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-white"
@@ -1244,7 +1250,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                    <div className="mt-4 border-t border-slate-200 pt-4">
                      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                        <div>
-                         <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Tiles</div>
+                         <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Tiles</div>
                          <div className="text-sm text-slate-600">
                            Asset-backed shortcuts for linked pages, images, and core game functions.
                          </div>
@@ -1262,7 +1268,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                            <Link key={tile.href} href={tile.href}>
                              <div
                                className={cn(
-                                 "group relative min-h-[152px] cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-all duration-200",
+                                 "sd-command-tile group relative min-h-[152px] cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-all duration-200",
                                  tileActive
                                    ? "border-primary bg-primary/5"
                                    : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
@@ -1302,10 +1308,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                      </div>
 
                      <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_1.4fr]">
-                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                       <div className="sd-panel-surface rounded-2xl border border-slate-200 bg-slate-50 p-4">
                          <div className="mb-3 flex items-center justify-between gap-3">
                            <div>
-                             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Base Selection</div>
+                             <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Base Selection</div>
                              <div className="text-sm text-slate-600">Switch the active command layer used by pages, menus, and management panels.</div>
                            </div>
                            <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
@@ -1340,10 +1346,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          </div>
                        </div>
 
-                       <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                       <div className="sd-panel-surface rounded-2xl border border-slate-200 bg-white p-4">
                          <div className="mb-3 flex items-center justify-between gap-3">
                            <div>
-                             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Actions</div>
+                             <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Actions</div>
                              <div className="text-sm text-slate-600">Clearer buttons and shortcuts for the current main menu and submenu selection.</div>
                            </div>
                            <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
@@ -1381,10 +1387,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                        </div>
                      </div>
 
-                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                     <div className="sd-panel-surface mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                        <div className="mb-3 flex items-center justify-between gap-3">
                          <div>
-                           <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">System Details</div>
+                           <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">System Details</div>
                            <div className="text-sm text-slate-600">Live details and support metrics for the current menu layer.</div>
                          </div>
                          <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
@@ -1394,7 +1400,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
 
                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                          {detailCards.map((detail) => (
-                           <div key={detail.label} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                           <div key={detail.label} className="sd-detail-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                              <div className="flex items-center justify-between gap-3">
                                <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{detail.label}</div>
                                <detail.icon className={cn("h-4 w-4", detail.toneClass)} />
@@ -1409,10 +1415,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                  </div>
                  ) : (
                  <div className={cn(isMobile ? "px-4 py-4" : "px-5 py-4")}>
-                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 backdrop-blur-sm">
+                   <div className="sd-panel-surface sd-collapsed-notice rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 backdrop-blur-sm">
                      <div className="flex flex-wrap items-center justify-between gap-3">
                        <div>
-                         <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Page Menu Collapsed</div>
+                         <div className="sd-eyebrow text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Page Menu Collapsed</div>
                          <div className="text-sm text-slate-600">
                            This page menu is now folded into the left-side menu and submenu categories. Use the left navigation to jump between linked sub pages, or reopen this panel here.
                          </div>
@@ -1432,7 +1438,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </main>
       </div>
 
-      <footer className="relative z-10 border-t border-slate-200 bg-white/88 px-4 py-2 backdrop-blur-md sm:px-6 flex flex-col gap-1 sm:h-8 sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-500 font-mono" data-testid="footer-build-info">
+      <footer className="sd-footer-shell relative z-10 border-t border-slate-200 bg-white/88 px-4 py-2 backdrop-blur-md sm:px-6 flex flex-col gap-1 sm:h-8 sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-500 font-mono" data-testid="footer-build-info">
         <div>universe-empire-domions</div>
         <div className="flex flex-wrap items-center gap-4">
           <span>Version: {appVersion}</span>
