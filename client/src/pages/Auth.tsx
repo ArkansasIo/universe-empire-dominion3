@@ -32,7 +32,7 @@ const GAME_VERSION = "1.0.0";
 const UNIVERSE_ID = "Nexus-Alpha";
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
-const NINE_REALMS = [
+const TEN_REALMS = [
   {
     id: "realm-01",
     name: "Asgard Prime",
@@ -105,7 +105,17 @@ const NINE_REALMS = [
     detail: "Late-cycle realm for veterans contesting world bosses, ascension loops, and final sectors.",
     population: "4.9M online citizens",
   },
+  {
+    id: "realm-10",
+    name: "Bifrost Ascension",
+    rank: "Mythic Tier X",
+    universe: "Oblivion Gate",
+    detail: "Transcendent relay realm linking late-game ascension fleets, dimensional transit, and prestige campaigns.",
+    population: "4.2M online citizens",
+  },
 ] as const;
+
+const REALM_COLUMNS = [TEN_REALMS.slice(0, 5), TEN_REALMS.slice(5)] as const;
 
 type PublicHealthCheck = {
   status: "ok" | "warning" | "critical";
@@ -290,7 +300,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-24 pb-16 relative overflow-hidden">
+    <div className="min-h-screen bg-white flex items-center justify-center p-3 pt-20 pb-14 relative overflow-hidden">
       <header className="fixed top-0 inset-x-0 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-sm z-30">
         <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -324,48 +334,56 @@ export default function Auth() {
         </div>
       )}
 
-      <div className="relative z-10 w-full max-w-7xl">
-        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,460px)_320px] items-start">
-          <aside className="rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden">
-            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-5 py-5 text-white">
+      <div className="relative z-10 w-full max-w-[1600px]">
+        <div className="grid gap-4 xl:grid-cols-3 items-stretch">
+          <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden xl:max-h-[calc(100vh-8rem)]">
+            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-4 text-white">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/10 ring-1 ring-cyan-200/20">
                   <Globe2 className="h-5 w-5 text-cyan-200" />
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/80">Universe Grid</div>
-                  <h2 className="font-orbitron text-xl font-bold">Nine Realms</h2>
+                  <h2 className="font-orbitron text-lg font-bold">Ten Realms</h2>
                 </div>
               </div>
-              <p className="text-sm text-slate-300">
-                Nine linked universe realms with ranked progression bands, frontier identities, and deployment focus.
+              <p className="text-xs leading-5 text-slate-300">
+                Ten linked universe realms arranged in two command columns for ranked progression, frontier identity, and deployment focus.
               </p>
             </div>
-            <div className="space-y-3 p-4">
-              {NINE_REALMS.map((realm, index) => (
-                <div key={realm.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Realm {index + 1}</div>
-                      <div className="font-orbitron text-sm font-bold text-slate-900">{realm.name}</div>
-                    </div>
-                    <div className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700">
-                      {realm.rank}
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{realm.universe}</div>
-                  <p className="mt-2 text-sm leading-5 text-slate-600">{realm.detail}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                    <span>{realm.population}</span>
-                    <span className="font-mono">Gate {index + 1}/9</span>
-                  </div>
+            <div className="grid min-h-0 flex-1 gap-2 overflow-y-auto p-3 md:grid-cols-2">
+              {REALM_COLUMNS.map((column, columnIndex) => (
+                <div key={`realm-column-${columnIndex + 1}`} className="space-y-2">
+                  {column.map((realm, realmIndex) => {
+                    const displayIndex = columnIndex * 5 + realmIndex + 1;
+
+                    return (
+                      <div key={realm.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Realm {displayIndex}</div>
+                            <div className="font-orbitron text-xs font-bold text-slate-900 sm:text-sm">{realm.name}</div>
+                          </div>
+                          <div className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-700">
+                            {realm.rank}
+                          </div>
+                        </div>
+                        <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{realm.universe}</div>
+                        <p className="mt-1.5 text-xs leading-4 text-slate-600">{realm.detail}</p>
+                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>{realm.population}</span>
+                          <span className="font-mono">Gate {displayIndex}/10</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>
           </aside>
 
-          <Card className="w-full bg-white border border-slate-300 text-slate-900 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="text-center pb-2">
+          <Card className="flex min-h-0 w-full flex-col border border-slate-300 bg-white text-slate-900 shadow-lg transition-shadow duration-300 hover:shadow-xl xl:max-h-[calc(100vh-8rem)]">
+            <CardHeader className="pb-2 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
                 <img
                   src={MENU_ASSETS.NAVIGATION.EXPLORATION.path}
@@ -374,11 +392,11 @@ export default function Auth() {
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
                 />
               </div>
-              <CardTitle className="text-4xl font-orbitron font-bold tracking-wider text-slate-900">universe-empire-domions</CardTitle>
-              <CardDescription className="text-slate-700 font-rajdhani text-lg font-medium mt-2">Command your fleet. Conquer the stars.</CardDescription>
+              <CardTitle className="text-3xl font-orbitron font-bold tracking-wider text-slate-900 xl:text-[2rem]">universe-empire-domions</CardTitle>
+              <CardDescription className="mt-2 font-rajdhani text-base font-medium text-slate-700">Command your fleet. Conquer the stars.</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto">
               {tempPassword ? (
                 <div className="bg-green-50 border border-green-300 p-4 rounded-lg space-y-3">
                   <div className="flex gap-2 items-start">
@@ -556,7 +574,7 @@ export default function Auth() {
               )}
             </CardContent>
 
-            <CardFooter className="flex flex-col items-center gap-4 pb-6 border-t border-slate-300 pt-6">
+            <CardFooter className="flex flex-col items-center gap-3 border-t border-slate-300 pb-5 pt-5">
               <Link href="/about">
                 <Button variant="ghost" className="text-slate-700 hover:text-slate-900 transition-colors" data-testid="button-about">
                   <Info className="w-4 h-4 mr-2" /> About universe-empire-domions
@@ -574,8 +592,8 @@ export default function Auth() {
             </CardFooter>
           </Card>
 
-          <aside className="rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden">
-            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-5 py-5 text-white">
+          <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden xl:max-h-[calc(100vh-8rem)]">
+            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-4 text-white">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/10 ring-1 ring-emerald-200/20">
                   <Server className="h-5 w-5 text-emerald-200" />
@@ -585,11 +603,11 @@ export default function Auth() {
                   <h2 className="font-orbitron text-xl font-bold">Server Health</h2>
                 </div>
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-xs leading-5 text-slate-300">
                 Live public health telemetry for the command cluster shown beside the login menu before players enter the game.
               </p>
             </div>
-            <div className="space-y-4 p-4">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -643,7 +661,7 @@ export default function Auth() {
                 <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-slate-500">
                   <Crown className="h-4 w-4" /> Title-Screen Overview
                 </div>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <ul className="space-y-2 text-xs leading-5 text-slate-600">
                   <li>Login access sits between universe realm intelligence and live operations telemetry.</li>
                   <li>Healthy clusters report 200 status, while degraded or unhealthy states surface immediately here.</li>
                   <li>Both side panels stay attached to the home title page instead of the in-game menu layout.</li>

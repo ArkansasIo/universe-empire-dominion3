@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { OGAMEX_FEATURED_ASSETS, PLANET_ASSETS } from "@shared/config";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
@@ -61,6 +62,7 @@ import {
   TowerControl,
   Menu,
   MonitorSmartphone,
+  Hammer,
 } from "lucide-react";
 
 interface NavItem {
@@ -93,6 +95,27 @@ interface ActivePageContext {
   groupDescription?: string;
   item: NavItem;
   siblings: NavItem[];
+}
+
+interface CommandTile extends NavItem {
+  kicker: string;
+  assetPath: string;
+}
+
+interface PageAction {
+  label: string;
+  href?: string;
+  icon: LucideIcon;
+  helper: string;
+  onClick?: () => void;
+}
+
+interface DetailCard {
+  label: string;
+  value: string;
+  helper: string;
+  icon: LucideIcon;
+  toneClass: string;
 }
 
 interface LayoutPlayerOptions {
@@ -143,7 +166,7 @@ const SidebarItem = ({
   <Link href={href} data-testid={`link-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}>
     <div className={cn(
       "flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
-      indentLevel === 2 ? "px-8 py-2 text-xs" : "px-6 py-2.5 text-xs",
+      indentLevel === 2 ? "px-7 py-1.5 text-[11px]" : "px-5 py-2 text-[11px]",
       touchMode && (indentLevel === 2 ? "min-h-[46px]" : "min-h-[50px]"),
       active 
         ? "bg-primary/10 border-primary text-primary font-bold" 
@@ -188,7 +211,7 @@ const CollapsibleMenu = ({
         onClick={() => setIsOpen(!isOpen)}
         data-testid={`button-menu-${title.toLowerCase().replace(/\s+/g, '-')}`}
         className={cn(
-          "w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
+          "w-full flex items-center justify-between px-4 py-2 cursor-pointer transition-all duration-200 border-l-2 touch-manipulation",
           touchMode && "min-h-[50px]",
           hasActiveChild 
             ? "bg-primary/5 border-primary/50 text-primary" 
@@ -277,6 +300,7 @@ const menuSections: MenuSection[] = [
         items: [
           { href: "/research", icon: FlaskConical, label: "Research Hub", description: "View current research priorities and laboratory output." },
           { href: "/research-lab", icon: Zap, label: "Research Management", description: "Allocate research capacity and manage active development." },
+          { href: "/research-analytics", icon: ScrollText, label: "Research Analytics", description: "Track discovery streaks, tier spread, and science performance." },
         ],
       },
       {
@@ -295,6 +319,7 @@ const menuSections: MenuSection[] = [
           { href: "/blueprints", icon: FileText, label: "Blueprints", description: "Review unlocked designs and production-ready schematics." },
           { href: "/artifacts", icon: Hexagon, label: "Artifacts", description: "Inspect rare artifacts that modify empire capabilities." },
           { href: "/relics", icon: Gem, label: "Relics", description: "Manage relic bonuses and rare discovery effects." },
+          { href: "/knowledge-library", icon: BookOpen, label: "Knowledge Library", description: "Study mastery tracks, class tiers, and cross-discipline synergies." },
         ],
       },
     ],
@@ -439,6 +464,60 @@ const adminItems: NavItem[] = [
   { href: "/server-console", icon: Database, label: "Server Console", description: "Review live server console tools and operational controls." },
 ];
 
+const getCommandTiles = (context: ActivePageContext | null): CommandTile[] => {
+  switch (context?.section) {
+    case "Empire":
+      return [
+        { href: "/empire-planets", icon: Globe, label: "Planet Grid", description: "Jump across core worlds, colonies, and moons from one empire map.", kicker: "Worlds", assetPath: PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path },
+        { href: "/resources", icon: Pickaxe, label: "Resource Control", description: "Tune raw extraction, storage balance, and supply throughput.", kicker: "Economy", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/facilities", icon: Factory, label: "Facility Queue", description: "Push building upgrades, production chains, and support structures.", kicker: "Build", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/stations", icon: Satellite, label: "Orbital Layer", description: "Coordinate stations, support rings, and orbital logistics.", kicker: "Orbit", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
+      ];
+    case "Research":
+      return [
+        { href: "/research-analytics", icon: ScrollText, label: "Analytics", description: "Review live research trends, level pace, and completion spread.", kicker: "Insight", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+        { href: "/knowledge-library", icon: BookOpen, label: "Library", description: "Open doctrine, knowledge classes, and synergy references.", kicker: "Archive", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+        { href: "/blueprints", icon: FileText, label: "Blueprint Vault", description: "Browse designs, schematics, and unlockable technical plans.", kicker: "Designs", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/assets-gallery", icon: Image, label: "Science Assets", description: "View linked PNGs, panel art, and source asset references.", kicker: "Assets", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+      ];
+    case "Military":
+      return [
+        { href: "/fleet", icon: Send, label: "Fleet Orders", description: "Dispatch missions, monitor arrivals, and keep combat groups active.", kicker: "Command", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/combat", icon: ShieldAlert, label: "Combat Center", description: "Launch raids, attacks, and tactical battle actions.", kicker: "Battle", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/battle-logs", icon: ScrollText, label: "Action Reports", description: "Inspect logs, after-action reports, and battle summaries.", kicker: "Reports", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/planet-occupation", icon: TowerControl, label: "Occupation Ops", description: "Control captured planets, garrisons, and extraction pressure.", kicker: "Control", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
+      ];
+    case "Exploration":
+      return [
+        { href: "/galaxy", icon: Globe, label: "Galaxy Sweep", description: "Survey sectors, systems, and route pressure across nearby space.", kicker: "Scan", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/universe", icon: Orbit, label: "Universe Lens", description: "Switch to the larger multi-universe command view.", kicker: "Macro", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/warp-network", icon: Network, label: "Warp Corridors", description: "Plot stargates, hyperspace lanes, and warp relays.", kicker: "Transit", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/celestial-browser", icon: Search, label: "Celestial Index", description: "Browse stars, planets, moons, and interstellar objects.", kicker: "Catalog", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
+      ];
+    case "Diplomacy":
+      return [
+        { href: "/alliance", icon: Shield, label: "Alliance Command", description: "Coordinate guilds, members, pacts, and alliance strategy.", kicker: "Allies", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/messages", icon: Mail, label: "Message Relay", description: "Review diplomacy traffic, reports, and system mail.", kicker: "Comms", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/leaderboard", icon: Trophy, label: "Rankings", description: "Compare empire power, prestige, and commander standings.", kicker: "Ranks", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+        { href: "/friends", icon: Users, label: "Contacts", description: "Manage friends, trusted pilots, and cooperative partners.", kicker: "Network", assetPath: PLANET_ASSETS.TERRESTRIAL.JUNGLE.path },
+      ];
+    case "Economy":
+      return [
+        { href: "/market", icon: ShoppingBag, label: "Market Grid", description: "Trade resources, parts, and strategic commodities.", kicker: "Trade", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/storefront", icon: Store, label: "Storefront", description: "Browse premium goods, packs, and featured offers.", kicker: "Store", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/season-pass", icon: Award, label: "Season Track", description: "Push time-limited objectives, rewards, and progression goals.", kicker: "Pass", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+        { href: "/achievements", icon: Trophy, label: "Milestones", description: "Track long-term progression achievements and reward claims.", kicker: "Goals", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+      ];
+    default:
+      return [
+        { href: "/settings", icon: Settings, label: "Settings", description: "Adjust browser width, mobile support, touch controls, and display options.", kicker: "Options", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
+        { href: "/assets-gallery", icon: Image, label: "Assets Gallery", description: "Open linked OGameX-derived PNG, sprite, and panel asset pages.", kicker: "Assets", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/diagnostics", icon: AlertTriangle, label: "Diagnostics", description: "Check client and gameplay systems for current issues.", kicker: "Status", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/about", icon: BookOpen, label: "Game Docs", description: "Read the current project overview, systems, and support pages.", kicker: "Docs", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+      ];
+  }
+};
+
 const getActivePageContext = (location: string, isAdmin: boolean): ActivePageContext | null => {
   for (const section of menuSections) {
     for (const group of section.groups) {
@@ -492,13 +571,13 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
   const safeValue = Number.isFinite(value) ? value : 0;
 
   return (
-    <div className="flex shrink-0 items-center gap-3 bg-white border border-slate-200 px-3 py-2 rounded shadow-sm min-w-[126px] sm:min-w-[140px]">
-      <div className={cn("p-2 rounded-full bg-slate-100", colorClass)}>
-        <Icon className="w-4 h-4" />
+    <div className="flex shrink-0 items-center gap-2 rounded border border-slate-200 bg-white px-2.5 py-2 shadow-sm min-w-[112px] sm:min-w-[124px]">
+      <div className={cn("rounded-full bg-slate-100 p-1.5", colorClass)}>
+        <Icon className="w-3.5 h-3.5" />
       </div>
       <div className="flex flex-col">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
-        <span className={cn("font-orbitron font-medium text-sm tabular-nums", colorClass)}>
+        <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+        <span className={cn("font-orbitron text-xs font-medium tabular-nums sm:text-sm", colorClass)}>
           {Math.floor(safeValue).toLocaleString()}
         </span>
       </div>
@@ -507,22 +586,22 @@ const ResourceDisplay = ({ icon: Icon, label, value, colorClass }: { icon: any, 
 };
 
 const TurnDisplay = ({ currentTurns, totalTurns, isLoading }: { currentTurns: number, totalTurns: number, isLoading: boolean }) => (
-  <div className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-3 py-2 rounded shadow-sm min-w-[170px] sm:min-w-[180px]" data-testid="display-turns">
-    <div className="p-2 rounded-full bg-indigo-100 text-indigo-600">
-      {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+  <div className="flex shrink-0 items-center gap-2 rounded border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-2.5 py-2 shadow-sm min-w-[148px] sm:min-w-[164px]" data-testid="display-turns">
+    <div className="rounded-full bg-indigo-100 p-1.5 text-indigo-600">
+      {isLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
     </div>
     <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-widest text-indigo-600 font-bold">Turns</span>
+      <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-indigo-600">Turns</span>
       <div className="flex items-center gap-2">
-        <span className="font-orbitron font-bold text-sm tabular-nums text-indigo-900">
+        <span className="font-orbitron text-xs font-bold tabular-nums text-indigo-900 sm:text-sm">
           {currentTurns.toLocaleString()}
         </span>
-        <span className="text-[10px] text-indigo-500 font-mono">+6/min</span>
+        <span className="font-mono text-[9px] text-indigo-500">+6/min</span>
       </div>
     </div>
-    <div className="border-l border-indigo-200 pl-3 ml-1">
+    <div className="ml-1 border-l border-indigo-200 pl-2.5">
       <span className="text-[9px] uppercase tracking-widest text-slate-400">Total</span>
-      <div className="font-mono text-xs text-slate-600">{totalTurns.toLocaleString()}</div>
+      <div className="font-mono text-[11px] text-slate-600">{totalTurns.toLocaleString()}</div>
     </div>
   </div>
 );
@@ -550,12 +629,12 @@ function GameSidebar({
 
   return (
     <>
-      <div className="p-4 sm:p-6">
+      <div className="p-4">
         <div className="relative overflow-hidden rounded border border-slate-200 text-center">
           <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{ backgroundImage: `url(${sidebarBackdropImage})` }} />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 via-white/80 to-white/95" />
-          <div className="relative p-4">
-            <div className="w-16 h-16 mx-auto bg-white rounded-full border-2 border-primary mb-3 shadow-sm overflow-hidden">
+          <div className="relative p-3">
+            <div className="mx-auto mb-2 h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-white shadow-sm">
               <img
                 src={sidebarPlanetImage}
                 alt={planetName || "Planet"}
@@ -566,9 +645,9 @@ function GameSidebar({
                 }}
               />
             </div>
-            <h3 className="font-orbitron font-bold text-slate-900">{planetName}</h3>
+            <h3 className="font-orbitron text-sm font-bold text-slate-900">{planetName}</h3>
             <p className="text-xs text-muted-foreground">[{coordinates}]</p>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
               <span>OGameX Assets</span>
               <span className="text-primary">Linked</span>
             </div>
@@ -576,7 +655,8 @@ function GameSidebar({
         </div>
       </div>
 
-      <nav className="flex-1 py-2 overflow-y-auto scrollbar-hide">        <SidebarItem href="/" icon={LayoutDashboard} label="Overview" active={location === "/"} onSelect={onNavigate} touchMode={touchMode} />
+      <nav className="flex-1 overflow-y-auto py-2 scrollbar-hide">
+        <SidebarItem href="/" icon={LayoutDashboard} label="Overview" active={location === "/"} onSelect={onNavigate} touchMode={touchMode} />
 
         {menuSections.map((section) => (
           <CollapsibleMenu
@@ -642,7 +722,23 @@ function GameSidebar({
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { resources, planetName, coordinates, isAdmin, logout, username } = useGame();
+  const {
+    resources,
+    planetName,
+    coordinates,
+    isAdmin,
+    logout,
+    username,
+    selectedRealm,
+    realmServers,
+    switchRealm,
+    activeBase,
+    setActiveBase,
+    queue,
+    activeMissions,
+    messages,
+    alliance,
+  } = useGame();
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
@@ -713,11 +809,105 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     displayPreferences.browserWidth === "full"
       ? "max-w-none"
       : displayPreferences.browserWidth === "wide"
-        ? "max-w-7xl"
+        ? "max-w-[1500px]"
         : displayPreferences.browserWidth === "compact"
-          ? "max-w-5xl"
-          : "max-w-6xl";
-  const contentPaddingClass = displayPreferences.compactView ? "p-3 sm:p-4 lg:p-6" : "p-4 sm:p-6 lg:p-8";
+          ? "max-w-[1120px]"
+          : "max-w-[1360px]";
+  const contentPaddingClass = displayPreferences.compactView ? "p-3 sm:p-4 lg:p-5" : "p-3 sm:p-4 lg:p-6";
+  const commandTiles = getCommandTiles(activePageContext);
+  const unreadMessages = messages.filter((message) => !message.read).length;
+  const sharedActions: PageAction[] =
+    activePageContext?.section === "Empire"
+      ? [
+          { label: "Manage Resources", href: "/resources", icon: Pickaxe, helper: "Tune output, storage, and collection cycles." },
+          { label: "Upgrade Facilities", href: "/facilities", icon: Factory, helper: "Build infrastructure and queue expansions." },
+          { label: "Review Colonies", href: "/colonies", icon: Home, helper: "Inspect colony slots, planets, and moons." },
+          { label: "Switch To Planet", icon: Globe, helper: "Focus planetary production and command controls.", onClick: () => setActiveBase("planet") },
+        ]
+      : activePageContext?.section === "Research"
+        ? [
+            { label: "Open Research Hub", href: "/research", icon: FlaskConical, helper: "Return to the main research queue and projects." },
+            { label: "View Analytics", href: "/research-analytics", icon: ScrollText, helper: "Read performance, streak, and progress data." },
+            { label: "Open Library", href: "/knowledge-library", icon: BookOpen, helper: "Study knowledge tracks, synergies, and classes." },
+            { label: "Tech Tree Route", href: "/technology-tree", icon: GraduationCap, helper: "Jump into prerequisite planning and unlock paths." },
+          ]
+        : activePageContext?.section === "Military"
+          ? [
+              { label: "Fleet Command", href: "/fleet", icon: Send, helper: "Dispatch fleets, raids, and logistics missions." },
+              { label: "Combat Center", href: "/combat", icon: ShieldAlert, helper: "Run combat actions, strikes, and battle ops." },
+              { label: "Open Shipyard", href: "/shipyard", icon: Rocket, helper: "Build starships, motherships, and yard upgrades." },
+              { label: "Occupation Ops", href: "/planet-occupation", icon: TowerControl, helper: "Manage garrisons, suppression, and extraction." },
+            ]
+          : activePageContext?.section === "Exploration"
+            ? [
+                { label: "Galaxy Map", href: "/galaxy", icon: Globe, helper: "Scan nearby sectors and route pressure." },
+                { label: "Universe View", href: "/universe", icon: Orbit, helper: "Inspect realm-wide and multi-universe structures." },
+                { label: "Warp Routes", href: "/warp-network", icon: Network, helper: "Switch lanes, gates, and travel corridors." },
+                { label: "Celestial Index", href: "/celestial-browser", icon: Search, helper: "Browse stars, moons, and planetary objects." },
+              ]
+            : activePageContext?.section === "Diplomacy"
+              ? [
+                  { label: "Open Messages", href: "/messages", icon: Mail, helper: "Read reports, diplomacy, and system mail." },
+                  { label: "Alliance Board", href: "/alliance", icon: Shield, helper: "Manage allies, members, and pacts." },
+                  { label: "Ranking Feed", href: "/leaderboard", icon: Trophy, helper: "Check prestige, empire, and combat standings." },
+                  { label: "Friends List", href: "/friends", icon: Users, helper: "Track trusted pilots and contacts." },
+                ]
+              : activePageContext?.section === "Economy"
+                ? [
+                    { label: "Open Market", href: "/market", icon: ShoppingBag, helper: "Trade materials, parts, and commodities." },
+                    { label: "Storefront", href: "/storefront", icon: Store, helper: "Browse premium packs and featured offers." },
+                    { label: "Season Track", href: "/season-pass", icon: Award, helper: "Advance timed objectives and rewards." },
+                    { label: "Achievements", href: "/achievements", icon: Trophy, helper: "Review milestones and reward claims." },
+                  ]
+                : [
+                    { label: "Open Settings", href: "/settings", icon: Settings, helper: "Adjust client options and gameplay preferences." },
+                    { label: "Assets Gallery", href: "/assets-gallery", icon: Image, helper: "Review linked PNG, sprite, and page art." },
+                    { label: "Diagnostics", href: "/diagnostics", icon: AlertTriangle, helper: "Inspect warnings, errors, and health signals." },
+                    { label: "Switch To Station", icon: Satellite, helper: "Set station as the active command base.", onClick: () => setActiveBase("station") },
+                  ];
+
+  const detailCards: DetailCard[] =
+    activePageContext?.section === "Research"
+      ? [
+          { label: "Active Base", value: activeBase.toUpperCase(), helper: "Current research operating frame.", icon: CircleDot, toneClass: "text-cyan-700" },
+          { label: "Queue Load", value: queue.length.toString(), helper: "Construction and science jobs currently queued.", icon: Clock, toneClass: "text-blue-700" },
+          { label: "Unread Reports", value: unreadMessages.toString(), helper: "Unread messages, reports, and notifications.", icon: Mail, toneClass: "text-violet-700" },
+          { label: "Energy Reserve", value: resources.energy.toLocaleString(), helper: "Available energy backing current research output.", icon: Zap, toneClass: resources.energy >= 0 ? "text-amber-700" : "text-red-700" },
+        ]
+      : activePageContext?.section === "Military"
+        ? [
+            { label: "Mission Ops", value: activeMissions.length.toString(), helper: "Current fleet and tactical operations in motion.", icon: Send, toneClass: "text-red-700" },
+            { label: "Queue Load", value: queue.length.toString(), helper: "Build and upgrade pressure on military systems.", icon: Hammer, toneClass: "text-orange-700" },
+            { label: "Unread Reports", value: unreadMessages.toString(), helper: "Combat reports and battle summaries waiting.", icon: ScrollText, toneClass: "text-violet-700" },
+            { label: "Deuterium", value: resources.deuterium.toLocaleString(), helper: "Flight fuel and war-drive reserve stock.", icon: Database, toneClass: "text-green-700" },
+          ]
+        : activePageContext?.section === "Exploration"
+          ? [
+              { label: "Realm Server", value: selectedRealm?.name || "Offline", helper: "Current realm routing for exploration systems.", icon: Globe, toneClass: "text-cyan-700" },
+              { label: "Mission Ops", value: activeMissions.length.toString(), helper: "Survey fleets and frontier expeditions underway.", icon: Compass, toneClass: "text-blue-700" },
+              { label: "Queue Load", value: queue.length.toString(), helper: "Queued projects competing for exploration tempo.", icon: Clock, toneClass: "text-orange-700" },
+              { label: "Coordinates", value: coordinates, helper: "Active world coordinates anchoring current view.", icon: Map, toneClass: "text-slate-700" },
+            ]
+          : activePageContext?.section === "Diplomacy"
+            ? [
+                { label: "Alliance", value: alliance?.tag || "NONE", helper: "Current alliance or guild command attachment.", icon: Shield, toneClass: alliance ? "text-emerald-700" : "text-slate-700" },
+                { label: "Unread Mail", value: unreadMessages.toString(), helper: "Diplomatic traffic and command communications.", icon: Mail, toneClass: "text-violet-700" },
+                { label: "Realm Server", value: selectedRealm?.name || "Offline", helper: "Current social and server cluster context.", icon: Globe, toneClass: "text-cyan-700" },
+                { label: "Credits", value: resources.credits.toLocaleString(), helper: "Political and trade flexibility reserve.", icon: Coins, toneClass: "text-amber-700" },
+              ]
+            : activePageContext?.section === "Economy"
+              ? [
+                  { label: "Credits", value: resources.credits.toLocaleString(), helper: "Liquid economy reserve for trade and growth.", icon: Coins, toneClass: "text-amber-700" },
+                  { label: "Food", value: resources.food.toLocaleString(), helper: "Population support and agricultural capacity.", icon: Wheat, toneClass: "text-lime-700" },
+                  { label: "Water", value: resources.water.toLocaleString(), helper: "Civilian and industrial support reserves.", icon: Droplets, toneClass: "text-cyan-700" },
+                  { label: "Queue Load", value: queue.length.toString(), helper: "Economic projects waiting to complete.", icon: Clock, toneClass: "text-blue-700" },
+                ]
+              : [
+                  { label: "Active Base", value: activeBase.toUpperCase(), helper: "Current command layer for page actions.", icon: CircleDot, toneClass: "text-cyan-700" },
+                  { label: "Queue Load", value: queue.length.toString(), helper: "Total queued construction and upgrade jobs.", icon: Clock, toneClass: "text-blue-700" },
+                  { label: "Mission Ops", value: activeMissions.length.toString(), helper: "Fleets and actions currently in progress.", icon: Send, toneClass: "text-red-700" },
+                  { label: "Unread Reports", value: unreadMessages.toString(), helper: "Unread system logs and command messages.", icon: Mail, toneClass: "text-violet-700" },
+                ];
 
   useEffect(() => {
     const root = document.documentElement;
@@ -760,10 +950,10 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         isMobile && displayPreferences.stickyMobileBars && "sticky top-0",
       )}>
         <div className={cn(
-          "flex flex-col gap-3 px-4 py-3 sm:px-6",
-          !isMobile && "h-24 flex-row items-center justify-between",
+          "flex flex-col gap-2 px-3 py-3 sm:px-5",
+          !isMobile && "flex-row items-start justify-between xl:items-center",
         )}>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 sm:gap-4">
             {isMobile && (
               <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
@@ -796,8 +986,8 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
              <Rocket className="text-white w-6 h-6" />
            </div>
            <div>
-             <h1 className={cn("font-orbitron font-bold tracking-wider text-slate-900", isMobile ? "text-base" : "text-xl")}>Universe-<span className="text-primary text-sm font-normal">Empires-Dominions</span></h1>
-             <p className="text-xs text-muted-foreground font-rajdhani tracking-widest uppercase">
+             <h1 className={cn("font-orbitron font-bold tracking-wider text-slate-900", isMobile ? "text-base" : "text-lg xl:text-xl")}>Universe-<span className="text-primary text-xs font-normal xl:text-sm">Empires-Dominions</span></h1>
+             <p className="font-rajdhani text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
                Server: Nexus-Alpha // User: {username || "Commander"}
              </p>
            </div>
@@ -835,8 +1025,45 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className={cn(
-            "flex gap-2 overflow-x-auto scrollbar-hide pb-1",
-            isMobile ? "w-full" : "justify-end",
+            "flex items-center gap-2",
+            isMobile ? "w-full flex-wrap" : "justify-end"
+          )}>
+            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+              Active Realm
+            </div>
+            <div className={cn(
+              "flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2",
+              isMobile ? "w-full" : "min-w-[270px]"
+            )}>
+              <Globe className="h-4 w-4 text-primary shrink-0" />
+              <Select
+                value={selectedRealm?.id || ""}
+                onValueChange={(value) => {
+                  void switchRealm(value);
+                }}
+              >
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 text-sm shadow-none focus:ring-0">
+                  <SelectValue placeholder="Select realm" />
+                </SelectTrigger>
+                <SelectContent>
+                  {realmServers.map((realm) => (
+                    <SelectItem key={realm.id} value={realm.id}>
+                      {realm.name} · {realm.region}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedRealm && (
+                <div className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-700">
+                  {selectedRealm.status}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={cn(
+            "flex gap-2 pb-1 scrollbar-hide",
+            isMobile ? "w-full overflow-x-auto" : "max-w-[920px] flex-wrap justify-end overflow-visible",
           )}>
             <TurnDisplay 
               currentTurns={turnData?.currentTurns || 0} 
@@ -857,7 +1084,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="hidden w-64 bg-white border-r border-slate-200 md:flex md:flex-col md:overflow-y-auto md:scrollbar-hide">
+        <aside className="hidden w-[17rem] border-r border-slate-200 bg-white md:flex md:w-[18rem] md:flex-col md:overflow-y-auto md:scrollbar-hide xl:w-[19rem]">
           <GameSidebar
             location={location}
             planetName={planetName}
@@ -869,11 +1096,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         </aside>
 
         {/* Main Content */}
-        <main className={cn("flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent bg-slate-50", contentPaddingClass)}>
+        <main className={cn("min-w-0 flex-1 overflow-y-auto bg-slate-50 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent", contentPaddingClass)}>
            <div className={cn(contentWidthClass, "mx-auto")}>
              {activePageContext && (
-               <section className="mb-6 rounded-2xl border border-slate-200 bg-white/90 shadow-sm overflow-hidden">
-                 <div className={cn("border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 bg-cover bg-center text-white", isMobile ? "px-4 py-4" : "px-6 py-5")} style={{ backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.88)), url(${contextBackdropImage})` }}>
+               <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
+                 <div className={cn("border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 bg-cover bg-center text-white", isMobile ? "px-4 py-4" : "px-5 py-4")} style={{ backgroundImage: `linear-gradient(rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.88)), url(${contextBackdropImage})` }}>
                    <div className="flex flex-wrap items-start justify-between gap-4">
                      <div className="space-y-2">
                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200/80">
@@ -886,16 +1113,16 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                            <activePageContext.sectionIcon className="h-5 w-5 text-cyan-200" />
                          </div>
                          <div>
-                           <h2 className="font-orbitron text-2xl font-bold tracking-wide text-white">
+                           <h2 className="font-orbitron text-xl font-bold tracking-wide text-white xl:text-2xl">
                              {activePageContext.item.label}
                            </h2>
-                           <p className="text-sm text-slate-300">
+                           <p className="text-xs leading-5 text-slate-300 sm:text-sm">
                              {activePageContext.item.description || activePageContext.groupDescription || activePageContext.sectionDescription}
                            </p>
                          </div>
                        </div>
                      </div>
-                     <div className={cn("rounded-xl border border-cyan-200/15 bg-white/5 px-4 py-3 text-right", isMobile && "w-full text-left")}>
+                     <div className={cn("rounded-xl border border-cyan-200/15 bg-white/5 px-3 py-2.5 text-right", isMobile && "w-full text-left")}>
                        <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Current Submenu</div>
                        <div className="mt-1 font-rajdhani text-lg font-semibold uppercase tracking-wider text-cyan-100">
                          {activePageContext.group}
@@ -904,7 +1131,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                    </div>
                  </div>
 
-                 <div className={cn(isMobile ? "px-4 py-4" : "px-6 py-4")}>
+                 <div className={cn(isMobile ? "px-4 py-4" : "px-5 py-4")}>
                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                      <div>
                        <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Sub Pages</div>
@@ -917,7 +1144,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                      </div>
                    </div>
 
-                   <div className="flex flex-wrap gap-3">
+                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                      {activePageContext.siblings.map((item) => {
                        const itemActive = isNavItemActive(item, location);
 
@@ -925,7 +1152,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          <Link key={item.href} href={item.href}>
                            <div
                              className={cn(
-                               "min-w-[180px] max-w-[240px] cursor-pointer rounded-xl border px-4 py-3 transition-all duration-200",
+                               "h-full min-w-0 cursor-pointer rounded-xl border px-3 py-3 transition-all duration-200",
                                itemActive
                                  ? "border-primary bg-primary/10 shadow-sm"
                                  : "border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-white"
@@ -947,6 +1174,172 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          </Link>
                        );
                      })}
+                   </div>
+
+                   <div className="mt-4 border-t border-slate-200 pt-4">
+                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                       <div>
+                         <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Tiles</div>
+                         <div className="text-sm text-slate-600">
+                           Asset-backed shortcuts for linked pages, images, and core game functions.
+                         </div>
+                       </div>
+                       <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                         {commandTiles.length} live tiles
+                       </div>
+                     </div>
+
+                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                     {commandTiles.map((tile) => {
+                        const tileActive = isNavItemActive(tile, location);
+
+                         return (
+                           <Link key={tile.href} href={tile.href}>
+                             <div
+                               className={cn(
+                                 "group relative min-h-[152px] cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-all duration-200",
+                                 tileActive
+                                   ? "border-primary bg-primary/5"
+                                   : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                               )}
+                               style={{
+                                 backgroundImage: `linear-gradient(180deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.9)), url(${tile.assetPath})`,
+                                 backgroundSize: "cover",
+                                 backgroundPosition: "center",
+                               }}
+                             >
+                               <div className="flex h-full flex-col justify-between p-4 text-white">
+                                 <div className="flex items-start justify-between gap-3">
+                                   <div className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-100">
+                                     {tile.kicker}
+                                   </div>
+                                   <div className={cn(
+                                     "flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-black/20",
+                                     tileActive && "border-cyan-200/40 bg-cyan-400/10"
+                                   )}>
+                                     <tile.icon className="h-4 w-4 text-cyan-100" />
+                                   </div>
+                                 </div>
+
+                                 <div>
+                                   <div className="font-orbitron text-base font-bold tracking-wide text-white">
+                                     {tile.label}
+                                   </div>
+                                   <p className="mt-2 text-xs leading-5 text-slate-200">
+                                     {tile.description || "Open this command page."}
+                                   </p>
+                                 </div>
+                               </div>
+                             </div>
+                           </Link>
+                       );
+                      })}
+                     </div>
+
+                     <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_1.4fr]">
+                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                         <div className="mb-3 flex items-center justify-between gap-3">
+                           <div>
+                             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Base Selection</div>
+                             <div className="text-sm text-slate-600">Switch the active command layer used by pages, menus, and management panels.</div>
+                           </div>
+                           <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                             {activeBase}
+                           </div>
+                         </div>
+
+                         <div className="grid gap-2 sm:grid-cols-3">
+                           {[
+                             { id: "planet", label: "Planet Command", icon: Globe, helper: "Surface production, resources, and city management." },
+                             { id: "moon", label: "Moon Operations", icon: CircleDot, helper: "Moon base logistics, jump gate, and relay controls." },
+                             { id: "station", label: "Station Control", icon: Satellite, helper: "Orbital support, stations, and deep-space operations." },
+                           ].map((base) => {
+                             const isActiveBase = activeBase === base.id;
+                             return (
+                               <Button
+                                 key={base.id}
+                                 variant={isActiveBase ? "default" : "outline"}
+                                 className={cn("h-auto min-h-[68px] flex-col items-start justify-start gap-1 p-3 text-left", isActiveBase && "shadow-sm")}
+                                 onClick={() => setActiveBase(base.id as "planet" | "moon" | "station")}
+                               >
+                                 <div className="flex items-center gap-2">
+                                   <base.icon className="h-4 w-4" />
+                                   <span className="font-semibold">{base.label}</span>
+                                 </div>
+                                 <div className={cn("text-xs leading-5 whitespace-normal", isActiveBase ? "text-primary-foreground/80" : "text-slate-500")}>
+                                   {base.helper}
+                                 </div>
+                               </Button>
+                             );
+                           })}
+                         </div>
+                       </div>
+
+                       <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                         <div className="mb-3 flex items-center justify-between gap-3">
+                           <div>
+                             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Command Actions</div>
+                             <div className="text-sm text-slate-600">Clearer buttons and shortcuts for the current main menu and submenu selection.</div>
+                           </div>
+                           <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                             {sharedActions.length} actions
+                           </div>
+                         </div>
+
+                         <div className="grid gap-3 sm:grid-cols-2">
+                           {sharedActions.map((action) => {
+                             const actionContent = (
+                               <Button
+                                 variant={action.onClick ? "default" : "outline"}
+                                 className="h-auto min-h-[72px] w-full flex-col items-start justify-start gap-1 p-3 text-left"
+                                 onClick={action.onClick}
+                               >
+                                 <div className="flex items-center gap-2">
+                                   <action.icon className="h-4 w-4" />
+                                   <span className="font-semibold">{action.label}</span>
+                                 </div>
+                                 <div className={cn("text-xs leading-5 whitespace-normal", action.onClick ? "text-primary-foreground/80" : "text-slate-500")}>
+                                   {action.helper}
+                                 </div>
+                               </Button>
+                             );
+
+                             return action.href ? (
+                               <Link key={action.label} href={action.href}>
+                                 {actionContent}
+                               </Link>
+                             ) : (
+                               <div key={action.label}>{actionContent}</div>
+                             );
+                           })}
+                         </div>
+                       </div>
+                     </div>
+
+                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                       <div className="mb-3 flex items-center justify-between gap-3">
+                         <div>
+                           <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">System Details</div>
+                           <div className="text-sm text-slate-600">Live details and support metrics for the current menu layer.</div>
+                         </div>
+                         <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                           {detailCards.length} details
+                         </div>
+                       </div>
+
+                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                         {detailCards.map((detail) => (
+                           <div key={detail.label} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                             <div className="flex items-center justify-between gap-3">
+                               <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{detail.label}</div>
+                               <detail.icon className={cn("h-4 w-4", detail.toneClass)} />
+                             </div>
+                             <div className={cn("mt-2 font-orbitron text-lg font-bold", detail.toneClass)}>{detail.value}</div>
+                             <div className="mt-1 text-xs leading-5 text-slate-500">{detail.helper}</div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
                    </div>
                  </div>
                </section>

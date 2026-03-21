@@ -354,20 +354,8 @@ export async function setupAuth(app: Express) {
       }
       
       logger.warn("AUTH", "No valid authentication for /api/auth/user");
-      if (isDevAuthBypassEnabled()) {
-        const user = await ensureDevBypassUser();
-        (req.session as any).userId = user.id;
-        const adminStatus = await resolveAdminStatus(user.id);
-        return res.status(200).json({
-          id: user.id,
-          username: user.username || "",
-          email: user.email,
-          firstName: user.firstName,
-          isAdmin: adminStatus.isAdmin,
-          adminRole: adminStatus.adminRole,
-          devBypass: true,
-        });
-      }
+      // Keep the landing/title page public even in development. Dev bypass can still
+      // authenticate protected gameplay APIs after the player explicitly enters the game.
       res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
       logger.error("AUTH", "Auth user endpoint error", {}, error);

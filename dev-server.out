@@ -2,21 +2,21 @@
 > rest-express@1.0.0 dev
 > tsx script/dev.ts
 
-[dotenv@17.3.1] injecting env (3) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.3.1] injecting env (3) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
 Starting full-stack development server...
-[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-[dotenv@17.3.1] injecting env (3) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
 🔌 Connecting to database...
 Resource service started!
 Fleet service started!
 Technology service started!
 Game engine started!
 ✅ Database connection established
-10:03:43 AM ⚠️ [33m[AUTH]    [0m [1mDEV_AUTH_BYPASS is enabled; protected routes will auto-authenticate locally[0m  
-10:03:44 AM [express] [i] serving on port 5001
-10:03:44 AM ℹ️ [34m[SERVER]  [0m [1mserving on port 5001[0m  
+10:17:40 AM ⚠️ [33m[AUTH]    [0m [1mDEV_AUTH_BYPASS is enabled; protected routes will auto-authenticate locally[0m  
+10:17:41 AM [express] [i] serving on port 5001
+10:17:41 AM ℹ️ [34m[SERVER]  [0m [1mserving on port 5001[0m  
 
 [1m[34m================================================[0m
 [1m[34m SERVER STARTUP INITIALIZATION [0m
@@ -145,3 +145,926 @@ Game engine started!
   [31m*[0m Offline / Inactive
   [33m*[0m Warning / Resetting
 
+10:17:55 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:17:55 AM [api] [!] GET    /api/auth/user                      [401] fast 4ms [0.0KB]
+10:17:55 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 4ms [0.0KB][0m  
+10:18:04 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:18:04 AM [api] [!] GET    /api/auth/user                      [401] fast 2ms [0.0KB]
+10:18:04 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 2ms [0.0KB][0m  
+10:18:05 AM [api] [x] GET    /api/status/health                  [503] quick 136ms [0.9KB]
+10:18:05 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 136ms [0.9KB][0m  
+10:18:34 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:18:34 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+10:18:35 AM [api] [x] GET    /api/status/health                  [503] quick 119ms [0.9KB]
+10:18:35 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 119ms [0.9KB][0m  
+10:19:05 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 0ms [0.0KB]
+10:19:05 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 0ms [0.0KB][0m  
+10:19:36 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:19:36 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+[2m10:19:57 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Auth.tsx[22m
+10:19:58 AM [api] [x] GET    /api/status/health                  [503] quick 131ms [0.9KB]
+10:19:58 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 131ms [0.9KB][0m  
+10:20:09 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:20:09 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+10:20:21 AM [api] [ok] GET    /api/turns                          [200] fast 9ms
+10:20:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 9ms[0m  
+10:20:21 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/settings/player/options[0m  
+10:20:21 AM [api] [i] GET    /api/settings/player/options        [304] quick 119ms
+10:20:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 119ms[0m  
+10:20:21 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/season-pass/progression[0m  
+10:20:21 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/battle-pass/overview[0m  
+10:20:21 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/population/snapshot[0m  
+10:20:21 AM [api] [i] GET    /api/season-pass/progression        [304] quick 109ms
+10:20:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] quick 109ms[0m  
+10:20:21 AM [api] [i] GET    /api/battle-pass/overview           [304] quick 111ms
+10:20:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] quick 111ms[0m  
+10:20:21 AM [api] [i] GET    /api/population/snapshot            [304] quick 114ms
+10:20:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] quick 114ms[0m  
+10:20:30 AM [api] [ok] POST   /api/auth/logout                    [200] fast 1ms [0.0KB]
+10:20:30 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/auth/logout                    [200] fast 1ms [0.0KB][0m  
+10:20:30 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:20:30 AM [api] [!] GET    /api/auth/user                      [401] fast 1ms [0.0KB]
+10:20:30 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 1ms [0.0KB][0m  
+10:20:31 AM [api] [x] GET    /api/status/health                  [503] fast 29ms [0.9KB]
+10:20:31 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] fast 29ms [0.9KB][0m  
+10:20:41 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:20:41 AM [api] [!] GET    /api/auth/user                      [401] fast 1ms [0.0KB]
+10:20:41 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 1ms [0.0KB][0m  
+10:20:42 AM [api] [x] GET    /api/status/health                  [503] quick 89ms [1.0KB]
+10:20:42 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 89ms [1.0KB][0m  
+10:21:12 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:21:12 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+10:21:42 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:21:42 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+[2m10:22:42 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Auth.tsx[22m
+10:22:43 AM [api] [x] GET    /api/status/health                  [503] quick 113ms [1.0KB]
+10:22:43 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 113ms [1.0KB][0m  
+10:23:09 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:23:09 AM [api] [!] GET    /api/auth/user                      [401] fast 1ms [0.0KB]
+10:23:09 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 1ms [0.0KB][0m  
+10:23:10 AM [api] [x] GET    /api/status/health                  [503] quick 106ms [1.0KB]
+10:23:10 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 106ms [1.0KB][0m  
+10:23:31 AM [api] [ok] GET    /api/turns                          [200] fast 9ms
+10:23:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 9ms[0m  
+10:23:31 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/population/snapshot[0m  
+10:23:31 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/settings/player/options[0m  
+10:23:31 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/season-pass/progression[0m  
+10:23:31 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/battle-pass/overview[0m  
+10:23:31 AM [api] [i] GET    /api/population/snapshot            [304] quick 104ms
+10:23:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] quick 104ms[0m  
+10:23:31 AM [api] [i] GET    /api/settings/player/options        [304] quick 114ms
+10:23:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 114ms[0m  
+10:23:31 AM [api] [i] GET    /api/season-pass/progression        [304] quick 115ms
+10:23:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] quick 115ms[0m  
+10:23:31 AM [api] [i] GET    /api/battle-pass/overview           [304] quick 122ms
+10:23:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] quick 122ms[0m  
+10:23:40 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 96ms [0.6KB]
+10:23:40 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 96ms [0.6KB][0m  
+[2m10:24:02 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:24:03 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:03 AM [api] [ok] GET    /api/turns                          [200] fast 8ms
+10:24:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 8ms[0m  
+10:24:03 AM [api] [i] GET    /api/settings/player/options        [304] quick 99ms
+10:24:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 99ms[0m  
+10:24:10 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 102ms [0.6KB]
+10:24:10 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 102ms [0.6KB][0m  
+[2m10:24:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+[2m10:24:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:24:23 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:24:23 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM [api] [ok] GET    /api/auth/user                      [200] quick 106ms [0.2KB]
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/auth/user                      [200] quick 106ms [0.2KB][0m  
+10:24:52 AM [api] [ok] GET    /api/game/state                     [200] fast 32ms [1.9KB]
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/state                     [200] fast 32ms [1.9KB][0m  
+10:24:52 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:24:52 AM [api] [i] GET    /api/game/missions                  [304] fast 20ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/missions                  [304] fast 20ms[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM [api] [i] GET    /api/messages                       [304] fast 36ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/messages                       [304] fast 36ms[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM [api] [i] GET    /api/alliances/mine                 [304] fast 24ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/alliances/mine                 [304] fast 24ms[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:24:52 AM [api] [ok] GET    /api/turns                          [200] fast 11ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 11ms[0m  
+10:24:52 AM [api] [i] GET    /api/settings/player/options        [304] fast 24ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] fast 24ms[0m  
+10:24:52 AM [api] [i] GET    /api/season-pass/progression        [304] quick 87ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] quick 87ms[0m  
+10:24:52 AM [api] [i] GET    /api/battle-pass/overview           [304] quick 89ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] quick 89ms[0m  
+10:24:52 AM [api] [i] GET    /api/population/snapshot            [304] quick 90ms
+10:24:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] quick 90ms[0m  
+10:24:54 AM [api] [ok] PATCH  /api/game/state                     [200] quick 60ms [1.9KB]
+10:24:54 AM ℹ️ [34m[SERVER]  [0m [1mPATCH  /api/game/state                     [200] quick 60ms [1.9KB][0m  
+10:25:02 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:25:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:25:13 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:25:13 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:25:22 AM [api] [ok] GET    /api/leaderboard/empireValue        [200] steady 213ms [0.5KB]
+10:25:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/leaderboard/empireValue        [200] steady 213ms [0.5KB][0m  
+10:25:22 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:25:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:25:22 AM [api] [ok] GET    /api/leaderboard/ranks/all          [200] fast 39ms [0.8KB]
+10:25:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/leaderboard/ranks/all          [200] fast 39ms [0.8KB][0m  
+10:25:22 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 90ms [0.6KB]
+10:25:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 90ms [0.6KB][0m  
+10:25:26 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:25:26 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:25:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:25:26 AM [api] [i] GET    /api/settings/player/options        [304] fast 21ms
+10:25:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] fast 21ms[0m  
+10:25:27 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:25:27 AM [api] [ok] GET    /api/government-leaders             [200] fast 2ms [6.2KB]
+10:25:27 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders             [200] fast 2ms [6.2KB][0m  
+10:25:27 AM [api] [ok] GET    /api/turns                          [200] fast 8ms
+10:25:27 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 8ms[0m  
+10:25:27 AM [api] [ok] GET    /api/government-leaders/appointments/me [200] fast 22ms [0.1KB]
+10:25:27 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders/appointments/me [200] fast 22ms [0.1KB][0m  
+10:25:29 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:25:29 AM [api] [ok] GET    /api/commanders                     [200] fast 8ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders                     [200] fast 8ms[0m  
+10:25:29 AM [api] [ok] GET    /api/turns                          [200] fast 9ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 9ms[0m  
+10:25:29 AM [api] [ok] GET    /api/commanders/gacha/status        [200] fast 13ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/gacha/status        [200] fast 13ms[0m  
+10:25:29 AM [api] [i] GET    /api/government-leaders             [304] fast 3ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders             [304] fast 3ms[0m  
+10:25:29 AM [api] [ok] GET    /api/commander/talent/tree          [200] fast 28ms [185.5KB]
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commander/talent/tree          [200] fast 28ms [185.5KB][0m  
+10:25:29 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:25:29 AM [api] [ok] GET    /api/commanders/inventory           [200] fast 25ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/inventory           [200] fast 25ms[0m  
+10:25:29 AM [api] [ok] GET    /api/commanders/profile/me          [200] fast 26ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/profile/me          [200] fast 26ms[0m  
+10:25:29 AM [api] [i] GET    /api/government-leaders/appointments/me [304] fast 32ms
+10:25:29 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders/appointments/me [304] fast 32ms[0m  
+10:25:39 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:25:39 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:25:49 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:25:49 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:25:52 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 142ms [0.6KB]
+10:25:52 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 142ms [0.6KB][0m  
+10:25:53 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:25:53 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:25:59 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:25:59 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:25:59 AM [api] [i] GET    /api/settings/player/options        [304] fast 20ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] fast 20ms[0m  
+10:25:59 AM [api] [ok] GET    /api/commanders                     [200] fast 4ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders                     [200] fast 4ms[0m  
+10:25:59 AM [api] [ok] GET    /api/commanders/gacha/status        [200] fast 5ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/gacha/status        [200] fast 5ms[0m  
+10:25:59 AM [api] [ok] GET    /api/commanders/inventory           [200] fast 5ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/inventory           [200] fast 5ms[0m  
+10:25:59 AM [api] [ok] GET    /api/commanders/profile/me          [200] fast 4ms
+10:25:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/profile/me          [200] fast 4ms[0m  
+10:26:00 AM [api] [ok] GET    /api/planets                        [200] fast 2ms [1.4KB]
+10:26:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets                        [200] fast 2ms [1.4KB][0m  
+10:26:00 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:26:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:26:00 AM [api] [ok] GET    /api/megastructures/player          [200] fast 19ms [0.0KB]
+10:26:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/megastructures/player          [200] fast 19ms [0.0KB][0m  
+10:26:00 AM [api] [ok] GET    /api/planets/1/defense              [200] fast 2ms [0.6KB]
+10:26:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/defense              [200] fast 2ms [0.6KB][0m  
+10:26:00 AM [api] [i] GET    /api/planets/1/sub-planes           [304] fast 2ms
+10:26:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/sub-planes           [304] fast 2ms[0m  
+10:26:03 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:26:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:26:10 AM [api] [ok] POST   /api/auth/logout                    [200] fast 1ms [0.0KB]
+10:26:10 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/auth/logout                    [200] fast 1ms [0.0KB][0m  
+10:26:10 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:26:10 AM [api] [!] GET    /api/auth/user                      [401] fast 2ms [0.0KB]
+10:26:10 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 2ms [0.0KB][0m  
+10:26:11 AM [api] [x] GET    /api/status/health                  [503] quick 93ms [1.0KB]
+10:26:11 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 93ms [1.0KB][0m  
+10:26:41 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:26:41 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+[2m10:26:41 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+10:27:11 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 0ms [0.0KB]
+10:27:11 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 0ms [0.0KB][0m  
+[2m10:27:43 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+[2m10:28:04 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m10:28:37 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m10:28:53 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+10:29:32 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:29:32 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:29:32 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/season-pass/progression[0m  
+10:29:32 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/settings/player/options[0m  
+10:29:32 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/battle-pass/overview[0m  
+10:29:32 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/population/snapshot[0m  
+10:29:32 AM [api] [i] GET    /api/settings/player/options        [304] quick 118ms
+10:29:32 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 118ms[0m  
+10:29:32 AM [api] [i] GET    /api/season-pass/progression        [304] quick 113ms
+10:29:32 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] quick 113ms[0m  
+10:29:32 AM [api] [i] GET    /api/battle-pass/overview           [304] quick 120ms
+10:29:32 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] quick 120ms[0m  
+10:29:32 AM [api] [i] GET    /api/population/snapshot            [304] quick 132ms
+10:29:32 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] quick 132ms[0m  
+10:29:36 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:29:36 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:29:40 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:29:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:29:41 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:29:41 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:29:42 AM [api] [ok] GET    /api/turns                          [200] fast 16ms
+10:29:42 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 16ms[0m  
+10:29:43 AM [api] [i] GET    /api/planets/types                  [304] fast 8ms
+10:29:43 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/types                  [304] fast 8ms[0m  
+10:29:43 AM [api] [ok] GET    /api/turns                          [200] fast 25ms
+10:29:43 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 25ms[0m  
+10:29:43 AM [api] [i] GET    /api/travel/player/state            [304] quick 113ms
+10:29:43 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/travel/player/state            [304] quick 113ms[0m  
+10:29:44 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:29:44 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:29:44 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 65ms [0.6KB]
+10:29:44 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 65ms [0.6KB][0m  
+10:29:46 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:29:46 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:29:48 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:29:48 AM [api] [ok] GET    /api/turns                          [200] fast 11ms
+10:29:48 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 11ms[0m  
+10:29:48 AM [api] [i] GET    /api/population/snapshot            [304] fast 22ms
+10:29:48 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] fast 22ms[0m  
+10:29:57 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:29:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:29:58 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:29:58 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:29:59 AM [api] [ok] GET    /api/config/civilization-jobs       [200] fast 1ms [44.2KB]
+10:29:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/config/civilization-jobs       [200] fast 1ms [44.2KB][0m  
+10:29:59 AM [api] [ok] GET    /api/config/civilization-jobs/meta  [200] fast 1ms [0.8KB]
+10:29:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/config/civilization-jobs/meta  [200] fast 1ms [0.8KB][0m  
+10:29:59 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:29:59 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:30:00 AM [api] [ok] POST   /api/config/civilization-jobs/projection [200] fast 1ms [0.4KB]
+10:30:00 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/config/civilization-jobs/projection [200] fast 1ms [0.4KB][0m  
+10:30:02 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:30:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:30:03 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:03 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:03 AM [api] [ok] GET    /api/civilization/state             [200] fast 2ms [0.8KB]
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/civilization/state             [200] fast 2ms [0.8KB][0m  
+10:30:03 AM [api] [ok] GET    /api/civilization/subsystems        [200] fast 3ms [7.3KB]
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/civilization/subsystems        [200] fast 3ms [7.3KB][0m  
+10:30:03 AM [api] [ok] GET    /api/turns                          [200] fast 15ms
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 15ms[0m  
+10:30:03 AM [api] [ok] GET    /api/civilization/jobs              [200] fast 2ms [14.4KB]
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/civilization/jobs              [200] fast 2ms [14.4KB][0m  
+10:30:03 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:03 AM [api] [ok] GET    /api/civilization/workforce/assignments [200] fast 1ms [0.0KB]
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/civilization/workforce/assignments [200] fast 1ms [0.0KB][0m  
+10:30:03 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:03 AM [api] [ok] GET    /api/civilization/workforce/projection [200] fast 2ms [0.1KB]
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/civilization/workforce/projection [200] fast 2ms [0.1KB][0m  
+10:30:03 AM [api] [i] GET    /api/settings/player/options        [304] quick 83ms
+10:30:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 83ms[0m  
+10:30:06 AM [api] [ok] GET    /api/turns                          [200] fast 12ms
+10:30:06 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 12ms[0m  
+10:30:10 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:10 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:10 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:10 AM [api] [ok] GET    /api/turns                          [200] fast 19ms
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 19ms[0m  
+10:30:10 AM [api] [ok] GET    /api/research/xp/stats              [200] fast 27ms [0.3KB]
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/research/xp/stats              [200] fast 27ms [0.3KB][0m  
+10:30:10 AM [api] [ok] GET    /api/research/discoveries           [200] quick 93ms [0.0KB]
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/research/discoveries           [200] quick 93ms [0.0KB][0m  
+10:30:10 AM [api] [ok] GET    /api/research/leaderboard           [200] quick 95ms [0.2KB]
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/research/leaderboard           [200] quick 95ms [0.2KB][0m  
+10:30:10 AM [api] [ok] GET    /api/research/player/progress       [200] quick 108ms [0.1KB]
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/research/player/progress       [200] quick 108ms [0.1KB][0m  
+10:30:10 AM [api] [ok] GET    /api/research/recommendations       [200] quick 129ms [0.9KB]
+10:30:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/research/recommendations       [200] quick 129ms [0.9KB][0m  
+10:30:12 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:30:12 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:30:13 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:30:13 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:30:14 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:30:14 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:30:14 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 86ms [0.6KB]
+10:30:14 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 86ms [0.6KB][0m  
+[2m10:30:21 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/lib/gameContext.tsx[22m
+[2m10:30:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/lib/gameContext.tsx[22m Could not Fast Refresh ("useGame" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m10:30:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/pages/Auth.tsx, /src/pages/Overview.tsx, /src/components/layout/GameLayout.tsx, /src/pages/Leaderboard.tsx, /src/pages/Government.tsx, /src/pages/Commander.tsx, /src/pages/EmpireCommandCenter.tsx, /src/pages/MegaStructures.tsx, /src/pages/Facilities.tsx, /src/pages/Resources.tsx, /src/pages/EmpireProgression.tsx, /src/pages/Research.tsx[22m
+10:30:22 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:22 AM [api] [ok] GET    /api/auth/user                      [200] quick 56ms [0.2KB]
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/auth/user                      [200] quick 56ms [0.2KB][0m  
+10:30:22 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:22 AM [api] [ok] GET    /api/universe/realms                [200] fast 3ms [0.8KB]
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/universe/realms                [200] fast 3ms [0.8KB][0m  
+10:30:22 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:22 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:22 AM [api] [ok] GET    /api/turns                          [200] fast 13ms
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 13ms[0m  
+10:30:22 AM [api] [ok] GET    /api/game/state                     [200] fast 20ms [1.9KB]
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/state                     [200] fast 20ms [1.9KB][0m  
+10:30:22 AM [api] [i] GET    /api/alliances/mine                 [304] quick 85ms
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/alliances/mine                 [304] quick 85ms[0m  
+10:30:22 AM [api] [i] GET    /api/messages                       [304] quick 86ms
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/messages                       [304] quick 86ms[0m  
+10:30:22 AM [api] [i] GET    /api/game/missions                  [304] quick 88ms
+10:30:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/missions                  [304] quick 88ms[0m  
+10:30:23 AM [api] [ok] GET    /api/turns                          [200] fast 36ms
+10:30:23 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 36ms[0m  
+10:30:24 AM [api] [ok] PATCH  /api/game/state                     [200] quick 93ms [1.9KB]
+10:30:24 AM ℹ️ [34m[SERVER]  [0m [1mPATCH  /api/game/state                     [200] quick 93ms [1.9KB][0m  
+10:30:33 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:30:33 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:30:43 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:30:43 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:30:53 AM [api] [ok] POST   /api/game/sync-tick                 [200] steady 195ms [0.6KB]
+10:30:53 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] steady 195ms [0.6KB][0m  
+10:30:53 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:30:53 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:30:56 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:56 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:56 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:56 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:30:56 AM [api] [ok] GET    /api/diagnostics/issues             [200] fast 5ms [0.0KB]
+10:30:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/diagnostics/issues             [200] fast 5ms [0.0KB][0m  
+10:30:56 AM [api] [ok] GET    /api/diagnostics/warnings           [200] fast 6ms [0.0KB]
+10:30:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/diagnostics/warnings           [200] fast 6ms [0.0KB][0m  
+10:30:56 AM [api] [ok] GET    /api/diagnostics/debug              [200] fast 6ms [0.0KB]
+10:30:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/diagnostics/debug              [200] fast 6ms [0.0KB][0m  
+10:30:56 AM [api] [ok] GET    /api/turns                          [200] fast 12ms
+10:30:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 12ms[0m  
+10:30:56 AM [api] [i] GET    /api/settings/player/options        [304] fast 27ms
+10:30:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] fast 27ms[0m  
+[2m10:30:59 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+10:31:00 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:31:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:31:03 AM [api] [ok] GET    /api/planets                        [200] fast 5ms [1.4KB]
+10:31:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets                        [200] fast 5ms [1.4KB][0m  
+10:31:03 AM [api] [ok] GET    /api/turns                          [200] fast 10ms
+10:31:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 10ms[0m  
+10:31:03 AM [api] [i] GET    /api/megastructures/player          [304] fast 23ms
+10:31:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/megastructures/player          [304] fast 23ms[0m  
+10:31:03 AM [api] [i] GET    /api/planets/1/sub-planes           [304] fast 2ms
+10:31:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/sub-planes           [304] fast 2ms[0m  
+10:31:03 AM [api] [i] GET    /api/planets/1/defense              [304] fast 2ms
+10:31:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/defense              [304] fast 2ms[0m  
+10:31:12 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:31:12 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+[2m10:31:20 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+10:31:20 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:31:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:31:22 AM [api] [ok] POST   /api/game/sync-tick                 [200] steady 171ms [0.6KB]
+10:31:23 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] steady 171ms [0.6KB][0m  
+10:31:26 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:31:26 AM [api] [ok] GET    /api/unit-systems/blueprints        [200] fast 6ms [9.7KB]
+10:31:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/unit-systems/blueprints        [200] fast 6ms [9.7KB][0m  
+10:31:26 AM [api] [ok] GET    /api/turns                          [200] fast 11ms
+10:31:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 11ms[0m  
+10:31:26 AM [api] [ok] GET    /api/unit-systems/state             [200] steady 255ms [10.7KB]
+10:31:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/unit-systems/state             [200] steady 255ms [10.7KB][0m  
+10:31:30 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:31:30 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:31:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:31:30 AM [api] [i] GET    /api/settings/player/options        [304] fast 22ms
+10:31:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] fast 22ms[0m  
+10:31:34 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:31:34 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:31:38 AM [api] [ok] POST   /api/auth/logout                    [200] fast 1ms [0.0KB]
+10:31:38 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/auth/logout                    [200] fast 1ms [0.0KB][0m  
+10:31:38 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:31:38 AM [api] [!] GET    /api/auth/user                      [401] fast 1ms [0.0KB]
+10:31:38 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 1ms [0.0KB][0m  
+10:31:39 AM [api] [x] GET    /api/status/health                  [503] fast 27ms [0.9KB]
+10:31:39 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] fast 27ms [0.9KB][0m  
+[2m10:31:59 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m10:32:04 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:32:09 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:32:09 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+[2m10:32:12 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:32:39 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:32:39 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+[2m10:34:14 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+10:37:10 AM [api] [x] GET    /api/status/health                  [503] slow 1200ms [1.0KB]
+10:37:10 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] slow 1200ms [1.0KB][0m  
+10:37:13 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:37:13 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+10:37:44 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 0ms [0.0KB]
+10:37:44 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 0ms [0.0KB][0m  
+10:38:14 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 0ms [0.0KB]
+10:38:14 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 0ms [0.0KB][0m  
+[2m10:39:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+[2m10:39:49 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+[2m10:40:18 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+[2m10:40:45 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+[2m10:41:01 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+[2m10:41:20 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Shipyard.tsx[22m
+10:42:02 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:42:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:42:02 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/population/snapshot[0m  
+10:42:02 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/battle-pass/overview[0m  
+10:42:02 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/season-pass/progression[0m  
+10:42:02 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/settings/player/options[0m  
+10:42:02 AM [api] [i] GET    /api/settings/player/options        [304] steady 278ms
+10:42:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] steady 278ms[0m  
+10:42:02 AM [api] [i] GET    /api/season-pass/progression        [304] steady 276ms
+10:42:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] steady 276ms[0m  
+10:42:02 AM [api] [i] GET    /api/population/snapshot            [304] steady 204ms
+10:42:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] steady 204ms[0m  
+10:42:02 AM [api] [i] GET    /api/battle-pass/overview           [304] steady 207ms
+10:42:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] steady 207ms[0m  
+10:42:13 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:42:13 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:42:13 AM [api] [ok] POST   /api/game/sync-tick                 [200] steady 242ms [0.6KB]
+10:42:13 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] steady 242ms [0.6KB][0m  
+10:42:15 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:42:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:42:15 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:15 AM [api] [ok] GET    /api/constructor-yard/catalog       [200] fast 3ms [163.8KB]
+10:42:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/catalog       [200] fast 3ms [163.8KB][0m  
+10:42:15 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:15 AM [api] [ok] GET    /api/constructor-yard/catalog       [200] fast 4ms [166.4KB]
+10:42:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/catalog       [200] fast 4ms [166.4KB][0m  
+10:42:15 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:15 AM [api] [ok] GET    /api/constructor-yard/status/me     [200] quick 78ms [5.5KB]
+10:42:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [200] quick 78ms [5.5KB][0m  
+10:42:20 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:20 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 2ms
+10:42:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 2ms[0m  
+10:42:25 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:42:25 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:42:25 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:25 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 2ms
+10:42:25 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 2ms[0m  
+10:42:30 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:30 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 1ms
+10:42:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 1ms[0m  
+[2m10:42:31 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:42:31 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:42:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:42:35 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:35 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 2ms
+10:42:35 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 2ms[0m  
+10:42:40 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:40 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 1ms
+10:42:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 1ms[0m  
+10:42:41 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:42:41 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:42:43 AM [api] [ok] POST   /api/game/sync-tick                 [200] steady 169ms [0.6KB]
+10:42:43 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] steady 169ms [0.6KB][0m  
+10:42:45 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:45 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 1ms
+10:42:45 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 1ms[0m  
+10:42:50 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:50 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 1ms
+10:42:50 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 1ms[0m  
+10:42:51 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:42:51 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:42:55 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:42:55 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 1ms
+10:42:55 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 1ms[0m  
+10:43:00 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:00 AM [api] [i] GET    /api/constructor-yard/status/me     [304] fast 3ms
+10:43:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/constructor-yard/status/me     [304] fast 3ms[0m  
+10:43:01 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:43:01 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+[2m10:43:03 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+[2m10:43:07 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:43:07 AM [api] [x] GET    /api/status/health                  [503] quick 100ms [1.0KB]
+10:43:07 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 100ms [1.0KB][0m  
+10:43:07 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:07 AM [api] [ok] GET    /api/auth/user                      [200] quick 127ms [0.2KB]
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/auth/user                      [200] quick 127ms [0.2KB][0m  
+10:43:07 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:07 AM [api] [i] GET    /api/universe/realms                [304] fast 4ms
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/universe/realms                [304] fast 4ms[0m  
+10:43:07 AM [api] [ok] GET    /api/turns                          [200] fast 10ms
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 10ms[0m  
+10:43:07 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:07 AM [api] [ok] GET    /api/game/state                     [200] fast 22ms [1.9KB]
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/state                     [200] fast 22ms [1.9KB][0m  
+10:43:07 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:07 AM [api] [i] GET    /api/game/missions                  [304] fast 23ms
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/game/missions                  [304] fast 23ms[0m  
+10:43:07 AM [api] [i] GET    /api/messages                       [304] fast 31ms
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/messages                       [304] fast 31ms[0m  
+10:43:07 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:07 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:43:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:43:08 AM [api] [i] GET    /api/settings/player/options        [304] quick 57ms
+10:43:08 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 57ms[0m  
+10:43:08 AM [api] [i] GET    /api/alliances/mine                 [304] quick 125ms
+10:43:08 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/alliances/mine                 [304] quick 125ms[0m  
+10:43:10 AM [api] [ok] PATCH  /api/game/state                     [200] fast 49ms [1.9KB]
+10:43:10 AM ℹ️ [34m[SERVER]  [0m [1mPATCH  /api/game/state                     [200] fast 49ms [1.9KB][0m  
+10:43:18 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:43:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:43:19 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:19 AM [api] [ok] POST   /api/universe/realms/select         [200] fast 2ms [0.2KB]
+10:43:19 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/universe/realms/select         [200] fast 2ms [0.2KB][0m  
+10:43:19 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:19 AM [api] [ok] GET    /api/universe/realms                [200] fast 2ms [0.8KB]
+10:43:19 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/universe/realms                [200] fast 2ms [0.8KB][0m  
+10:43:20 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:20 AM [api] [ok] POST   /api/universe/realms/select         [200] fast 2ms [0.2KB]
+10:43:20 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/universe/realms/select         [200] fast 2ms [0.2KB][0m  
+10:43:21 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:21 AM [api] [ok] GET    /api/universe/realms                [200] fast 1ms [0.8KB]
+10:43:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/universe/realms                [200] fast 1ms [0.8KB][0m  
+[2m10:43:25 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/GameLayout.tsx[22m
+10:43:26 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:43:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:43:30 AM [api] [i] GET    /api/planets                        [304] fast 2ms
+10:43:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets                        [304] fast 2ms[0m  
+10:43:30 AM [api] [ok] GET    /api/turns                          [200] fast 11ms
+10:43:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 11ms[0m  
+10:43:30 AM [api] [i] GET    /api/planets/1/sub-planes           [304] fast 1ms
+10:43:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/sub-planes           [304] fast 1ms[0m  
+10:43:30 AM [api] [i] GET    /api/planets/1/defense              [304] fast 2ms
+10:43:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/defense              [304] fast 2ms[0m  
+10:43:30 AM [api] [i] GET    /api/megastructures/player          [304] quick 93ms
+10:43:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/megastructures/player          [304] quick 93ms[0m  
+10:43:37 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:43:37 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:43:45 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:43:45 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:43:45 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:43:45 AM [api] [i] GET    /api/settings/player/options        [304] quick 95ms
+10:43:45 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 95ms[0m  
+10:43:51 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 96ms [0.6KB]
+10:43:51 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 96ms [0.6KB][0m  
+10:43:55 AM [api] [ok] GET    /api/turns                          [200] fast 3ms
+10:43:55 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 3ms[0m  
+10:43:56 AM [api] [ok] POST   /api/auth/logout                    [200] fast 1ms [0.0KB]
+10:43:56 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/auth/logout                    [200] fast 1ms [0.0KB][0m  
+10:43:56 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:43:56 AM [api] [!] GET    /api/auth/user                      [401] fast 1ms [0.0KB]
+10:43:56 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 1ms [0.0KB][0m  
+10:43:56 AM [api] [x] GET    /api/status/health                  [503] fast 30ms [1.0KB]
+10:43:56 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] fast 30ms [1.0KB][0m  
+10:44:09 AM [api] [ok] GET    /api/turns                          [200] fast 24ms
+10:44:09 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 24ms[0m  
+10:44:10 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/season-pass/progression[0m  
+10:44:10 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/population/snapshot[0m  
+10:44:10 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/settings/player/options[0m  
+10:44:10 AM ⚠️ [33m[AUTH]    [0m [1mDev auth bypass granted for /api/battle-pass/overview[0m  
+10:44:10 AM [api] [i] GET    /api/season-pass/progression        [304] quick 129ms
+10:44:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/season-pass/progression        [304] quick 129ms[0m  
+10:44:10 AM [api] [i] GET    /api/population/snapshot            [304] quick 129ms
+10:44:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/population/snapshot            [304] quick 129ms[0m  
+10:44:10 AM [api] [i] GET    /api/battle-pass/overview           [304] quick 133ms
+10:44:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/battle-pass/overview           [304] quick 133ms[0m  
+10:44:10 AM [api] [i] GET    /api/settings/player/options        [304] quick 136ms
+10:44:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 136ms[0m  
+10:44:20 AM [api] [ok] GET    /api/turns                          [200] fast 7ms
+10:44:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 7ms[0m  
+10:44:20 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:44:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:44:20 AM [api] [i] GET    /api/planets                        [304] fast 1ms
+10:44:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets                        [304] fast 1ms[0m  
+10:44:20 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [1.8KB]
+10:44:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [1.8KB][0m  
+10:44:26 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 136ms [0.6KB]
+10:44:26 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 136ms [0.6KB][0m  
+10:44:30 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:44:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:44:31 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.1KB]
+10:44:31 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.1KB][0m  
+10:44:31 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [1.9KB]
+10:44:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [1.9KB][0m  
+10:44:33 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.2KB]
+10:44:33 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.2KB][0m  
+10:44:33 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.1KB]
+10:44:33 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.1KB][0m  
+10:44:34 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.4KB]
+10:44:34 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [2.4KB][0m  
+10:44:34 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.3KB]
+10:44:34 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.3KB][0m  
+10:44:36 AM [api] [ok] POST   /api/planets/1/occupation/extract   [200] quick 64ms [2.8KB]
+10:44:36 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/extract   [200] quick 64ms [2.8KB][0m  
+10:44:36 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.5KB]
+10:44:36 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.5KB][0m  
+10:44:37 AM [api] [ok] POST   /api/planets/1/occupation/extract   [200] quick 51ms [2.9KB]
+10:44:37 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/extract   [200] quick 51ms [2.9KB][0m  
+10:44:37 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.7KB]
+10:44:37 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.7KB][0m  
+10:44:40 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:44:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:44:40 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.0KB]
+10:44:40 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.0KB][0m  
+10:44:40 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.8KB]
+10:44:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.8KB][0m  
+10:44:41 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 0ms [3.1KB]
+10:44:41 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 0ms [3.1KB][0m  
+10:44:41 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.0KB]
+10:44:41 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.0KB][0m  
+10:44:41 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.3KB]
+10:44:41 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.3KB][0m  
+10:44:41 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.2KB]
+10:44:41 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.2KB][0m  
+10:44:42 AM [api] [ok] POST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.3KB]
+10:44:42 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/suppress  [200] fast 1ms [3.3KB][0m  
+10:44:42 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [3.2KB]
+10:44:42 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [3.2KB][0m  
+10:44:45 AM [api] [ok] POST   /api/planets/1/occupation/garrison  [200] fast 1ms [3.2KB]
+10:44:45 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/garrison  [200] fast 1ms [3.2KB][0m  
+10:44:45 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.2KB]
+10:44:45 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.2KB][0m  
+10:44:48 AM [api] [ok] POST   /api/planets/1/occupation/garrison  [200] fast 0ms [3.2KB]
+10:44:48 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/garrison  [200] fast 0ms [3.2KB][0m  
+10:44:48 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.1KB]
+10:44:48 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.1KB][0m  
+10:44:50 AM [api] [ok] POST   /api/planets/1/occupation/garrison  [200] fast 0ms [3.1KB]
+10:44:50 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/garrison  [200] fast 0ms [3.1KB][0m  
+10:44:50 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.1KB]
+10:44:50 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.1KB][0m  
+10:44:50 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:44:50 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:44:52 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] steady 169ms [3.3KB]
+10:44:52 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] steady 169ms [3.3KB][0m  
+10:44:52 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.0KB]
+10:44:52 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.0KB][0m  
+10:44:53 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 58ms [3.3KB]
+10:44:53 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 58ms [3.3KB][0m  
+10:44:53 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [3.0KB]
+10:44:53 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [3.0KB][0m  
+10:44:53 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 63ms [3.3KB]
+10:44:53 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 63ms [3.3KB][0m  
+10:44:53 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [3.0KB]
+10:44:53 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [3.0KB][0m  
+10:44:54 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 62ms [3.2KB]
+10:44:54 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 62ms [3.2KB][0m  
+10:44:54 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:44:54 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:44:54 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB]
+10:44:54 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB][0m  
+10:44:54 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:44:54 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:44:55 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 51ms [3.2KB]
+10:44:55 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 51ms [3.2KB][0m  
+10:44:55 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:44:55 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:44:56 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 52ms [3.2KB]
+10:44:56 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 52ms [3.2KB][0m  
+10:44:56 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:44:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:44:56 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 87ms [0.6KB]
+10:44:56 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 87ms [0.6KB][0m  
+10:44:56 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 101ms [3.2KB]
+10:44:56 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 101ms [3.2KB][0m  
+10:44:56 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:44:56 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:44:57 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 73ms [3.2KB]
+10:44:57 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 73ms [3.2KB][0m  
+10:44:57 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:44:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:44:57 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 57ms [3.2KB]
+10:44:57 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 57ms [3.2KB][0m  
+10:44:57 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:44:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:44:58 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB]
+10:44:58 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB][0m  
+10:44:58 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:44:58 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:00 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:45:00 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:45:01 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 53ms [3.2KB]
+10:45:01 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 53ms [3.2KB][0m  
+10:45:01 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:01 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:02 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 52ms [3.2KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 52ms [3.2KB][0m  
+10:45:02 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:02 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 73ms [3.2KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 73ms [3.2KB][0m  
+10:45:02 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:02 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 62ms [3.2KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 62ms [3.2KB][0m  
+10:45:02 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:02 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:03 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB]
+10:45:03 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB][0m  
+10:45:03 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:03 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 86ms [3.2KB]
+10:45:03 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 86ms [3.2KB][0m  
+10:45:03 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:03 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:04 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB]
+10:45:04 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB][0m  
+10:45:04 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:04 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:04 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB]
+10:45:04 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB][0m  
+10:45:04 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:04 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:05 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB]
+10:45:05 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB][0m  
+10:45:05 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:05 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:05 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 77ms [3.2KB]
+10:45:05 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 77ms [3.2KB][0m  
+10:45:05 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:05 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:06 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB]
+10:45:06 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB][0m  
+10:45:06 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:06 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:10 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:45:10 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:45:14 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB]
+10:45:14 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB][0m  
+10:45:14 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:14 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:15 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 77ms [3.2KB]
+10:45:15 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 77ms [3.2KB][0m  
+10:45:15 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:15 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB]
+10:45:15 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB][0m  
+10:45:15 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:15 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:16 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB][0m  
+10:45:16 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:16 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB][0m  
+10:45:16 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:16 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB][0m  
+10:45:16 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:16 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:17 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 70ms [3.2KB]
+10:45:17 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 70ms [3.2KB][0m  
+10:45:17 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:17 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:17 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB]
+10:45:17 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB][0m  
+10:45:17 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:17 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:18 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB][0m  
+10:45:18 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:18 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB][0m  
+10:45:18 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:18 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB][0m  
+10:45:18 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:18 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 58ms [3.2KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 58ms [3.2KB][0m  
+10:45:18 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:18 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB][0m  
+10:45:18 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:18 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:20 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:45:20 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 55ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 57ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 57ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] fast 40ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] fast 40ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:21 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB][0m  
+10:45:21 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:21 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:22 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 60ms [3.2KB][0m  
+10:45:22 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:22 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB][0m  
+10:45:22 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:22 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] fast 41ms [3.2KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] fast 41ms [3.2KB][0m  
+10:45:22 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:22 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 50ms [3.2KB][0m  
+10:45:22 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:22 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] fast 41ms [3.2KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] fast 41ms [3.2KB][0m  
+10:45:22 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:22 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:23 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB]
+10:45:23 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 76ms [3.2KB][0m  
+10:45:23 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:23 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:23 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB]
+10:45:23 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 56ms [3.2KB][0m  
+10:45:23 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:23 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:24 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB]
+10:45:24 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 61ms [3.2KB][0m  
+10:45:24 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:24 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:24 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB]
+10:45:24 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 64ms [3.2KB][0m  
+10:45:24 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:24 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:25 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 54ms [3.2KB]
+10:45:25 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 54ms [3.2KB][0m  
+10:45:25 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:25 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:26 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 78ms [3.2KB]
+10:45:26 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 78ms [3.2KB][0m  
+10:45:26 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 0ms [2.9KB]
+10:45:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 0ms [2.9KB][0m  
+10:45:26 AM [api] [ok] POST   /api/game/sync-tick                 [200] quick 109ms [0.6KB]
+10:45:26 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] quick 109ms [0.6KB][0m  
+10:45:26 AM [api] [ok] POST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB]
+10:45:26 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/fortify   [200] quick 59ms [3.2KB][0m  
+10:45:26 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:26 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:30 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:45:30 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:45:31 AM [api] [ok] POST   /api/planets/1/occupation/garrison  [200] fast 1ms [3.0KB]
+10:45:31 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/planets/1/occupation/garrison  [200] fast 1ms [3.0KB][0m  
+10:45:31 AM [api] [ok] GET    /api/planets/1/occupation           [200] fast 1ms [2.9KB]
+10:45:31 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/planets/1/occupation           [200] fast 1ms [2.9KB][0m  
+10:45:40 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:45:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:45:40 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:40 AM [api] [i] GET    /api/settings/player/options        [304] quick 117ms
+10:45:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 117ms[0m  
+10:45:40 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:40 AM [api] [ok] GET    /api/raid-finder/queue              [200] fast 1ms [0.2KB]
+10:45:40 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/raid-finder/queue              [200] fast 1ms [0.2KB][0m  
+10:45:45 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:45 AM [api] [ok] GET    /api/raid-finder/queue              [200] fast 2ms [0.2KB]
+10:45:45 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/raid-finder/queue              [200] fast 2ms [0.2KB][0m  
+10:45:50 AM [api] [ok] GET    /api/turns                          [200] fast 4ms
+10:45:50 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 4ms[0m  
+10:45:50 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:50 AM [api] [ok] GET    /api/raid-finder/queue              [200] fast 1ms [0.2KB]
+10:45:50 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/raid-finder/queue              [200] fast 1ms [0.2KB][0m  
+10:45:55 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:55 AM [api] [ok] GET    /api/raid-finder/queue              [200] fast 2ms [0.2KB]
+10:45:55 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/raid-finder/queue              [200] fast 2ms [0.2KB][0m  
+10:45:56 AM [api] [ok] POST   /api/game/sync-tick                 [200] steady 202ms [0.6KB]
+10:45:56 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [200] steady 202ms [0.6KB][0m  
+10:45:57 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:57 AM [api] [ok] GET    /api/turns                          [200] fast 8ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 8ms[0m  
+10:45:57 AM [api] [ok] GET    /api/commanders                     [200] fast 11ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders                     [200] fast 11ms[0m  
+10:45:57 AM [api] [ok] GET    /api/commanders/gacha/status        [200] fast 13ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/gacha/status        [200] fast 13ms[0m  
+10:45:57 AM [api] [i] GET    /api/commander/talent/tree          [304] fast 26ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commander/talent/tree          [304] fast 26ms[0m  
+10:45:57 AM [api] [i] GET    /api/government-leaders             [304] fast 2ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders             [304] fast 2ms[0m  
+10:45:57 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:45:57 AM [api] [ok] GET    /api/commanders/inventory           [200] fast 19ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/inventory           [200] fast 19ms[0m  
+10:45:57 AM [api] [ok] GET    /api/commanders/profile/me          [200] fast 14ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/commanders/profile/me          [200] fast 14ms[0m  
+10:45:57 AM [api] [i] GET    /api/government-leaders/appointments/me [304] fast 25ms
+10:45:57 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/government-leaders/appointments/me [304] fast 25ms[0m  
+10:46:07 AM [api] [ok] GET    /api/turns                          [200] fast 6ms
+10:46:07 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 6ms[0m  
+10:46:13 AM ℹ️ [34m[AUTH]    [0m [1mSession auth successful for userId: 12d093ab-08fb-4ded-967f-64bba3ee96b2[0m  
+10:46:13 AM [api] [ok] GET    /api/turns                          [200] fast 9ms
+10:46:13 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 9ms[0m  
+10:46:13 AM [api] [i] GET    /api/settings/player/options        [304] quick 100ms
+10:46:13 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/settings/player/options        [304] quick 100ms[0m  
+10:46:17 AM [api] [ok] GET    /api/turns                          [200] fast 5ms
+10:46:17 AM ℹ️ [34m[SERVER]  [0m [1mGET    /api/turns                          [200] fast 5ms[0m  
+10:46:22 AM [api] [ok] POST   /api/auth/logout                    [200] fast 1ms [0.0KB]
+10:46:22 AM ℹ️ [34m[SERVER]  [0m [1mPOST   /api/auth/logout                    [200] fast 1ms [0.0KB][0m  
+10:46:22 AM ⚠️ [33m[AUTH]    [0m [1mNo valid authentication for /api/auth/user[0m  
+10:46:22 AM [api] [!] GET    /api/auth/user                      [401] fast 2ms [0.0KB]
+10:46:22 AM ⚠️ [33m[SERVER]  [0m [1mGET    /api/auth/user                      [401] fast 2ms [0.0KB][0m  
+10:46:23 AM [api] [x] GET    /api/status/health                  [503] fast 29ms [1.0KB]
+10:46:23 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] fast 29ms [1.0KB][0m  
+10:46:52 AM [api] [!] POST   /api/game/sync-tick                 [401] fast 1ms [0.0KB]
+10:46:52 AM ⚠️ [33m[SERVER]  [0m [1mPOST   /api/game/sync-tick                 [401] fast 1ms [0.0KB][0m  
+10:46:53 AM [api] [x] GET    /api/status/health                  [503] quick 102ms [1.0KB]
+10:46:53 AM ❌ [31m[SERVER]  [0m [1mGET    /api/status/health                  [503] quick 102ms [1.0KB][0m  

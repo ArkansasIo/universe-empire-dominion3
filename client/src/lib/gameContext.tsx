@@ -175,6 +175,24 @@ export interface GameConfig {
   maintenanceMode: boolean;
 }
 
+export interface RealmServer {
+  id: string;
+  name: string;
+  region: "NA" | "EU" | "APAC";
+  status: "online" | "maintenance" | "degraded";
+  playersOnline: number;
+  maxPlayers: number;
+  tickRateMs: number;
+  uptimePercent: number;
+  universes: string[];
+}
+
+interface RealmResponse {
+  realms: RealmServer[];
+  selectedRealmId: string;
+  selectedRealm: RealmServer;
+}
+
 export interface Message {
   id: string;
   from: string;
@@ -217,7 +235,11 @@ interface GameState {
   username: string;
   totalTurns: number;
   currentTurns: number;
+  realmServers: RealmServer[];
+  selectedRealmId: string;
+  selectedRealm: RealmServer | null;
   spendTurns: (amount: number) => Promise<boolean>;
+  switchRealm: (realmId: string) => Promise<void>;
   login: () => void;
   logout: () => void;
   isLoading: boolean;
@@ -475,6 +497,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     refetchInterval: 15000 // Sync turns every 15s
   });
 
+  const { data: realmData } = useQuery<RealmResponse>({
+    queryKey: ["/api/universe/realms"],
+    queryFn: () => apiRequest("GET", "/api/universe/realms"),
+    enabled: !!authUser,
+    staleTime: 30000,
+  });
+
   useEffect(() => {
     if (!authUser?.id) return;
     if (!blink) {
@@ -660,6 +689,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  const switchRealmMutation = useMutation({
+    mutationFn: (realmId: string) => apiRequest("POST", "/api/universe/realms/select", { realmId }),
+    onSuccess: (data: RealmResponse | any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/universe/realms"] });
+      const realmName = data?.selectedRealm?.name;
+      if (realmName) {
+        setConfig((prev) => ({ ...prev, universeName: realmName }));
+      }
+      addEvent("Realm Switched", `Command routing updated to ${realmName || "selected realm"}.`, "info");
+      toast({ title: "Realm switched", description: "In-game realm updated successfully." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Realm switch failed",
+        description: error?.message || "Unable to change realms right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const joinAllianceMutation = useMutation({
     mutationFn: (id: string) => apiRequest('POST', `/api/alliances/${id}/join`, {}),
     onSuccess: () => {
@@ -755,6 +804,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setNeedsSetup(Boolean((state as any).setupComplete === false));
     setIsInitialized(true);
   }, [authUser, serverGameState, gameStateLoading, isInitialized, turnData]);
+
+  useEffect(() => {
+    if (!realmData?.selectedRealm?.name) {
+      return;
+    }
+
+    setConfig((prev) =>
+      prev.universeName === realmData.selectedRealm.name
+        ? prev
+        : { ...prev, universeName: realmData.selectedRealm.name }
+    );
+  }, [realmData?.selectedRealm?.name]);
 
   useEffect(() => {
     const missionPayload = Array.isArray(serverMissions)
@@ -1313,6 +1374,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      createAllianceMutation.mutate({ name, tag, description: "A new power rises." });
   };
 
+  const switchRealm = async (realmId: string): Promise<void> => {
+    if (!realmId || realmId === realmData?.selectedRealmId) {
+      return;
+    }
+
+    await switchRealmMutation.mutateAsync(realmId);
+  };
+
   const joinAlliance = (id: string) => {
      joinAllianceMutation.mutate(id);
   };
@@ -1471,7 +1540,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        sellItem,
        totalTurns,
        currentTurns,
+       realmServers: realmData?.realms || [],
+       selectedRealmId: realmData?.selectedRealmId || "",
+       selectedRealm: realmData?.selectedRealm || null,
        spendTurns,
+       switchRealm,
        processMissions,
        completeResearch: completeResearchMutation.mutate,
        processQueue: processQueueMutation.mutate
