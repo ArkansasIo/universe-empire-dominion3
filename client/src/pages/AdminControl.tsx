@@ -13,8 +13,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   Ban,
+  Cpu,
   Database,
+  HardDrive,
   Lock,
+  MemoryStick,
   RefreshCw,
   Server,
   ShieldAlert,
@@ -22,6 +25,7 @@ import {
   Users,
   Wand2,
 } from "lucide-react";
+import type { SystemMetricsSnapshot } from "@shared/config/statusConfig";
 
 type AdminMeResponse = {
   isAdmin: boolean;
@@ -155,6 +159,14 @@ type DeveloperShortcutsResponse = {
     email: string;
   }>;
 };
+
+function formatAdminUptime(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${days}d ${hours}h ${minutes}m`;
+}
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -309,6 +321,13 @@ export default function AdminControl() {
     refetchInterval: 10000,
   });
 
+  const { data: statusData } = useQuery<{ success: boolean; data: SystemMetricsSnapshot }>({
+    queryKey: ["admin-server-status"],
+    queryFn: () => fetchJson<{ success: boolean; data: SystemMetricsSnapshot }>("/api/status"),
+    enabled: !!meData?.isAdmin,
+    refetchInterval: 10000,
+  });
+
   useEffect(() => {
     if (serverSettingsData?.settings) {
       setServerForm(serverSettingsData.settings);
@@ -345,6 +364,7 @@ export default function AdminControl() {
     queryClient.invalidateQueries({ queryKey: ["admin-server-settings"] });
     queryClient.invalidateQueries({ queryKey: ["admin-rules-content"] });
     queryClient.invalidateQueries({ queryKey: ["admin-developer-shortcuts"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-server-status"] });
   };
 
   const statusMutation = useMutation({
@@ -554,6 +574,76 @@ export default function AdminControl() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Server Health</CardTitle>
+                <CardDescription>Real-time metrics mirrored from the server status service into the admin plane.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Health Score</div>
+                    <div className="mt-1 text-2xl font-bold">{statusData?.data.healthCheck.overallScore ?? 0}</div>
+                    <div className="text-xs text-slate-500">{statusData?.data.healthCheck.status ?? "offline"}</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Uptime</div>
+                    <div className="mt-1 text-2xl font-bold">{formatAdminUptime((statusData?.data.cpu.uptime ?? 0) * 1000)}</div>
+                    <div className="text-xs text-slate-500">Live process time</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Request Rate</div>
+                    <div className="mt-1 text-2xl font-bold">{(statusData?.data.requests.requestsPerSecond ?? 0).toFixed(2)}</div>
+                    <div className="text-xs text-slate-500">Requests per second</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Database</div>
+                    <div className="mt-1 text-2xl font-bold">{statusData?.data.database.connections ?? 0}</div>
+                    <div className="text-xs text-slate-500">Open connections</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-lg border p-4 flex items-start gap-3">
+                    <Cpu className="w-5 h-5 text-cyan-600 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-semibold">CPU</div>
+                      <div className="text-sm text-slate-600">{Math.round(statusData?.data.cpu.usage ?? 0)}% usage</div>
+                      <div className="text-xs text-slate-500">Load 1m: {(statusData?.data.cpu.loadAverage.oneMinute ?? 0).toFixed(2)}</div>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-4 flex items-start gap-3">
+                    <MemoryStick className="w-5 h-5 text-violet-600 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-semibold">Memory</div>
+                      <div className="text-sm text-slate-600">{Math.round(statusData?.data.memory.usage ?? 0)}% usage</div>
+                      <div className="text-xs text-slate-500">{statusData?.data.memory.used ?? 0} / {statusData?.data.memory.total ?? 0} MB</div>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-4 flex items-start gap-3">
+                    <HardDrive className="w-5 h-5 text-slate-600 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-semibold">Disk</div>
+                      <div className="text-sm text-slate-600">{Math.round(statusData?.data.disk.usage ?? 0)}% usage</div>
+                      <div className="text-xs text-slate-500">{statusData?.data.disk.used ?? 0} / {statusData?.data.disk.total ?? 0} GB</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                  {Object.entries(statusData?.data.healthCheck.checks || {}).map(([key, check]) => (
+                    <div key={key} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold capitalize">{key}</div>
+                        <Badge variant="outline">{check.status}</Badge>
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">{check.message || "No issues detected."}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users" className="mt-6">
@@ -613,66 +703,97 @@ export default function AdminControl() {
           </TabsContent>
 
           <TabsContent value="server" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Imported OGameX Server Settings</CardTitle>
-                <CardDescription>Universe, economy, battle, expedition, and galaxy configuration mirrored into the new backend.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {[
-                    ["universeName", "Universe Name"],
-                    ["economySpeed", "Economy Speed"],
-                    ["researchSpeed", "Research Speed"],
-                    ["fleetSpeedWar", "War Fleet Speed"],
-                    ["fleetSpeedHolding", "Holding Fleet Speed"],
-                    ["fleetSpeedPeaceful", "Peaceful Fleet Speed"],
-                    ["planetFieldsBonus", "Planet Fields Bonus"],
-                    ["registrationPlanetAmount", "Registration Planets"],
-                    ["darkMatterBonus", "Dark Matter Bonus"],
-                    ["defenseRepairRate", "Defense Repair Rate"],
-                    ["numberOfGalaxies", "Galaxies"],
-                    ["systemsPerGalaxy", "Systems per Galaxy"],
-                  ].map(([key, label]) => (
-                    <div key={key}>
-                      <div className="text-sm font-medium mb-1">{label}</div>
-                      <Input
-                        value={String(serverForm[key as keyof ServerSettings])}
-                        onChange={(event) =>
-                          setServerForm((prev) => ({
-                            ...prev,
-                            [key]: key === "universeName" ? event.target.value : Number(event.target.value) || 0,
-                          }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {[
-                    ["darkMatterRegenEnabled", "Dark Matter Regen"],
-                    ["allianceCombatSystemOn", "Alliance Combat"],
-                    ["debrisFieldDeuteriumOn", "Deuterium Debris"],
-                    ["rapidFireEnabled", "Rapid Fire"],
-                    ["highscoreAdminVisible", "Show Admins in Highscore"],
-                    ["allowNewRegistrations", "Allow Registrations"],
-                  ].map(([key, label]) => (
-                    <div key={key} className="flex items-center justify-between border rounded-lg p-3">
-                      <div className="font-medium">{label}</div>
-                      <Switch
-                        checked={Boolean(serverForm[key as keyof ServerSettings])}
-                        onCheckedChange={(checked) =>
-                          setServerForm((prev) => ({ ...prev, [key]: checked }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={() => serverSettingsMutation.mutate(serverForm)} disabled={serverSettingsMutation.isPending}>
-                  <Server className="w-4 h-4 mr-2" /> Save Server Settings
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Live Runtime Snapshot</CardTitle>
+                  <CardDescription>Current process, database, and request telemetry for the running server.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Success / Failed</div>
+                    <div className="mt-1 text-2xl font-bold">{statusData?.data.requests.successfulRequests ?? 0} / {statusData?.data.requests.failedRequests ?? 0}</div>
+                    <div className="text-xs text-slate-500">API outcomes</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Average Response</div>
+                    <div className="mt-1 text-2xl font-bold">{Math.round(statusData?.data.requests.averageResponseTime ?? 0)} ms</div>
+                    <div className="text-xs text-slate-500">P95 {Math.round(statusData?.data.requests.p95ResponseTime ?? 0)} ms</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Cache Hit Rate</div>
+                    <div className="mt-1 text-2xl font-bold">{Math.round(statusData?.data.database.cacheHitRate ?? 0)}%</div>
+                    <div className="text-xs text-slate-500">{statusData?.data.database.totalDataSize ?? "0B"} data size</div>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase text-slate-500">Slow Queries</div>
+                    <div className="mt-1 text-2xl font-bold">{statusData?.data.database.slowQueries ?? 0}</div>
+                    <div className="text-xs text-slate-500">{statusData?.data.database.activeQueries ?? 0} active</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Imported OGameX Server Settings</CardTitle>
+                  <CardDescription>Universe, economy, battle, expedition, and galaxy configuration mirrored into the new backend.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {[
+                      ["universeName", "Universe Name"],
+                      ["economySpeed", "Economy Speed"],
+                      ["researchSpeed", "Research Speed"],
+                      ["fleetSpeedWar", "War Fleet Speed"],
+                      ["fleetSpeedHolding", "Holding Fleet Speed"],
+                      ["fleetSpeedPeaceful", "Peaceful Fleet Speed"],
+                      ["planetFieldsBonus", "Planet Fields Bonus"],
+                      ["registrationPlanetAmount", "Registration Planets"],
+                      ["darkMatterBonus", "Dark Matter Bonus"],
+                      ["defenseRepairRate", "Defense Repair Rate"],
+                      ["numberOfGalaxies", "Galaxies"],
+                      ["systemsPerGalaxy", "Systems per Galaxy"],
+                    ].map(([key, label]) => (
+                      <div key={key}>
+                        <div className="text-sm font-medium mb-1">{label}</div>
+                        <Input
+                          value={String(serverForm[key as keyof ServerSettings])}
+                          onChange={(event) =>
+                            setServerForm((prev) => ({
+                              ...prev,
+                              [key]: key === "universeName" ? event.target.value : Number(event.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {[
+                      ["darkMatterRegenEnabled", "Dark Matter Regen"],
+                      ["allianceCombatSystemOn", "Alliance Combat"],
+                      ["debrisFieldDeuteriumOn", "Deuterium Debris"],
+                      ["rapidFireEnabled", "Rapid Fire"],
+                      ["highscoreAdminVisible", "Show Admins in Highscore"],
+                      ["allowNewRegistrations", "Allow Registrations"],
+                    ].map(([key, label]) => (
+                      <div key={key} className="flex items-center justify-between border rounded-lg p-3">
+                        <div className="font-medium">{label}</div>
+                        <Switch
+                          checked={Boolean(serverForm[key as keyof ServerSettings])}
+                          onCheckedChange={(checked) =>
+                            setServerForm((prev) => ({ ...prev, [key]: checked }))
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={() => serverSettingsMutation.mutate(serverForm)} disabled={serverSettingsMutation.isPending}>
+                    <Server className="w-4 h-4 mr-2" /> Save Server Settings
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="rules" className="mt-6">
