@@ -84,6 +84,7 @@ const PlanetCommand = lazy(() => import("@/pages/PlanetCommand"));
 const PlanetaryOccupation = lazy(() => import("@/pages/PlanetaryOccupation"));
 const OgameCompendium = lazy(() => import("@/pages/OgameCompendium"));
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
+const ThreeDViewerPortal = lazy(() => import("@/pages/ThreeDViewerPortal"));
 
 function LoadingSplash() {
   return (
@@ -159,6 +160,7 @@ function RouterContent() {
   if (!isLoggedIn) {
     return (
       <Switch>
+        <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/about" component={About} />
         <Route path="/forums" component={Forums} />
@@ -172,6 +174,7 @@ function RouterContent() {
   if (needsSetup) {
     return (
       <Switch>
+        <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/about" component={About} />
         <Route path="/forums" component={Forums} />
@@ -184,6 +187,7 @@ function RouterContent() {
 
   return (
     <Switch>
+      <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/" component={Overview} />
       <Route path="/about" component={About} />
