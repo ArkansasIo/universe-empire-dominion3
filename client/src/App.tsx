@@ -14,6 +14,8 @@ const Overview = lazy(() => import("@/pages/Overview"));
 const Resources = lazy(() => import("@/pages/Resources"));
 const Facilities = lazy(() => import("@/pages/Facilities"));
 const Research = lazy(() => import("@/pages/Research"));
+const Skills = lazy(() => import("@/pages/Skills"));
+const Fitting = lazy(() => import("@/pages/Fitting"));
 const Shipyard = lazy(() => import("@/pages/Shipyard"));
 const Fleet = lazy(() => import("@/pages/Fleet"));
 const Galaxy = lazy(() => import("@/pages/Galaxy"));
@@ -197,6 +199,8 @@ function RouterContent() {
       <Route path="/resources" component={Resources} />
       <Route path="/facilities" component={Facilities} />
       <Route path="/research" component={Research} />
+      <Route path="/skills" component={Skills} />
+      <Route path="/fitting" component={Fitting} />
       <Route path="/artifacts" component={Artifacts} />
       <Route path="/shipyard" component={Shipyard} />
       <Route path="/fleet" component={Fleet} />
@@ -267,9 +271,11 @@ function RouterContent() {
 
 function Router() {
   return (
-    <Suspense fallback={<LoadingSplash />}>
-      <RouterContent />
-    </Suspense>
+    <GameProvider>
+      <Suspense fallback={<LoadingSplash />}>
+        <RouterContent />
+      </Suspense>
+    </GameProvider>
   );
 }
 
@@ -277,10 +283,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <GameProvider>
-          <Toaster />
-          <Router />
-        </GameProvider>
+        <Toaster />
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );

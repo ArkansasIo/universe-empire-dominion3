@@ -6,7 +6,6 @@
 @import "./sub/form-system.css";
 @import "./sub/data-system.css";
 
-:root,
 :root[data-sd-theme="black-style"] {
   --sd-cut-corner: 6px;
   --sd-font-display: "Orbitron", sans-serif;
@@ -82,6 +81,7 @@
   --sd-resource-alloy: #81c784;
 }
 
+:root,
 :root[data-sd-theme="og-white"] {
   --sd-theme-surface: light;
 

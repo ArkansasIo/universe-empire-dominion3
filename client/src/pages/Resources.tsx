@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Box, Gem, Database, Zap, ArrowUpCircle, Hammer, Clock, TrendingUp, Warehouse, Info, ChevronRight, BarChart3 } from "lucide-react";
+import { Box, Gem, Database, Zap, ArrowUpCircle, Hammer, Clock, TrendingUp, Warehouse, Factory, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { MENU_ASSETS } from "@shared/config";
 import { calculateResourceProduction, calculateStorageCapacity } from "@/lib/resourceMath";
+import { getRefineryStage, getRefineryUpgradeSnapshot, type RefinerySystemDefinition } from "@/lib/refinerySystemsCatalog";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
@@ -160,7 +161,7 @@ function toPercent(value: number, total: number): number {
 }
 
 export default function Resources() {
-  const { buildings, resources, updateBuilding, queue } = useGame();
+  const { buildings, resources, updateBuilding, queue, refinerySystems, upgradeRefinerySystem } = useGame();
 
   const buildQueue = queue.filter(q => q.type === "building");
 
@@ -175,6 +176,101 @@ export default function Resources() {
     metal: calculateStorageCapacity(10000, buildings.metalMine),
     crystal: calculateStorageCapacity(10000, buildings.crystalMine),
     deuterium: calculateStorageCapacity(10000, buildings.deuteriumSynthesizer)
+  };
+
+  const refineryCatalog: RefinerySystemDefinition[] = [
+    {
+      id: "metal-refinery",
+      name: "Metal Refinery System",
+      linkedBuilding: "metalMine",
+      linkedLabel: "Metal Mine",
+      imagePath: MENU_ASSETS.RESOURCES.METAL.path,
+      throughputFactor: 0.42,
+      baseEfficiency: 60,
+      stabilizationFactor: 0.14,
+      outputLabel: "Structural Alloy Feed",
+      description: "Smelters, separators, and pressure furnaces turn mined ore into construction-ready alloy batches for factories and hull plating.",
+      tone: {
+        shell: "border-slate-200 bg-gradient-to-br from-slate-50 to-white",
+        badge: "bg-slate-100 text-slate-700 border-slate-200",
+        rate: "text-slate-900",
+        accent: "text-slate-600",
+      },
+    },
+    {
+      id: "crystal-refinery",
+      name: "Crystal Purification Grid",
+      linkedBuilding: "crystalMine",
+      linkedLabel: "Crystal Mine",
+      imagePath: MENU_ASSETS.RESOURCES.CRYSTAL.path,
+      throughputFactor: 0.38,
+      baseEfficiency: 58,
+      stabilizationFactor: 0.17,
+      outputLabel: "Optics-Grade Crystal",
+      description: "Precision cutters and resonance baths refine mined crystal into high-clarity wafers used by targeting systems and advanced research arrays.",
+      tone: {
+        shell: "border-blue-200 bg-gradient-to-br from-blue-50 to-white",
+        badge: "bg-blue-100 text-blue-700 border-blue-200",
+        rate: "text-blue-900",
+        accent: "text-blue-600",
+      },
+    },
+    {
+      id: "deuterium-refinery",
+      name: "Deuterium Fractionation Line",
+      linkedBuilding: "deuteriumSynthesizer",
+      linkedLabel: "Deuterium Synthesizer",
+      imagePath: MENU_ASSETS.RESOURCES.DEUTERIUM.path,
+      throughputFactor: 0.34,
+      baseEfficiency: 56,
+      stabilizationFactor: 0.21,
+      outputLabel: "Fuel-Grade Deuterium",
+      description: "Cryogenic separators and isotope filters stabilize harvested heavy hydrogen into cleaner propellant reserves for fleets and reactors.",
+      tone: {
+        shell: "border-green-200 bg-gradient-to-br from-green-50 to-white",
+        badge: "bg-green-100 text-green-700 border-green-200",
+        rate: "text-green-900",
+        accent: "text-green-600",
+      },
+    },
+  ];
+
+  const refinerySystemsState = refineryCatalog.map((system) => {
+    const level = refinerySystems[system.id] || 0;
+    const linkedLevel = buildings[system.linkedBuilding] || 0;
+    const linkedProduction =
+      system.linkedBuilding === "metalMine"
+        ? metalProduction
+        : system.linkedBuilding === "crystalMine"
+          ? crystalProduction
+          : deuteriumProduction;
+    const snapshot = getRefineryUpgradeSnapshot(system, level, linkedProduction);
+    const unlocked = linkedLevel > 0;
+    const maxed = level >= snapshot.maxLevel;
+    const canAfford =
+      resources.metal >= snapshot.cost.metal &&
+      resources.crystal >= snapshot.cost.crystal &&
+      resources.deuterium >= snapshot.cost.deuterium;
+
+    return {
+      ...system,
+      level,
+      linkedLevel,
+      unlocked,
+      maxed,
+      canAfford,
+      snapshot,
+    };
+  });
+
+  const refinerySummary = {
+    activeLines: refinerySystemsState.filter((system) => system.level > 0).length,
+    combinedThroughput: refinerySystemsState.reduce((total, system) => total + system.snapshot.throughput, 0),
+    averageEfficiency:
+      refinerySystemsState.length > 0
+        ? Math.round(refinerySystemsState.reduce((total, system) => total + system.snapshot.efficiency, 0) / refinerySystemsState.length)
+        : 0,
+    stabilizedOutput: refinerySystemsState.reduce((total, system) => total + system.snapshot.stabilization, 0),
   };
 
   return (
@@ -417,6 +513,159 @@ export default function Resources() {
               nextLevelBonus={Math.floor(20 * (buildings.solarPlant + 1)) - energyProduction}
            />
         </div>
+
+        <Card className="bg-white border-slate-200 shadow-sm" data-testid="card-refinery-systems">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Factory className="w-4 h-4 text-primary" /> Refinery Systems
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Mining networks now feed dedicated refinery lines that clean, stabilize, and package raw extraction output for downstream industry.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">Active Lines</div>
+                <div className="mt-1 text-2xl font-orbitron font-bold text-slate-900">{refinerySummary.activeLines}</div>
+                <div className="text-xs text-muted-foreground">Mining-linked refinery systems online</div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">Combined Throughput</div>
+                <div className="mt-1 text-2xl font-orbitron font-bold text-slate-900">{refinerySummary.combinedThroughput.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Processed material per hour</div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">Average Efficiency</div>
+                <div className="mt-1 text-2xl font-orbitron font-bold text-slate-900">{refinerySummary.averageEfficiency}%</div>
+                <div className="text-xs text-muted-foreground">{refinerySummary.stabilizedOutput.toLocaleString()} units stabilized per hour</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {refinerySystemsState.map((system) => (
+                <Card key={system.id} className={cn("shadow-sm", system.tone.shell)} data-testid={`card-${system.id}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-white shadow-sm">
+                          <img
+                            src={system.imagePath}
+                            alt={system.name}
+                            className="h-8 w-8 object-contain"
+                            onError={(e) => { (e.target as HTMLImageElement).src = TEMP_THEME_IMAGE; }}
+                          />
+                        </div>
+                        <div>
+                          <CardTitle className={cn("text-base font-orbitron", system.tone.rate)}>{system.name}</CardTitle>
+                          <div className="text-xs text-muted-foreground">{system.linkedLabel} Level {system.linkedLevel} • Refinery Level {system.level}</div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={system.tone.badge}>
+                        {getRefineryStage(system.level)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{system.description}</p>
+
+                    <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                      <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Processing Output</div>
+                      <div className="flex items-end justify-between gap-3">
+                        <div className={cn("text-2xl font-orbitron font-bold", system.tone.rate)}>
+                          {system.snapshot.throughput.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground">/hour</div>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">{system.outputLabel}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-white/70 bg-white/70 p-3">
+                        <div className="text-xs uppercase tracking-widest text-muted-foreground">Efficiency</div>
+                        <div className={cn("mt-1 text-lg font-bold", system.tone.rate)}>{system.snapshot.efficiency}%</div>
+                      </div>
+                      <div className="rounded-lg border border-white/70 bg-white/70 p-3">
+                        <div className="text-xs uppercase tracking-widest text-muted-foreground">Stabilized Flow</div>
+                        <div className={cn("mt-1 text-lg font-bold", system.tone.rate)}>{system.snapshot.stabilization.toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                        <div className="text-xs uppercase tracking-widest text-muted-foreground">Next Throughput</div>
+                        <div className={cn("mt-1 font-semibold", system.tone.rate)}>{system.snapshot.nextThroughput.toLocaleString()}/h</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                        <div className="text-xs uppercase tracking-widest text-muted-foreground">Next Efficiency</div>
+                        <div className={cn("mt-1 font-semibold", system.tone.rate)}>{system.snapshot.nextEfficiency}%</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3 text-sm">
+                      <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Upgrade Costs</div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Metal</span>
+                          <span className={cn(resources.metal < system.snapshot.cost.metal ? "font-bold text-red-600" : "text-slate-900")}>
+                            {system.snapshot.cost.metal.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Crystal</span>
+                          <span className={cn(resources.crystal < system.snapshot.cost.crystal ? "font-bold text-red-600" : "text-slate-900")}>
+                            {system.snapshot.cost.crystal.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Deuterium</span>
+                          <span className={cn(resources.deuterium < system.snapshot.cost.deuterium ? "font-bold text-red-600" : "text-slate-900")}>
+                            {system.snapshot.cost.deuterium.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+                          <span>Upgrade Time</span>
+                          <span>{system.snapshot.buildTimeSeconds}s</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-white/60 p-3 text-sm text-slate-600">
+                      <span className={cn("font-semibold", system.tone.accent)}>Refinery tie-in:</span> Upgrading the linked mining system expands this line's processing capacity automatically.
+                    </div>
+
+                    {!system.unlocked && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        Requires {system.linkedLabel} Level 1 to bring this refinery online.
+                      </div>
+                    )}
+
+                    <Button
+                      className="w-full font-orbitron tracking-wider"
+                      disabled={!system.unlocked || !system.canAfford || system.maxed}
+                      onClick={() =>
+                        upgradeRefinerySystem(
+                          system.id,
+                          system.name,
+                          system.snapshot.cost,
+                          system.snapshot.buildTimeSeconds * 1000,
+                        )
+                      }
+                    >
+                      {system.maxed
+                        ? "MAX LEVEL"
+                        : !system.unlocked
+                          ? "LINKED MINE REQUIRED"
+                          : system.canAfford
+                            ? `UPGRADE TO LEVEL ${system.level + 1}`
+                            : "INSUFFICIENT RESOURCES"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-slate-50 border-slate-200" data-testid="card-storage-info">
           <CardHeader className="pb-2">

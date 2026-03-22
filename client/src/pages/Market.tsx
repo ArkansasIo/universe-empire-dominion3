@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
-type MarketTab = "market" | "auction" | "exchange" | "history" | "prices";
+type MarketTab = "market" | "auction" | "exchange" | "orders" | "history" | "prices";
 
 const ItemCard = ({ 
   item, 
@@ -744,11 +744,19 @@ export default function Market() {
   const [exchangeFrom, setExchangeFrom] = useState("metal");
   const [exchangeTo, setExchangeTo] = useState("crystal");
 
+  // Player-driven market state
+  const [marketOrders, setMarketOrders] = useState([]);
+  const [myMarketOrders, setMyMarketOrders] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("metal");
+  const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
+  const [orderQuantity, setOrderQuantity] = useState(1);
+  const [orderPrice, setOrderPrice] = useState(1);
+
   useEffect(() => {
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam === "market" || tabParam === "auction" || tabParam === "exchange" || tabParam === "history" || tabParam === "prices") {
+      if (tabParam === "market" || tabParam === "auction" || tabParam === "exchange" || tabParam === "orders" || tabParam === "history" || tabParam === "prices") {
         setActiveTab(tabParam);
       }
     };
@@ -769,6 +777,113 @@ export default function Market() {
       window.history.replaceState(null, "", nextUrl);
     }
   }, [activeTab]);
+
+  // Load market orders when orders tab is active
+  useEffect(() => {
+    if (activeTab === "orders") {
+      loadMarketOrders();
+      loadMyMarketOrders();
+    }
+  }, [activeTab]);
+
+  const loadMarketOrders = async () => {
+    try {
+      const response = await fetch('/api/market/orders');
+      if (response.ok) {
+        const orders = await response.json();
+        setMarketOrders(orders);
+      }
+    } catch (error) {
+      console.error("Failed to load market orders:", error);
+    }
+  };
+
+  const loadMyMarketOrders = async () => {
+    try {
+      const response = await fetch('/api/market/orders');
+      if (response.ok) {
+        const orders = await response.json();
+        // Filter for current user's orders (in real implementation, get from session)
+        const myOrders = orders.filter((order: any) => order.userId === "current_user");
+        setMyMarketOrders(myOrders);
+      }
+    } catch (error) {
+      console.error("Failed to load my market orders:", error);
+    }
+  };
+
+  const createMarketOrder = async () => {
+    if (!selectedItem || orderQuantity <= 0 || orderPrice <= 0) return;
+
+    try {
+      const response = await fetch('/api/market/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: orderType,
+          itemId: selectedItem,
+          quantity: orderQuantity,
+          price: orderPrice,
+          location: "main_station"
+        })
+      });
+
+      if (response.ok) {
+        loadMarketOrders();
+        loadMyMarketOrders();
+        setOrderQuantity(1);
+        setOrderPrice(1);
+        toast({ title: "Order Created", description: "Your market order has been placed." });
+      } else {
+        const error = await response.text();
+        toast({ title: "Order Failed", description: error, variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Order Failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const cancelMarketOrder = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/market/order/${orderId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadMarketOrders();
+        loadMyMarketOrders();
+        toast({ title: "Order Cancelled", description: "Your market order has been cancelled." });
+      } else {
+        const error = await response.text();
+        toast({ title: "Cancellation Failed", description: error, variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Cancellation Failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const buyFromMarketOrder = async (orderId: string, buyQuantity: number) => {
+    try {
+      const response = await fetch('/api/market/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          quantity: buyQuantity
+        })
+      });
+
+      if (response.ok) {
+        loadMarketOrders();
+        toast({ title: "Purchase Complete", description: "Item purchased from market." });
+      } else {
+        const error = await response.text();
+        toast({ title: "Purchase Failed", description: error, variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Purchase Failed", description: error.message, variant: "destructive" });
+    }
+  };
 
   const { data: marketHistory } = useQuery<MarketHistoryResponse>({
     queryKey: ["market-history"],
@@ -909,6 +1024,7 @@ export default function Market() {
               <TabsTrigger value="market" className="font-orbitron" data-testid="tab-market"><ShoppingBag className="w-4 h-4 mr-2" /> Marketplace</TabsTrigger>
               <TabsTrigger value="auction" className="font-orbitron" data-testid="tab-auction"><Gavel className="w-4 h-4 mr-2" /> Auction House</TabsTrigger>
               <TabsTrigger value="exchange" className="font-orbitron" data-testid="tab-exchange"><ArrowUpDown className="w-4 h-4 mr-2" /> Resource Exchange</TabsTrigger>
+              <TabsTrigger value="orders" className="font-orbitron" data-testid="tab-orders"><Coins className="w-4 h-4 mr-2" /> Player Orders</TabsTrigger>
               <TabsTrigger value="history" className="font-orbitron" data-testid="tab-history"><History className="w-4 h-4 mr-2" /> Trade History</TabsTrigger>
               <TabsTrigger value="prices" className="font-orbitron" data-testid="tab-prices"><BarChart3 className="w-4 h-4 mr-2" /> Price Trends</TabsTrigger>
            </TabsList>
@@ -1141,6 +1257,208 @@ export default function Market() {
                     </CardContent>
                  </Card>
               </div>
+           </TabsContent>
+
+           <TabsContent value="orders" className="mt-6">
+             <div className="space-y-6">
+               {/* Create Order */}
+               <Card className="bg-white border-slate-200">
+                 <CardHeader>
+                   <CardTitle className="flex items-center gap-2 text-slate-900">
+                     <Coins className="w-5 h-5 text-yellow-600" /> Create Market Order
+                   </CardTitle>
+                   <CardDescription>Place buy or sell orders for player-to-player trading.</CardDescription>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <Label htmlFor="order-type">Order Type</Label>
+                       <Select value={orderType} onValueChange={(value: "buy" | "sell") => setOrderType(value)}>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="buy">Buy Order</SelectItem>
+                           <SelectItem value="sell">Sell Order</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div>
+                       <Label htmlFor="item">Item</Label>
+                       <Select value={selectedItem} onValueChange={setSelectedItem}>
+                         <SelectTrigger>
+                           <SelectValue placeholder="Select item" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="metal">🔧 Metal</SelectItem>
+                           <SelectItem value="crystal">💎 Crystal</SelectItem>
+                           <SelectItem value="deuterium">⚡ Deuterium</SelectItem>
+                           <SelectItem value="energy">🔋 Energy</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <Label htmlFor="quantity">Quantity</Label>
+                       <Input
+                         id="quantity"
+                         type="number"
+                         min="1"
+                         value={orderQuantity}
+                         onChange={(e) => setOrderQuantity(parseInt(e.target.value) || 1)}
+                       />
+                     </div>
+                     <div>
+                       <Label htmlFor="price">Price per unit (credits)</Label>
+                       <Input
+                         id="price"
+                         type="number"
+                         min="0.01"
+                         step="0.01"
+                         value={orderPrice}
+                         onChange={(e) => setOrderPrice(parseFloat(e.target.value) || 1)}
+                       />
+                     </div>
+                   </div>
+                   <Button onClick={createMarketOrder} className="w-full">
+                     <Plus className="w-4 h-4 mr-2" />
+                     Create {orderType === "buy" ? "Buy" : "Sell"} Order
+                   </Button>
+                 </CardContent>
+               </Card>
+
+               {/* Market Orders */}
+               <div className="grid gap-4">
+                 {/* Sell Orders */}
+                 <Card className="bg-white border-slate-200">
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <TrendingUp className="w-5 h-5 text-green-500" />
+                       Sell Orders (Buy from Market)
+                     </CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="space-y-2">
+                       {marketOrders.filter((order: any) => order.type === "sell").map((order: any) => (
+                         <div key={order._id} className="flex items-center justify-between p-3 bg-slate-50 rounded border">
+                           <div className="flex items-center gap-3">
+                             <span className="text-lg">
+                               {order.itemId === "metal" ? "🔧" :
+                                order.itemId === "crystal" ? "💎" :
+                                order.itemId === "deuterium" ? "⚡" : "🔋"}
+                             </span>
+                             <div>
+                               <div className="font-medium capitalize">{order.itemId}</div>
+                               <div className="text-sm text-slate-500">Qty: {order.quantity}</div>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <div className="font-mono font-bold">{order.price.toFixed(2)} credits</div>
+                             <Button
+                               size="sm"
+                               onClick={() => buyFromMarketOrder(order._id, Math.min(order.quantity, 1))}
+                               className="mt-1"
+                             >
+                               Buy 1
+                             </Button>
+                           </div>
+                         </div>
+                       ))}
+                       {marketOrders.filter((order: any) => order.type === "sell").length === 0 && (
+                         <div className="text-center py-8 text-slate-400">
+                           <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                           <p>No sell orders available</p>
+                         </div>
+                       )}
+                     </div>
+                   </CardContent>
+                 </Card>
+
+                 {/* Buy Orders */}
+                 <Card className="bg-white border-slate-200">
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <TrendingDown className="w-5 h-5 text-blue-500" />
+                       Buy Orders (Sell to Market)
+                     </CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="space-y-2">
+                       {marketOrders.filter((order: any) => order.type === "buy").map((order: any) => (
+                         <div key={order._id} className="flex items-center justify-between p-3 bg-slate-50 rounded border">
+                           <div className="flex items-center gap-3">
+                             <span className="text-lg">
+                               {order.itemId === "metal" ? "🔧" :
+                                order.itemId === "crystal" ? "💎" :
+                                order.itemId === "deuterium" ? "⚡" : "🔋"}
+                             </span>
+                             <div>
+                               <div className="font-medium capitalize">{order.itemId}</div>
+                               <div className="text-sm text-slate-500">Qty: {order.quantity}</div>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <div className="font-mono font-bold">{order.price.toFixed(2)} credits</div>
+                           </div>
+                         </div>
+                       ))}
+                       {marketOrders.filter((order: any) => order.type === "buy").length === 0 && (
+                         <div className="text-center py-8 text-slate-400">
+                           <TrendingDown className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                           <p>No buy orders available</p>
+                         </div>
+                       )}
+                     </div>
+                   </CardContent>
+                 </Card>
+
+                 {/* My Orders */}
+                 <Card className="bg-white border-slate-200">
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2 text-slate-900">
+                       <Package className="w-5 h-5 text-purple-600" />
+                       My Orders
+                     </CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="space-y-2">
+                       {myMarketOrders.map((order: any) => (
+                         <div key={order._id} className="flex items-center justify-between p-3 bg-slate-50 rounded border">
+                           <div className="flex items-center gap-3">
+                             <Badge variant={order.type === "buy" ? "default" : "secondary"}>
+                               {order.type === "buy" ? "Buy" : "Sell"}
+                             </Badge>
+                             <span className="text-lg">
+                               {order.itemId === "metal" ? "🔧" :
+                                order.itemId === "crystal" ? "💎" :
+                                order.itemId === "deuterium" ? "⚡" : "🔋"}
+                             </span>
+                             <div>
+                               <div className="font-medium capitalize">{order.itemId}</div>
+                               <div className="text-sm text-slate-500">Qty: {order.quantity} | Price: {order.price.toFixed(2)}</div>
+                             </div>
+                           </div>
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={() => cancelMarketOrder(order._id)}
+                           >
+                             <X className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       ))}
+                       {myMarketOrders.length === 0 && (
+                         <div className="text-center py-8 text-slate-400">
+                           <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                           <p>No active orders</p>
+                         </div>
+                       )}
+                     </div>
+                   </CardContent>
+                 </Card>
+               </div>
+             </div>
            </TabsContent>
 
            <TabsContent value="history" className="mt-6">

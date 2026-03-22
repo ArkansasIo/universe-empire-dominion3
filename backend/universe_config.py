@@ -255,6 +255,2016 @@ COMMANDER_RANKS = [
 ]
 
 
+# ==================== SKILLS SYSTEM ====================
+
+SKILLS = {
+    # Core Skills
+    "gunnery": {
+        "name": "Gunnery",
+        "description": "Improves turret weapon effectiveness",
+        "category": "combat",
+        "max_level": 5,
+        "base_training_time": 300,  # seconds for level 1
+        "attributes": ["perception", "willpower"],
+        "effect": {"turret_damage": 0.05}
+    },
+    "missile_launcher_operation": {
+        "name": "Missile Launcher Operation",
+        "description": "Improves missile weapon effectiveness",
+        "category": "combat",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["perception", "willpower"],
+        "effect": {"missile_damage": 0.05}
+    },
+    "spaceship_command": {
+        "name": "Spaceship Command",
+        "description": "Allows command of larger ships",
+        "category": "navigation",
+        "max_level": 5,
+        "base_training_time": 240,
+        "attributes": ["perception", "charisma"],
+        "effect": {"ship_command_slots": 1}
+    },
+    "navigation": {
+        "name": "Navigation",
+        "description": "Improves ship velocity and agility",
+        "category": "navigation",
+        "max_level": 5,
+        "base_training_time": 240,
+        "attributes": ["intelligence", "perception"],
+        "effect": {"velocity_bonus": 0.05}
+    },
+    "afterburner": {
+        "name": "Afterburner",
+        "description": "Improves afterburner effectiveness",
+        "category": "navigation",
+        "max_level": 4,
+        "base_training_time": 180,
+        "attributes": ["perception", "willpower"],
+        "effect": {"afterburner_bonus": 0.10}
+    },
+    "ewar": {
+        "name": "Electronic Warfare",
+        "description": "Improves electronic warfare module effectiveness",
+        "category": "electronic",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"ewar_strength": 0.05}
+    },
+    "engineering": {
+        "name": "Engineering",
+        "description": "Improves capacitor and energy management",
+        "category": "electronic",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"capacitor_capacity": 0.05}
+    },
+    "shield_operation": {
+        "name": "Shield Operation",
+        "description": "Improves shield resistances and capacity",
+        "category": "electronic",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"shield_capacity": 0.05}
+    },
+    "repair_systems": {
+        "name": "Repair Systems",
+        "description": "Improves armor repairer effectiveness",
+        "category": "electronic",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"armor_repair": 0.05}
+    },
+    "hull_upgrades": {
+        "name": "Hull Upgrades",
+        "description": "Improves ship armor and structure",
+        "category": "mechanical",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["memory", "willpower"],
+        "effect": {"armor_hp": 0.05}
+    },
+    "rigging": {
+        "name": "Rigging",
+        "description": "Allows fitting of rig modules",
+        "category": "mechanical",
+        "max_level": 3,
+        "base_training_time": 600,
+        "attributes": ["memory", "intelligence"],
+        "effect": {"rig_slots": 1}
+    },
+    "jury_rigging": {
+        "name": "Jury Rigging",
+        "description": "Improves rig effectiveness",
+        "category": "mechanical",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["memory", "intelligence"],
+        "effect": {"rig_effectiveness": 0.10}
+    },
+    "drones": {
+        "name": "Drones",
+        "description": "Allows operation of combat/utility drones",
+        "category": "mechanical",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["memory", "perception"],
+        "effect": {"drone_damage": 0.05}
+    },
+    "mining": {
+        "name": "Mining",
+        "description": "Improves mining laser effectiveness",
+        "category": "industry",
+        "max_level": 5,
+        "base_training_time": 180,
+        "attributes": ["memory", "intelligence"],
+        "effect": {"mining_yield": 0.05}
+    },
+    "industry": {
+        "name": "Industry",
+        "description": "Improves manufacturing efficiency",
+        "category": "industry",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["memory", "charisma"],
+        "effect": {"production_efficiency": 0.05}
+    },
+    "refining": {
+        "name": "Refining",
+        "description": "Improves ore refining efficiency",
+        "category": "industry",
+        "max_level": 5,
+        "base_training_time": 240,
+        "attributes": ["memory", "intelligence"],
+        "effect": {"refining_efficiency": 0.05}
+    },
+    "science": {
+        "name": "Science",
+        "description": "Improves research effectiveness",
+        "category": "science",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"research_speed": 0.05}
+    },
+    "research": {
+        "name": "Research",
+        "description": "Allows invention and reverse engineering",
+        "category": "science",
+        "max_level": 5,
+        "base_training_time": 420,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"invention_chance": 0.05}
+    },
+    "metallurgy": {
+        "name": "Metallurgy",
+        "description": "Improves material efficiency",
+        "category": "science",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["intelligence", "memory"],
+        "effect": {"material_efficiency": 0.05}
+    },
+    "social": {
+        "name": "Social",
+        "description": "Improves standings and negotiation",
+        "category": "social",
+        "max_level": 5,
+        "base_training_time": 240,
+        "attributes": ["charisma", "intelligence"],
+        "effect": {"standing_bonus": 0.05}
+    },
+    "negotiation": {
+        "name": "Negotiation",
+        "description": "Improves contract and trade effectiveness",
+        "category": "social",
+        "max_level": 5,
+        "base_training_time": 300,
+        "attributes": ["charisma", "willpower"],
+        "effect": {"contract_bonus": 0.05}
+    },
+    "leadership": {
+        "name": "Leadership",
+        "description": "Improves fleet command effectiveness",
+        "category": "social",
+        "max_level": 5,
+        "base_training_time": 360,
+        "attributes": ["charisma", "willpower"],
+        "effect": {"fleet_bonus": 0.05}
+    }
+}
+
+ATTRIBUTES = {
+    "intelligence": {"name": "Intelligence", "description": "Affects research and electronic systems"},
+    "memory": {"name": "Memory", "description": "Affects skill training speed and capacity"},
+    "charisma": {"name": "Charisma", "description": "Affects social interactions and leadership"},
+    "perception": {"name": "Perception", "description": "Affects targeting and navigation"},
+    "willpower": {"name": "Willpower", "description": "Affects resistance and endurance"}
+}
+
+
+# ==================== SHIP MODULES ====================
+
+SHIP_MODULES = {
+    # High Slot Modules
+    "small_energy_blaster": {
+        "name": "Small Energy Blaster",
+        "type": "high",
+        "category": "weapon",
+        "size": "small",
+        "cpu": 10,
+        "powergrid": 5,
+        "damage": {"em": 4, "thermal": 4},
+        "rate_of_fire": 2.5,
+        "range": 5000
+    },
+    "small_railgun": {
+        "name": "Small Railgun",
+        "type": "high",
+        "category": "weapon",
+        "size": "small",
+        "cpu": 8,
+        "powergrid": 6,
+        "damage": {"kinetic": 3, "thermal": 3},
+        "rate_of_fire": 3.0,
+        "range": 8000
+    },
+    "small_missile_launcher": {
+        "name": "Small Missile Launcher",
+        "type": "high",
+        "category": "weapon",
+        "size": "small",
+        "cpu": 12,
+        "powergrid": 4,
+        "damage": {"explosive": 5},
+        "rate_of_fire": 2.0,
+        "range": 10000
+    },
+    
+    # Mid Slot Modules
+    "small_shield_booster": {
+        "name": "Small Shield Booster",
+        "type": "mid",
+        "category": "defense",
+        "size": "small",
+        "cpu": 6,
+        "powergrid": 8,
+        "shield_boost": 10,
+        "capacitor_use": 5
+    },
+    "small_armor_repairer": {
+        "name": "Small Armor Repairer",
+        "type": "mid",
+        "category": "defense",
+        "size": "small",
+        "cpu": 7,
+        "powergrid": 9,
+        "armor_repair": 8,
+        "capacitor_use": 6
+    },
+    "afterburner": {
+        "name": "Afterburner",
+        "type": "mid",
+        "category": "propulsion",
+        "size": "small",
+        "cpu": 5,
+        "powergrid": 4,
+        "velocity_bonus": 0.15,
+        "capacitor_use": 3
+    },
+    "stasis_webifier": {
+        "name": "Stasis Webifier",
+        "type": "mid",
+        "category": "electronic",
+        "size": "small",
+        "cpu": 10,
+        "powergrid": 6,
+        "speed_reduction": 0.5,
+        "range": 10000
+    },
+    
+    # Low Slot Modules
+    "small_energy_burst": {
+        "name": "Small Energy Burst",
+        "type": "low",
+        "category": "electronic",
+        "size": "small",
+        "cpu": 8,
+        "powergrid": 3,
+        "capacitor_capacity": 0.1
+    },
+    "heat_sink": {
+        "name": "Heat Sink",
+        "type": "low",
+        "category": "electronic",
+        "size": "small",
+        "cpu": 6,
+        "powergrid": 4,
+        "damage_bonus": 0.1
+    },
+    "adaptive_nano_plating": {
+        "name": "Adaptive Nano Plating",
+        "type": "low",
+        "category": "defense",
+        "size": "small",
+        "cpu": 5,
+        "powergrid": 7,
+        "armor_resistance": {"em": 0.1, "thermal": 0.1, "kinetic": 0.1, "explosive": 0.1}
+    },
+    
+    # Rig Modules
+    "small_energy_burst_rig": {
+        "name": "Small Energy Burst Rig",
+        "type": "rig",
+        "category": "electronic",
+        "size": "small",
+        "calibration": 20,
+        "capacitor_capacity": 0.05
+    },
+    "small_armor_repairer_rig": {
+        "name": "Small Armor Repairer Rig",
+        "type": "rig",
+        "category": "defense",
+        "size": "small",
+        "calibration": 25,
+        "armor_repair": 0.05
+    }
+}
+
+
+# ==================== MATERIALS SYSTEM ====================
+
+# Raw Materials (Ores and Minerals)
+RAW_MATERIALS = {
+    # Veldspar variants
+    "veldspar": {
+        "name": "Veldspar",
+        "type": "ore",
+        "rarity": "common",
+        "volume": 0.1,
+        "refined_materials": {
+            "tritanium": 415,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "concentrated_velspar": {
+        "name": "Concentrated Veldspar",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 0.1,
+        "refined_materials": {
+            "tritanium": 436,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "dense_velspar": {
+        "name": "Dense Veldspar",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.1,
+        "refined_materials": {
+            "tritanium": 457,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Scordite variants
+    "scordite": {
+        "name": "Scordite",
+        "type": "ore",
+        "rarity": "common",
+        "volume": 0.15,
+        "refined_materials": {
+            "tritanium": 346,
+            "pyerite": 173,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "condensed_scordite": {
+        "name": "Condensed Scordite",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 0.15,
+        "refined_materials": {
+            "tritanium": 363,
+            "pyerite": 181,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "massive_scordite": {
+        "name": "Massive Scordite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.15,
+        "refined_materials": {
+            "tritanium": 380,
+            "pyerite": 190,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Pyroxeres variants
+    "pyroxeres": {
+        "name": "Pyroxeres",
+        "type": "ore",
+        "rarity": "common",
+        "volume": 0.3,
+        "refined_materials": {
+            "tritanium": 351,
+            "pyerite": 25,
+            "mexallon": 50,
+            "isogen": 5,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "solid_pyroxeres": {
+        "name": "Solid Pyroxeres",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 0.3,
+        "refined_materials": {
+            "tritanium": 368,
+            "pyerite": 26,
+            "mexallon": 52,
+            "isogen": 5,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "viscous_pyroxeres": {
+        "name": "Viscous Pyroxeres",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.3,
+        "refined_materials": {
+            "tritanium": 385,
+            "pyerite": 27,
+            "mexallon": 55,
+            "isogen": 6,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Plagioclase variants
+    "plagioclase": {
+        "name": "Plagioclase",
+        "type": "ore",
+        "rarity": "common",
+        "volume": 0.35,
+        "refined_materials": {
+            "tritanium": 107,
+            "pyerite": 213,
+            "mexallon": 107,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "azure_plagioclase": {
+        "name": "Azure Plagioclase",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 0.35,
+        "refined_materials": {
+            "tritanium": 112,
+            "pyerite": 224,
+            "mexallon": 112,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "rich_plagioclase": {
+        "name": "Rich Plagioclase",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.35,
+        "refined_materials": {
+            "tritanium": 118,
+            "pyerite": 235,
+            "mexallon": 118,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Omber variants
+    "omber": {
+        "name": "Omber",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 0.6,
+        "refined_materials": {
+            "tritanium": 85,
+            "pyerite": 34,
+            "mexallon": 0,
+            "isogen": 85,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "silvery_omber": {
+        "name": "Silvery Omber",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.6,
+        "refined_materials": {
+            "tritanium": 89,
+            "pyerite": 35,
+            "mexallon": 0,
+            "isogen": 89,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "golden_omber": {
+        "name": "Golden Omber",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 0.6,
+        "refined_materials": {
+            "tritanium": 94,
+            "pyerite": 37,
+            "mexallon": 0,
+            "isogen": 94,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Kernite variants
+    "kernite": {
+        "name": "Kernite",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 1.2,
+        "refined_materials": {
+            "tritanium": 134,
+            "pyerite": 0,
+            "mexallon": 267,
+            "isogen": 134,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "luminous_kernite": {
+        "name": "Luminous Kernite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 1.2,
+        "refined_materials": {
+            "tritanium": 141,
+            "pyerite": 0,
+            "mexallon": 280,
+            "isogen": 141,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "fiery_kernite": {
+        "name": "Fiery Kernite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 1.2,
+        "refined_materials": {
+            "tritanium": 148,
+            "pyerite": 0,
+            "mexallon": 294,
+            "isogen": 148,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Jaspet variants
+    "jaspet": {
+        "name": "Jaspet",
+        "type": "ore",
+        "rarity": "uncommon",
+        "volume": 2.0,
+        "refined_materials": {
+            "tritanium": 72,
+            "pyerite": 0,
+            "mexallon": 121,
+            "isogen": 0,
+            "nocxium": 72,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "pure_jaspet": {
+        "name": "Pure Jaspet",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 2.0,
+        "refined_materials": {
+            "tritanium": 75,
+            "pyerite": 0,
+            "mexallon": 127,
+            "isogen": 0,
+            "nocxium": 75,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "pristine_jaspet": {
+        "name": "Pristine Jaspet",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 2.0,
+        "refined_materials": {
+            "tritanium": 79,
+            "pyerite": 0,
+            "mexallon": 133,
+            "isogen": 0,
+            "nocxium": 79,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Hemorphite variants
+    "hemorphite": {
+        "name": "Hemorphite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 212,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 212,
+            "nocxium": 106,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "vivid_hemorphite": {
+        "name": "Vivid Hemorphite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 223,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 223,
+            "nocxium": 111,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "radiant_hemorphite": {
+        "name": "Radiant Hemorphite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 234,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 234,
+            "nocxium": 117,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Hedbergite variants
+    "hedbergite": {
+        "name": "Hedbergite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 395,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 197,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "vitric_hedbergite": {
+        "name": "Vitric Hedbergite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 414,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 207,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "glazed_hedbergite": {
+        "name": "Glazed Hedbergite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 3.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 434,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 217,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Gneiss variants
+    "gneiss": {
+        "name": "Gneiss",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 5.0,
+        "refined_materials": {
+            "tritanium": 171,
+            "pyerite": 0,
+            "mexallon": 343,
+            "isogen": 0,
+            "nocxium": 171,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "iridescent_gneiss": {
+        "name": "Iridescent Gneiss",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 5.0,
+        "refined_materials": {
+            "tritanium": 179,
+            "pyerite": 0,
+            "mexallon": 360,
+            "isogen": 0,
+            "nocxium": 179,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "prismatic_gneiss": {
+        "name": "Prismatic Gneiss",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 5.0,
+        "refined_materials": {
+            "tritanium": 188,
+            "pyerite": 0,
+            "mexallon": 377,
+            "isogen": 0,
+            "nocxium": 188,
+            "zydrine": 0,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Dark Ochre variants
+    "dark_ochre": {
+        "name": "Dark Ochre",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 8.0,
+        "refined_materials": {
+            "tritanium": 250,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 250,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "onyx_ochre": {
+        "name": "Onyx Ochre",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 8.0,
+        "refined_materials": {
+            "tritanium": 262,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 262,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "obsidian_ochre": {
+        "name": "Obsidian Ochre",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 8.0,
+        "refined_materials": {
+            "tritanium": 275,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 275,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Spodumain variants
+    "spodumain": {
+        "name": "Spodumain",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 392,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 196
+        },
+        "compression_ratio": 100
+    },
+    "bright_spodumain": {
+        "name": "Bright Spodumain",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 411,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 205
+        },
+        "compression_ratio": 100
+    },
+    "gleaming_spodumain": {
+        "name": "Gleaming Spodumain",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 431,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 215
+        },
+        "compression_ratio": 100
+    },
+    
+    # Crokite variants
+    "crokite": {
+        "name": "Crokite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 331,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 331,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "sharp_crokite": {
+        "name": "Sharp Crokite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 347,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 347,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    "crystalline_crokite": {
+        "name": "Crystalline Crokite",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 364,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 364,
+            "megacyte": 0
+        },
+        "compression_ratio": 100
+    },
+    
+    # Bistot variants
+    "bistot": {
+        "name": "Bistot",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 331,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 331
+        },
+        "compression_ratio": 100
+    },
+    "triclinic_bistot": {
+        "name": "Triclinic Bistot",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 347,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 347
+        },
+        "compression_ratio": 100
+    },
+    "monoclinic_bistot": {
+        "name": "Monoclinic Bistot",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 364,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 364
+        },
+        "compression_ratio": 100
+    },
+    
+    # Arkonor variants
+    "arkonor": {
+        "name": "Arkonor",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 400
+        },
+        "compression_ratio": 100
+    },
+    "crimson_arkonor": {
+        "name": "Crimson Arkonor",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 420
+        },
+        "compression_ratio": 100
+    },
+    "prime_arkonor": {
+        "name": "Prime Arkonor",
+        "type": "ore",
+        "rarity": "rare",
+        "volume": 16.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 440
+        },
+        "compression_ratio": 100
+    },
+    
+    # Mercoxit variants
+    "mercoxit": {
+        "name": "Mercoxit",
+        "type": "ore",
+        "rarity": "exceptional",
+        "volume": 40.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0,
+            "morphite": 293
+        },
+        "compression_ratio": 100
+    },
+    "magma_mercoxit": {
+        "name": "Magma Mercoxit",
+        "type": "ore",
+        "rarity": "exceptional",
+        "volume": 40.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0,
+            "morphite": 307
+        },
+        "compression_ratio": 100
+    },
+    "vitreous_mercoxit": {
+        "name": "Vitreous Mercoxit",
+        "type": "ore",
+        "rarity": "exceptional",
+        "volume": 40.0,
+        "refined_materials": {
+            "tritanium": 0,
+            "pyerite": 0,
+            "mexallon": 0,
+            "isogen": 0,
+            "nocxium": 0,
+            "zydrine": 0,
+            "megacyte": 0,
+            "morphite": 322
+        },
+        "compression_ratio": 100
+    }
+}
+
+# Processed Materials (Minerals)
+PROCESSED_MATERIALS = {
+    "tritanium": {
+        "name": "Tritanium",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "The most basic and common mineral in the universe"
+    },
+    "pyerite": {
+        "name": "Pyerite",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "A common mineral used in many industrial processes"
+    },
+    "mexallon": {
+        "name": "Mexallon",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "A sturdy mineral used in armor and hull construction"
+    },
+    "isogen": {
+        "name": "Isogen",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "A rare mineral used in advanced electronics"
+    },
+    "nocxium": {
+        "name": "Nocxium",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "An extremely rare mineral used in capacitor systems"
+    },
+    "zydrine": {
+        "name": "Zydrine",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "A very rare mineral used in advanced ship construction"
+    },
+    "megacyte": {
+        "name": "Megacyte",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "The rarest mineral, used in the most advanced technology"
+    },
+    "morphite": {
+        "name": "Morphite",
+        "type": "mineral",
+        "volume": 0.01,
+        "description": "An exceptionally rare mineral found only in mercoxit"
+    }
+}
+
+# Planetary Commodities (PI Products)
+PLANETARY_COMMODITIES = {
+    # Basic Commodities
+    "aqueous_liquids": {
+        "name": "Aqueous Liquids",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "description": "Water and other aqueous liquids extracted from temperate planets"
+    },
+    "autotrophs": {
+        "name": "Autotrophs",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "description": "Self-sustaining organisms from temperate planets"
+    },
+    "base_metals": {
+        "name": "Base Metals",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "storm",
+        "volume": 0.4,
+        "description": "Common metals extracted from storm planets"
+    },
+    "carbon_compounds": {
+        "name": "Carbon Compounds",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "gas",
+        "volume": 0.4,
+        "description": "Carbon-based compounds from gas planets"
+    },
+    "complex_organisms": {
+        "name": "Complex Organisms",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "description": "Complex life forms from temperate planets"
+    },
+    "felsic_magma": {
+        "name": "Felsic Magma",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "lava",
+        "volume": 0.4,
+        "description": "Silica-rich magma from lava planets"
+    },
+    "heavy_metals": {
+        "name": "Heavy Metals",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "description": "Dense metals from plasma planets"
+    },
+    "ionic_solutions": {
+        "name": "Ionic Solutions",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "storm",
+        "volume": 0.4,
+        "description": "Electrolyte-rich solutions from storm planets"
+    },
+    "microorganisms": {
+        "name": "Microorganisms",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "barren",
+        "volume": 0.4,
+        "description": "Microscopic life forms from barren planets"
+    },
+    "noble_gas": {
+        "name": "Noble Gas",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "gas",
+        "volume": 0.4,
+        "description": "Inert gases from gas planets"
+    },
+    "noble_metals": {
+        "name": "Noble Metals",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "description": "Rare precious metals from plasma planets"
+    },
+    "non_cs_crystals": {
+        "name": "Non-CS Crystals",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "ice",
+        "volume": 0.4,
+        "description": "Non-crystalline solids from ice planets"
+    },
+    "planktic_colonies": {
+        "name": "Planktic Colonies",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "oceanic",
+        "volume": 0.4,
+        "description": "Floating colonies from oceanic planets"
+    },
+    "reactive_gas": {
+        "name": "Reactive Gas",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "gas",
+        "volume": 0.4,
+        "description": "Chemically active gases from gas planets"
+    },
+    "suspended_plasma": {
+        "name": "Suspended Plasma",
+        "type": "planetary_commodity",
+        "tier": 0,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "description": "Contained plasma from plasma planets"
+    },
+    
+    # Tier 1 Commodities
+    "bacteria": {
+        "name": "Bacteria",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"microorganisms": 3000, "carbon_compounds": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "biofuels": {
+        "name": "Biofuels",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"carbon_compounds": 40, "microorganisms": 3000},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "biomass": {
+        "name": "Biomass",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"carbon_compounds": 40, "autotrophs": 3000},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "chiral_structures": {
+        "name": "Chiral Structures",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"non_cs_crystals": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "electrolytes": {
+        "name": "Electrolytes",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "storm",
+        "volume": 0.4,
+        "input_materials": {"ionic_solutions": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "industrial_fibers": {
+        "name": "Industrial Fibers",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"autotrophs": 3000, "aqueous_liquids": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "oxidizing_compound": {
+        "name": "Oxidizing Compound",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "gas",
+        "volume": 0.4,
+        "input_materials": {"reactive_gas": 40, "felsic_magma": 3000},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "oxygen": {
+        "name": "Oxygen",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "gas",
+        "volume": 0.4,
+        "input_materials": {"reactive_gas": 40, "aqueous_liquids": 3000},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "plasmoids": {
+        "name": "Plasmoids",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "input_materials": {"suspended_plasma": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "precious_metals": {
+        "name": "Precious Metals",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "input_materials": {"noble_metals": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "proteins": {
+        "name": "Proteins",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"complex_organisms": 3000, "aqueous_liquids": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "reactive_metals": {
+        "name": "Reactive Metals",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "storm",
+        "volume": 0.4,
+        "input_materials": {"base_metals": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "silicon": {
+        "name": "Silicon",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "lava",
+        "volume": 0.4,
+        "input_materials": {"felsic_magma": 3000, "aqueous_liquids": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "toxic_metals": {
+        "name": "Toxic Metals",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "plasma",
+        "volume": 0.4,
+        "input_materials": {"heavy_metals": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    },
+    "water": {
+        "name": "Water",
+        "type": "planetary_commodity",
+        "tier": 1,
+        "planet_type": "temperate",
+        "volume": 0.4,
+        "input_materials": {"aqueous_liquids": 3000, "reactive_gas": 40},
+        "output_quantity": 20,
+        "cycle_time": 60
+    }
+}
+
+# Blueprints
+BLUEPRINTS = {
+    # Ship Blueprints
+    "rookie_ship_blueprint": {
+        "name": "Rookie Ship Blueprint",
+        "type": "blueprint",
+        "category": "ship",
+        "product": "rookie_ship",
+        "materials": {
+            "tritanium": 20000,
+            "pyerite": 2000,
+            "mexallon": 1000
+        },
+        "production_time": 1800,  # 30 minutes
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 900,  # 15 minutes
+        "research_material_time": 3600,  # 1 hour
+        "research_time_time": 3600,  # 1 hour
+        "invention_chance": 0.4,
+        "invention_materials": {
+            "datacore_electronic_engineering": 2,
+            "datacore_mechanical_engineering": 2
+        }
+    },
+    "frigate_blueprint": {
+        "name": "Frigate Blueprint",
+        "type": "blueprint",
+        "category": "ship",
+        "product": "frigate",
+        "materials": {
+            "tritanium": 50000,
+            "pyerite": 10000,
+            "mexallon": 5000,
+            "isogen": 1000
+        },
+        "production_time": 3600,  # 1 hour
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 1800,  # 30 minutes
+        "research_material_time": 7200,  # 2 hours
+        "research_time_time": 7200,  # 2 hours
+        "invention_chance": 0.3,
+        "invention_materials": {
+            "datacore_electronic_engineering": 2,
+            "datacore_mechanical_engineering": 2
+        }
+    },
+    "cruiser_blueprint": {
+        "name": "Cruiser Blueprint",
+        "type": "blueprint",
+        "category": "ship",
+        "product": "cruiser",
+        "materials": {
+            "tritanium": 150000,
+            "pyerite": 30000,
+            "mexallon": 15000,
+            "isogen": 3000,
+            "nocxium": 500
+        },
+        "production_time": 7200,  # 2 hours
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 3600,  # 1 hour
+        "research_material_time": 14400,  # 4 hours
+        "research_time_time": 14400,  # 4 hours
+        "invention_chance": 0.25,
+        "invention_materials": {
+            "datacore_electronic_engineering": 4,
+            "datacore_mechanical_engineering": 4
+        }
+    },
+    "battleship_blueprint": {
+        "name": "Battleship Blueprint",
+        "type": "blueprint",
+        "category": "ship",
+        "product": "battleship",
+        "materials": {
+            "tritanium": 500000,
+            "pyerite": 100000,
+            "mexallon": 50000,
+            "isogen": 10000,
+            "nocxium": 2000,
+            "zydrine": 500
+        },
+        "production_time": 14400,  # 4 hours
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 7200,  # 2 hours
+        "research_material_time": 28800,  # 8 hours
+        "research_time_time": 28800,  # 8 hours
+        "invention_chance": 0.2,
+        "invention_materials": {
+            "datacore_electronic_engineering": 8,
+            "datacore_mechanical_engineering": 8
+        }
+    },
+    
+    # Module Blueprints
+    "small_energy_laser_blueprint": {
+        "name": "Small Energy Laser Blueprint",
+        "type": "blueprint",
+        "category": "module",
+        "product": "small_energy_laser",
+        "materials": {
+            "tritanium": 1000,
+            "pyerite": 200,
+            "mexallon": 100,
+            "isogen": 50
+        },
+        "production_time": 600,  # 10 minutes
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 300,  # 5 minutes
+        "research_material_time": 1200,  # 20 minutes
+        "research_time_time": 1200,  # 20 minutes
+        "invention_chance": 0.35,
+        "invention_materials": {
+            "datacore_electronic_engineering": 1,
+            "datacore_weapon_upgrades": 1
+        }
+    },
+    "adaptive_nano_plating_blueprint": {
+        "name": "Adaptive Nano Plating Blueprint",
+        "type": "blueprint",
+        "category": "module",
+        "product": "adaptive_nano_plating",
+        "materials": {
+            "tritanium": 2000,
+            "pyerite": 500,
+            "mexallon": 300,
+            "isogen": 100,
+            "nocxium": 20
+        },
+        "production_time": 900,  # 15 minutes
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 450,  # 7.5 minutes
+        "research_material_time": 1800,  # 30 minutes
+        "research_time_time": 1800,  # 30 minutes
+        "invention_chance": 0.3,
+        "invention_materials": {
+            "datacore_mechanical_engineering": 1,
+            "datacore_hull_upgrades": 1
+        }
+    },
+    
+    # Component Blueprints
+    "capacitor_battery_blueprint": {
+        "name": "Capacitor Battery Blueprint",
+        "type": "blueprint",
+        "category": "component",
+        "product": "capacitor_battery",
+        "materials": {
+            "tritanium": 500,
+            "pyerite": 100,
+            "isogen": 50,
+            "nocxium": 10
+        },
+        "production_time": 300,  # 5 minutes
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 150,  # 2.5 minutes
+        "research_material_time": 600,  # 10 minutes
+        "research_time_time": 600,  # 10 minutes
+        "invention_chance": 0.4,
+        "invention_materials": {
+            "datacore_electronic_engineering": 1
+        }
+    },
+    "damage_control_blueprint": {
+        "name": "Damage Control Blueprint",
+        "type": "blueprint",
+        "category": "component",
+        "product": "damage_control",
+        "materials": {
+            "tritanium": 800,
+            "pyerite": 150,
+            "mexallon": 100,
+            "isogen": 30
+        },
+        "production_time": 450,  # 7.5 minutes
+        "production_efficiency": 1.0,
+        "material_efficiency": 1.0,
+        "waste_factor": 0.1,
+        "copy_time": 225,  # 3.75 minutes
+        "research_material_time": 900,  # 15 minutes
+        "research_time_time": 900,  # 15 minutes
+        "invention_chance": 0.35,
+        "invention_materials": {
+            "datacore_mechanical_engineering": 1,
+            "datacore_hull_upgrades": 1
+        }
+    }
+}
+
+# Manufacturing Facilities
+MANUFACTURING_FACILITIES = {
+    "small_ship_assembly_array": {
+        "name": "Small Ship Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "ship_manufacturing",
+        "size": "small",
+        "powergrid": 10000,
+        "cpu": 500,
+        "capacity": 1000,
+        "cycle_time_modifier": 1.0,
+        "material_efficiency_bonus": 0.0,
+        "time_efficiency_bonus": 0.0,
+        "allowed_categories": ["frigate", "rookie_ship"],
+        "base_cost": 1000000,
+        "maintenance_cost": 10000
+    },
+    "medium_ship_assembly_array": {
+        "name": "Medium Ship Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "ship_manufacturing",
+        "size": "medium",
+        "powergrid": 25000,
+        "cpu": 1250,
+        "capacity": 2500,
+        "cycle_time_modifier": 0.9,
+        "material_efficiency_bonus": 0.02,
+        "time_efficiency_bonus": 0.02,
+        "allowed_categories": ["frigate", "cruiser", "industrial"],
+        "base_cost": 5000000,
+        "maintenance_cost": 50000
+    },
+    "large_ship_assembly_array": {
+        "name": "Large Ship Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "ship_manufacturing",
+        "size": "large",
+        "powergrid": 50000,
+        "cpu": 2500,
+        "capacity": 5000,
+        "cycle_time_modifier": 0.8,
+        "material_efficiency_bonus": 0.04,
+        "time_efficiency_bonus": 0.04,
+        "allowed_categories": ["cruiser", "battleship", "industrial", "capital"],
+        "base_cost": 25000000,
+        "maintenance_cost": 250000
+    },
+    "advanced_large_ship_assembly_array": {
+        "name": "Advanced Large Ship Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "ship_manufacturing",
+        "size": "large",
+        "powergrid": 75000,
+        "cpu": 3750,
+        "capacity": 7500,
+        "cycle_time_modifier": 0.7,
+        "material_efficiency_bonus": 0.06,
+        "time_efficiency_bonus": 0.06,
+        "allowed_categories": ["battleship", "capital", "supercapital"],
+        "base_cost": 100000000,
+        "maintenance_cost": 1000000
+    },
+    
+    "equipment_assembly_plant": {
+        "name": "Equipment Assembly Plant",
+        "type": "manufacturing_facility",
+        "category": "equipment_manufacturing",
+        "size": "medium",
+        "powergrid": 15000,
+        "cpu": 750,
+        "capacity": 1500,
+        "cycle_time_modifier": 1.0,
+        "material_efficiency_bonus": 0.0,
+        "time_efficiency_bonus": 0.0,
+        "allowed_categories": ["module", "component", "ammo"],
+        "base_cost": 2000000,
+        "maintenance_cost": 20000
+    },
+    "advanced_equipment_assembly_plant": {
+        "name": "Advanced Equipment Assembly Plant",
+        "type": "manufacturing_facility",
+        "category": "equipment_manufacturing",
+        "size": "large",
+        "powergrid": 30000,
+        "cpu": 1500,
+        "capacity": 3000,
+        "cycle_time_modifier": 0.85,
+        "material_efficiency_bonus": 0.03,
+        "time_efficiency_bonus": 0.03,
+        "allowed_categories": ["module", "component", "ammo", "advanced_module"],
+        "base_cost": 10000000,
+        "maintenance_cost": 100000
+    },
+    
+    "component_assembly_array": {
+        "name": "Component Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "component_manufacturing",
+        "size": "small",
+        "powergrid": 5000,
+        "cpu": 250,
+        "capacity": 500,
+        "cycle_time_modifier": 1.0,
+        "material_efficiency_bonus": 0.0,
+        "time_efficiency_bonus": 0.0,
+        "allowed_categories": ["component"],
+        "base_cost": 500000,
+        "maintenance_cost": 5000
+    },
+    
+    "ammo_assembly_array": {
+        "name": "Ammo Assembly Array",
+        "type": "manufacturing_facility",
+        "category": "ammo_manufacturing",
+        "size": "small",
+        "powergrid": 3000,
+        "cpu": 150,
+        "capacity": 300,
+        "cycle_time_modifier": 1.0,
+        "material_efficiency_bonus": 0.0,
+        "time_efficiency_bonus": 0.0,
+        "allowed_categories": ["ammo"],
+        "base_cost": 300000,
+        "maintenance_cost": 3000
+    },
+    
+    "drug_lab": {
+        "name": "Drug Lab",
+        "type": "manufacturing_facility",
+        "category": "drug_manufacturing",
+        "size": "small",
+        "powergrid": 2000,
+        "cpu": 100,
+        "capacity": 200,
+        "cycle_time_modifier": 1.0,
+        "material_efficiency_bonus": 0.0,
+        "time_efficiency_bonus": 0.0,
+        "allowed_categories": ["drug"],
+        "base_cost": 200000,
+        "maintenance_cost": 2000
+    }
+}
+
+# Invention Datacores
+INVENTION_DATACORES = {
+    "datacore_electronic_engineering": {
+        "name": "Datacore - Electronic Engineering",
+        "type": "datacore",
+        "skill_requirement": "electronic_engineering",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on electronic systems and engineering"
+    },
+    "datacore_mechanical_engineering": {
+        "name": "Datacore - Mechanical Engineering",
+        "type": "datacore",
+        "skill_requirement": "mechanical_engineering",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on mechanical systems and engineering"
+    },
+    "datacore_weapon_upgrades": {
+        "name": "Datacore - Weapon Upgrades",
+        "type": "datacore",
+        "skill_requirement": "weapon_upgrades",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on weapon systems and upgrades"
+    },
+    "datacore_hull_upgrades": {
+        "name": "Datacore - Hull Upgrades",
+        "type": "datacore",
+        "skill_requirement": "hull_upgrades",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on ship hulls and armor systems"
+    },
+    "datacore_cpu_management": {
+        "name": "Datacore - CPU Management",
+        "type": "datacore",
+        "skill_requirement": "cpu_management",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on CPU systems and management"
+    },
+    "datacore_powergrid_management": {
+        "name": "Datacore - Powergrid Management",
+        "type": "datacore",
+        "skill_requirement": "powergrid_management",
+        "level_requirement": 1,
+        "volume": 0.1,
+        "description": "Contains research data on powergrid systems and management"
+    }
+}
+
+# Refining Skills and Bonuses
+REFINING_SKILLS = {
+    "refining": {
+        "name": "Refining",
+        "description": "Skill for refining ores into minerals",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "refining_yield_bonus": 0.03,  # 3% per level
+        "ore_processing_time_bonus": 0.05  # 5% per level
+    },
+    "refinery_efficiency": {
+        "name": "Refinery Efficiency",
+        "description": "Improves refining efficiency and reduces waste",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "refining_yield_bonus": 0.02,  # 2% per level
+        "waste_reduction": 0.05  # 5% per level
+    },
+    "deep_core_mining": {
+        "name": "Deep Core Mining",
+        "description": "Allows mining of mercoxit and morphite refining",
+        "max_level": 1,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "enables_morphite": True
+    }
+}
+
+# Planetary Industry Skills
+PLANETARY_INDUSTRY_SKILLS = {
+    "planetary_infrastructure": {
+        "name": "Planetary Infrastructure",
+        "description": "Allows construction and management of planetary colonies",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "charisma",
+        "colony_limit_bonus": 1,  # +1 colony per level
+        "command_center_upgrade_cost_reduction": 0.1  # 10% per level
+    },
+    "remote_sensing": {
+        "name": "Remote Sensing",
+        "description": "Improves planetary scanning and resource identification",
+        "max_level": 4,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "perception",
+        "scan_range_bonus": 0.25,  # 25% per level
+        "resource_quality_bonus": 0.05  # 5% per level
+    },
+    "planetary_consolidation": {
+        "name": "Planetary Consolidation",
+        "description": "Allows linking of planetary structures",
+        "max_level": 4,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "willpower",
+        "link_range_bonus": 0.2,  # 20% per level
+        "link_strength_bonus": 0.1  # 10% per level
+    },
+    "command_center_upgrades": {
+        "name": "Command Center Upgrades",
+        "description": "Improves command center efficiency",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "cpu_bonus": 0.1,  # 10% per level
+        "powergrid_bonus": 0.1  # 10% per level
+    },
+    "interplanetary_consolidation": {
+        "name": "Interplanetary Consolidation",
+        "description": "Allows interplanetary logistics",
+        "max_level": 4,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "charisma",
+        "launch_time_reduction": 0.1,  # 10% per level
+        "export_tax_reduction": 0.05  # 5% per level
+    }
+}
+
+# Manufacturing Skills
+MANUFACTURING_SKILLS = {
+    "industry": {
+        "name": "Industry",
+        "description": "Basic manufacturing skill",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "production_time_bonus": 0.05,  # 5% per level
+        "material_efficiency_bonus": 0.02  # 2% per level
+    },
+    "advanced_industry": {
+        "name": "Advanced Industry",
+        "description": "Advanced manufacturing techniques",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "production_time_bonus": 0.03,  # 3% per level
+        "material_efficiency_bonus": 0.04  # 4% per level
+    },
+    "production_efficiency": {
+        "name": "Production Efficiency",
+        "description": "Improves manufacturing efficiency",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "production_time_bonus": 0.04,  # 4% per level
+        "material_efficiency_bonus": 0.03  # 3% per level
+    }
+}
+
+# Invention Skills
+INVENTION_SKILLS = {
+    "invention": {
+        "name": "Invention",
+        "description": "Basic invention skill",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "invention_chance_bonus": 0.02,  # 2% per level
+        "datacore_reduction": 0.1  # 10% per level
+    },
+    "advanced_invention": {
+        "name": "Advanced Invention",
+        "description": "Advanced invention techniques",
+        "max_level": 5,
+        "primary_attribute": "intelligence",
+        "secondary_attribute": "memory",
+        "invention_chance_bonus": 0.03,  # 3% per level
+        "datacore_reduction": 0.15  # 15% per level
+    }
+}
+
+
 # ==================== GOVERNMENT SYSTEM ====================
 
 GOVERNMENT_TYPES = {

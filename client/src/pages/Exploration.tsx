@@ -11,6 +11,7 @@ import { SPACE_ANOMALIES, generateAnomalyForCoordinates } from "@/lib/spaceAnoma
 import { WARP_GATES, TRADE_ROUTES, calculateWarpTime, calculateWarpCost } from "@/lib/warpNetwork";
 import { ACHIEVEMENTS, QUESTS } from "@/lib/achievementsSystem";
 import { UNIVERSE_EVENTS, DEBRIS_FIELDS } from "@/lib/universeEvents";
+import { FRONTIER_FEATURES, STRONGHOLD_PROGRAMS, WORMHOLE_ROUTES } from "@/lib/wormholeStrongholdCatalog";
 import { cn } from "@/lib/utils";
 import Navigation from "./Navigation";
 
@@ -19,6 +20,7 @@ export default function Exploration() {
   const [selectedAnomaly, setSelectedAnomaly] = useState<string | null>(null);
   const [selectedQuest, setSelectedQuest] = useState<string | null>(null);
   const [scannedAnomalies, setScannedAnomalies] = useState<Set<string>>(new Set());
+  const [surveyedWormholes, setSurveyedWormholes] = useState<Set<string>>(new Set());
 
   const explorationStateQuery = useQuery<{ claimedQuestIds: string[]; harvestedDebrisIds: string[] }>({
     queryKey: ["exploration-state"],
@@ -164,6 +166,19 @@ export default function Exploration() {
     legendary: "bg-yellow-100 text-yellow-900"
   };
 
+  const surveyedCount = surveyedWormholes.size;
+  const stabilizedRoutes = WORMHOLE_ROUTES.filter((route) => route.status === "stabilized").length;
+  const strongholdIntelCount = STRONGHOLD_PROGRAMS.filter((program) => program.status !== "surveyed").length;
+  const frontierUnlockCount = FRONTIER_FEATURES.reduce((sum, feature) => sum + feature.unlocks.length, 0);
+
+  const handleSurveyWormhole = (route: typeof WORMHOLE_ROUTES[number]) => {
+    setSurveyedWormholes((prev) => new Set(prev).add(route.id));
+    toast({
+      title: "Wormhole signature resolved",
+      description: `${route.name} mapped. ${route.destinationMask} now feeds exploration, research, and logistics planning.`,
+    });
+  };
+
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -260,6 +275,166 @@ export default function Exploration() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-violet-600" /> Wormhole Recon Grid
+                </CardTitle>
+                <CardDescription>EVE-inspired frontier routes now plug into exploration, research, refinery fuel chains, and fortress staging.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card className="border-slate-200 bg-slate-50">
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase text-slate-500">Routes Mapped</div>
+                      <div className="text-2xl font-bold text-slate-900">{surveyedCount}/{WORMHOLE_ROUTES.length}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-green-200 bg-green-50">
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase text-green-700">Stable Routes</div>
+                      <div className="text-2xl font-bold text-green-900">{stabilizedRoutes}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-blue-200 bg-blue-50">
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase text-blue-700">Stronghold Intel</div>
+                      <div className="text-2xl font-bold text-blue-900">{strongholdIntelCount}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-amber-200 bg-amber-50">
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase text-amber-700">Frontier Unlocks</div>
+                      <div className="text-2xl font-bold text-amber-900">{frontierUnlockCount}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {WORMHOLE_ROUTES.map((route) => {
+                    const surveyed = surveyedWormholes.has(route.id);
+                    return (
+                      <Card key={route.id} className={cn("border-2", surveyed ? "border-violet-300 bg-violet-50/40" : "border-slate-200")}>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-orbitron font-bold text-slate-900">{route.name}</div>
+                              <div className="text-xs text-slate-500">{route.className} · {route.locus}</div>
+                            </div>
+                            <Badge className={route.status === "stabilized" ? "bg-green-100 text-green-900" : route.status === "stabilizing" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-900"}>
+                              {route.status}
+                            </Badge>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="rounded border border-slate-200 bg-white p-2">
+                              <div className="text-slate-500">Exit Mask</div>
+                              <div className="font-semibold text-slate-900">{route.destinationMask}</div>
+                            </div>
+                            <div className="rounded border border-slate-200 bg-white p-2">
+                              <div className="text-slate-500">Transit Profile</div>
+                              <div className="font-semibold text-slate-900">{route.transitProfile}</div>
+                            </div>
+                            <div className="rounded border border-slate-200 bg-white p-2">
+                              <div className="text-slate-500">Lifetime</div>
+                              <div className="font-semibold text-slate-900">{route.lifetimeHours}h</div>
+                            </div>
+                            <div className="rounded border border-slate-200 bg-white p-2">
+                              <div className="text-slate-500">Risk</div>
+                              <div className={cn("font-semibold", route.risk >= 8 ? "text-red-600" : route.risk >= 6 ? "text-amber-600" : "text-green-600")}>{route.risk}/10</div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <div className="font-bold text-slate-700">Connected Systems</div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {route.connectedSystems.map((system) => (
+                                  <Badge key={system} variant="outline">{system}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-700">Research Hooks</div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {route.researchHooks.map((hook) => (
+                                  <Badge key={hook} className="bg-blue-100 text-blue-900">{hook}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            className="w-full bg-violet-600 hover:bg-violet-700"
+                            disabled={surveyed}
+                            onClick={() => handleSurveyWormhole(route)}
+                            data-testid={`btn-survey-wormhole-${route.id}`}
+                          >
+                            {surveyed ? "Signature Mapped" : "Survey Signature"}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <Card className="bg-white border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">Frontier Systems Added</CardTitle>
+                  <CardDescription>Missing EVE-style loops translated into Stellar Dominion systems and menus.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {FRONTIER_FEATURES.map((feature) => (
+                    <div key={feature.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-semibold text-slate-900">{feature.name}</div>
+                        <Badge variant="outline">{feature.type}</Badge>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">{feature.summary}</div>
+                      <div className="mt-2 text-xs text-slate-500">{feature.gameplay}</div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {feature.linkedSystems.map((system) => (
+                          <Badge key={system} className="bg-slate-100 text-slate-700">{system}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">Stronghold Intelligence</CardTitle>
+                  <CardDescription>Frontier bastions tie wormholes, stations, raids, blueprints, and research together.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {STRONGHOLD_PROGRAMS.map((program) => (
+                    <div key={program.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-slate-900">{program.name}</div>
+                          <div className="text-xs text-slate-500">{program.tier} · {program.orbit}</div>
+                        </div>
+                        <Badge className={program.status === "operational" ? "bg-green-100 text-green-900" : program.status === "contested" ? "bg-red-100 text-red-900" : "bg-blue-100 text-blue-900"}>
+                          {program.status}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-sm text-slate-600">{program.summary}</div>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded border border-slate-200 bg-white p-2">Defense <span className="font-bold text-slate-900">{program.defense}</span></div>
+                        <div className="rounded border border-slate-200 bg-white p-2">Logistics <span className="font-bold text-slate-900">{program.logistics}</span></div>
+                        <div className="rounded border border-slate-200 bg-white p-2">Command <span className="font-bold text-slate-900">{program.command}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Warp Network Tab */}
