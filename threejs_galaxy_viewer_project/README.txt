@@ -1,0 +1,37 @@
+
+Three.js Galaxy Control Viewer
+
+Instructions:
+
+1. Open index.html in a modern browser.
+2. Orbit with the mouse.
+3. Click a star to select a system.
+4. Click a planet to switch into the local planet view.
+5. Use the left rail menus and sub pages to change the active 3D layer.
+6. Use the screen HUD and sub HUD cards to read live universe, planet, input, and overlay status.
+7. Use the top pills to switch galaxy, system, and planet camera modes.
+8. Use the ship mode pills to preview patrol, survey, intercept, and colonize behavior.
+9. Open the Settings menu to see keyboard, mouse, Xbox, PS5, and generic controller mappings.
+10. Press R to regenerate, F to focus, 1 / 2 / 3 to swap views, Q / E to cycle ship modes, [ / ] to cycle menus, and , / . to cycle sub pages.
+11. Use W / A / S / D to pan, Arrow Keys to orbit, and Z / X to zoom with the keyboard.
+12. Connect an Xbox or PS5 controller to use sticks for camera control and buttons for menu navigation.
+
+Features:
+- data-driven main menus, sub menus, pages, and overlay logic
+- screen HUD and sub HUD overlays styled for a strategy viewer command deck
+- command, navigation, intelligence, economy, fleets, diplomacy, and celestials views
+- dedicated settings pages for input profiles and control references
+- keyboard layout cards and controller keybind tables inside the Settings pages
+- galaxy, system, and planet camera modes
+- procedural star systems with planets, moons, stations, asteroid belts, and interstellar objects
+- 3D ship token controls for patrol, survey, intercept, and colonize posture
+- keyboard, mouse, Xbox, PS5, and generic Gamepad API support for navigation and camera control
+- responsive HUD for desktop and mobile
+- asset template folders for browser delivery and Java-friendly 3D pipelines
+
+Folder notes:
+- docs/asset_pipeline_guide.txt : format guidance for PNG, JPG, BMP, TGA, DDS, OBJ, FBX, GLTF, DAE, and J3O
+- assets/textures : starter texture folders by format
+- assets/models : starter model folders and template files
+- game-source/public/assets/3d : browser runtime asset template root
+- game-source/resources/3d : higher-fidelity source asset template root
