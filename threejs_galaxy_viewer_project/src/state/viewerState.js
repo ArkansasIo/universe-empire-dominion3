@@ -1,4 +1,10 @@
 import { getDefaultPage, getMenuById } from "../data/menuConfig.js";
+import {
+  GALAXY_SCALE_PRESETS,
+  buildGalaxyScaleSummary,
+  getGalaxyScalePresetById,
+  getMatchingGalaxyScalePreset,
+} from "../data/galaxyScalePresets.js";
 
 function randomSeed() {
   return Math.floor(Math.random() * 1000000);
@@ -9,14 +15,19 @@ export function createViewerState(options) {
   const initialMenuId = menus[0]?.id || "command";
   const initialPage = getDefaultPage(initialMenuId);
   const listeners = new Set();
+  const initialSystemCount = options.initialSystemCount || 400;
+  const initialPreset = getMatchingGalaxyScalePreset(initialSystemCount) || getGalaxyScalePresetById("small");
 
   let state = {
     menus,
+    galaxyScalePresets: options.galaxyScalePresets || GALAXY_SCALE_PRESETS,
     projectLinks: options.projectLinks || [],
     assetMounts: options.assetMounts || [],
     runtimeBridgeSummary: options.runtimeBridgeSummary || null,
     seed: randomSeed(),
-    systemCount: options.initialSystemCount || 420,
+    systemCount: initialSystemCount,
+    galaxyScalePresetId: initialPreset.id,
+    galaxyScaleSummary: buildGalaxyScaleSummary(initialSystemCount),
     motionEnabled: true,
     activeMenuId: initialMenuId,
     activePageId: initialPage.id,
@@ -89,12 +100,26 @@ export function createViewerState(options) {
       });
     },
     setSystemCount(systemCount) {
-      const normalized = Math.max(120, Math.min(900, Math.round(Number(systemCount) || state.systemCount)));
+      const normalized = Math.max(120, Math.min(1000, Math.round(Number(systemCount) || state.systemCount)));
       if (normalized === state.systemCount) {
         return;
       }
+      const matchedPreset = getMatchingGalaxyScalePreset(normalized);
       update({
         systemCount: normalized,
+        galaxyScalePresetId: matchedPreset?.id || "custom",
+        galaxyScaleSummary: buildGalaxyScaleSummary(normalized),
+        selectedSystem: null,
+        hoveredSystem: null,
+        selectedPlanet: null,
+      });
+    },
+    setGalaxyScalePreset(presetId) {
+      const preset = getGalaxyScalePresetById(presetId);
+      update({
+        galaxyScalePresetId: preset.id,
+        galaxyScaleSummary: buildGalaxyScaleSummary(preset.systemCount),
+        systemCount: preset.systemCount,
         selectedSystem: null,
         hoveredSystem: null,
         selectedPlanet: null,

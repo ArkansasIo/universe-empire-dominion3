@@ -540,6 +540,16 @@ body::after {
   text-transform: uppercase;
 }
 
+.sd-scale-summary {
+  margin-top: 12px;
+}
+
+.sd-scale-note {
+  margin: 12px 0 0;
+  color: rgba(221, 239, 255, 0.76);
+  line-height: 1.45;
+}
+
 @media (max-width: 1200px) {
   #viewer-root {
     inset: 18px 18px 18px 278px;

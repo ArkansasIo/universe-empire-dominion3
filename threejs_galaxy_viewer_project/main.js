@@ -1,4 +1,5 @@
 import { MENU_DEFINITIONS, getPageById } from "./src/data/menuConfig.js";
+import { GALAXY_SCALE_PRESETS } from "./src/data/galaxyScalePresets.js";
 import { GAME_RUNTIME_BRIDGE, summarizeRuntimeBridge } from "./src/data/gameRuntimeBridge.js";
 import { PROJECT_SOURCE_LINKS, VIEWER_ASSET_MOUNTS } from "./src/data/projectLinks.js";
 import { createSceneController } from "./src/3d/sceneController.js";
@@ -11,7 +12,8 @@ const hudRoot = document.querySelector("#hud-root");
 
 const state = createViewerState({
   menus: MENU_DEFINITIONS,
-  initialSystemCount: 420,
+  galaxyScalePresets: GALAXY_SCALE_PRESETS,
+  initialSystemCount: 400,
   projectLinks: PROJECT_SOURCE_LINKS,
   assetMounts: VIEWER_ASSET_MOUNTS,
   runtimeBridgeSummary: summarizeRuntimeBridge(GAME_RUNTIME_BRIDGE),

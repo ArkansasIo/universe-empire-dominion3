@@ -17,6 +17,8 @@ Instructions:
 12. Connect an Xbox or PS5 controller to use sticks for camera control and buttons for menu navigation.
 
 Features:
+- Stellaris-style galaxy scale presets for Tiny, Small, Medium, Large, and Huge maps
+- scale summaries for star-system diameter, hyperlane spacing, galaxy width, and total celestial-body estimates
 - data-driven main menus, sub menus, pages, and overlay logic
 - screen HUD and sub HUD overlays styled for a strategy viewer command deck
 - command, navigation, intelligence, economy, fleets, diplomacy, and celestials views

@@ -7,6 +7,16 @@ function formatMetric(value) {
   return `${Math.round(value || 0)}%`;
 }
 
+function renderGalaxyScaleRows(summary) {
+  return renderBindingRows([
+    { key: "Preset", action: `${summary.label} / ${summary.systemCount} systems` },
+    { key: "System Size", action: summary.systemDiameterAu },
+    { key: "Star Spacing", action: summary.interstellarSpacingLy },
+    { key: "Galaxy Width", action: summary.galaxyDiameterLy },
+    { key: "Bodies", action: summary.celestialBodiesEstimate },
+  ]);
+}
+
 const CONTROL_GUIDES = {
   "keyboard-mouse": {
     title: "Keyboard + Mouse",
@@ -248,6 +258,11 @@ function renderHudOverview(currentState, page, activeSystem) {
         <p>${activeSystem ? `${activeSystem.name} is feeding live local-space telemetry.` : "Awaiting focused system telemetry from the galaxy map."}</p>
       </div>
       <div class="sd-hud-card">
+        <span class="sd-kicker">Galaxy Scale</span>
+        <strong>${currentState.galaxyScaleSummary.label} / ${currentState.galaxyScaleSummary.systemCount}</strong>
+        <p>${currentState.galaxyScaleSummary.galaxyDiameterLy} across with ${currentState.galaxyScaleSummary.celestialBodiesEstimate.toLowerCase()}.</p>
+      </div>
+      <div class="sd-hud-card">
         <span class="sd-kicker">Bridge Layer</span>
         <strong>${page.menuLabel} / ${page.label}</strong>
         <p>${page.title} is driving the active 3D overlay and sub HUD routing.</p>
@@ -482,6 +497,24 @@ function renderRightPagePanel(currentState, page, activeSystem) {
           <button class="sd-pill sd-pill-accent" data-action="regenerate">Regenerate</button>
         </div>
       </div>
+      <div class="sd-section">
+        <div class="sd-section-title">Stellaris Scale Presets</div>
+        <div class="sd-chip-row">
+          ${currentState.galaxyScalePresets
+            .map(
+              (preset) => `
+                <button class="sd-pill ${currentState.galaxyScalePresetId === preset.id ? "is-active" : ""}" data-action="galaxy-scale" data-galaxy-scale-id="${preset.id}">
+                  ${preset.label} ${preset.systemCount}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="sd-section sd-scale-summary">
+          ${renderGalaxyScaleRows(currentState.galaxyScaleSummary)}
+        </div>
+        <p class="sd-scale-note">${currentState.galaxyScaleSummary.note}</p>
+      </div>
       ${page.id.startsWith("settings-") ? renderSettingsDeck(currentState, page) : ""}
       <div class="sd-section">
         <div class="sd-section-title">Active Game Code Links</div>
@@ -543,8 +576,9 @@ export function createControlPanel(options) {
           <section class="sd-bottom-strip">
             <div class="sd-strip-card">
               <span class="sd-kicker">System Density</span>
-              <strong>${currentState.systemCount} systems</strong>
-              <input class="sd-range" type="range" min="120" max="900" step="20" value="${currentState.systemCount}" data-action="system-count" />
+              <strong>${currentState.galaxyScaleSummary.label} / ${currentState.systemCount} systems</strong>
+              <p>${currentState.galaxyScaleSummary.systemDiameterAu} star systems with ${currentState.galaxyScaleSummary.interstellarSpacingLy} hyperlane spacing.</p>
+              <input class="sd-range" type="range" min="120" max="1000" step="20" value="${currentState.systemCount}" data-action="system-count" />
             </div>
             <div class="sd-strip-card">
               <span class="sd-kicker">3D Overlay Logic</span>
@@ -587,6 +621,9 @@ export function createControlPanel(options) {
     }
     if (action === "regenerate") {
       state.regenerate();
+    }
+    if (action === "galaxy-scale") {
+      state.setGalaxyScalePreset(target.getAttribute("data-galaxy-scale-id"));
     }
     if (action === "focus-selection") {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "f" }));
