@@ -1,4 +1,5 @@
 import { MENU_DEFINITIONS, getPageById } from "./src/data/menuConfig.js";
+import { PROJECT_SOURCE_LINKS, VIEWER_ASSET_MOUNTS } from "./src/data/projectLinks.js";
 import { createSceneController } from "./src/3d/sceneController.js";
 import { setupInputManager } from "./src/input/inputManager.js";
 import { createViewerState } from "./src/state/viewerState.js";
@@ -10,6 +11,8 @@ const hudRoot = document.querySelector("#hud-root");
 const state = createViewerState({
   menus: MENU_DEFINITIONS,
   initialSystemCount: 420,
+  projectLinks: PROJECT_SOURCE_LINKS,
+  assetMounts: VIEWER_ASSET_MOUNTS,
 });
 
 const sceneController = createSceneController({

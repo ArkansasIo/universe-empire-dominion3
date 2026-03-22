@@ -49,6 +49,38 @@ function renderBindingRows(rows) {
     .join("");
 }
 
+function renderSourceLinks(links) {
+  return links
+    .map(
+      (entry) => `
+        <div class="sd-binding-row">
+          <span class="sd-binding-key">${entry.label}</span>
+          <span class="sd-binding-action">
+            <strong>${entry.path}</strong><br>
+            ${entry.description}
+          </span>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderAssetMounts(mounts) {
+  return mounts
+    .map(
+      (entry) => `
+        <div class="sd-binding-row">
+          <span class="sd-binding-key">${entry.label}</span>
+          <span class="sd-binding-action">
+            <strong>${entry.path}</strong><br>
+            ${entry.purpose}
+          </span>
+        </div>
+      `,
+    )
+    .join("");
+}
+
 function renderKeyboardLayout() {
   return `
     <div class="sd-keyboard-layout">
@@ -395,6 +427,14 @@ function renderRightPagePanel(currentState, page, activeSystem) {
         </div>
       </div>
       ${page.id.startsWith("settings-") ? renderSettingsDeck(currentState, page) : ""}
+      <div class="sd-section">
+        <div class="sd-section-title">Main Game Source Links</div>
+        ${renderSourceLinks(currentState.projectLinks)}
+      </div>
+      <div class="sd-section">
+        <div class="sd-section-title">3D Asset Mounts</div>
+        ${renderAssetMounts(currentState.assetMounts)}
+      </div>
       ${renderInputSection(currentState)}
       <div class="sd-section">
         <div class="sd-section-title">System Inspector</div>

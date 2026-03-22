@@ -12,6 +12,8 @@ export function createViewerState(options) {
 
   let state = {
     menus,
+    projectLinks: options.projectLinks || [],
+    assetMounts: options.assetMounts || [],
     seed: randomSeed(),
     systemCount: options.initialSystemCount || 420,
     motionEnabled: true,

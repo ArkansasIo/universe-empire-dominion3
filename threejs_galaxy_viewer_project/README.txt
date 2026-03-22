@@ -22,6 +22,7 @@ Features:
 - command, navigation, intelligence, economy, fleets, diplomacy, and celestials views
 - dedicated settings pages for input profiles and control references
 - keyboard layout cards and controller keybind tables inside the Settings pages
+- source-link manifest that maps the viewer to the main game folders and 3D asset roots
 - galaxy, system, and planet camera modes
 - procedural star systems with planets, moons, stations, asteroid belts, and interstellar objects
 - 3D ship token controls for patrol, survey, intercept, and colonize posture
@@ -33,5 +34,6 @@ Folder notes:
 - docs/asset_pipeline_guide.txt : format guidance for PNG, JPG, BMP, TGA, DDS, OBJ, FBX, GLTF, DAE, and J3O
 - assets/textures : starter texture folders by format
 - assets/models : starter model folders and template files
+- src/data/projectLinks.js : source-map manifest linking the viewer to the main game code and 3D content roots
 - game-source/public/assets/3d : browser runtime asset template root
 - game-source/resources/3d : higher-fidelity source asset template root
