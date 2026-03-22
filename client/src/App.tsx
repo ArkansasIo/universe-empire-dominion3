@@ -152,18 +152,7 @@ function RouterContent() {
     return () => clearTimeout(timeout);
   }, [isLoading]);
 
-  useEffect(() => {
-    if (!isLoading) return;
-
-    const maxSplashMs = 6000;
-    const timeout = setTimeout(() => {
-      setShowSplash(false);
-    }, maxSplashMs);
-
-    return () => clearTimeout(timeout);
-  }, [isLoading]);
-
-  if (isLoading && showSplash) {
+  if (isLoading || showSplash) {
     return <LoadingSplash />;
   }
 

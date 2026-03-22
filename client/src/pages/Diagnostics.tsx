@@ -61,19 +61,19 @@ export default function Diagnostics() {
   const [selectedTab, setSelectedTab] = useState("overview");
   const queryClient = useQueryClient();
 
-  const { data: issuesResponse } = useQuery<WrappedResponse<IssueRecord[]>>({
+  const { data: issuesResponse, error: issuesError } = useQuery<WrappedResponse<IssueRecord[]>>({
     queryKey: ["diagnostics-issues"],
     queryFn: () => fetchJson<WrappedResponse<IssueRecord[]>>("/api/diagnostics/issues"),
     refetchInterval: 15000,
   });
 
-  const { data: warningsResponse } = useQuery<WrappedResponse<WarningRecord[]>>({
+  const { data: warningsResponse, error: warningsError } = useQuery<WrappedResponse<WarningRecord[]>>({
     queryKey: ["diagnostics-warnings"],
     queryFn: () => fetchJson<WrappedResponse<WarningRecord[]>>("/api/diagnostics/warnings"),
     refetchInterval: 15000,
   });
 
-  const { data: debugResponse } = useQuery<WrappedResponse<DebugRecord[]>>({
+  const { data: debugResponse, error: debugError } = useQuery<WrappedResponse<DebugRecord[]>>({
     queryKey: ["diagnostics-debug"],
     queryFn: () => fetchJson<WrappedResponse<DebugRecord[]>>("/api/diagnostics/debug?limit=100"),
     refetchInterval: 10000,
@@ -99,6 +99,7 @@ export default function Diagnostics() {
   const issues = issuesResponse?.data || [];
   const warnings = warningsResponse?.data || [];
   const debugLogs = debugResponse?.data || [];
+  const queryError = issuesError || warningsError || debugError;
   const resolvedIssues = issues.filter((issue) => issue.status === "resolved").length;
   const unresolvedIssues = issues.filter((issue) => issue.status !== "resolved").length;
   const warningAlerts = warnings.filter((warn) => warn.level === "alert" || warn.level === "emergency").length;
@@ -136,6 +137,14 @@ export default function Diagnostics() {
           </h2>
           <p className="text-muted-foreground font-rajdhani text-lg">Real-time error tracking, warnings, and debug information.</p>
         </div>
+
+        {queryError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6 text-sm text-red-700">
+              Diagnostics data could not be fully loaded. Some panels may be incomplete until the related API endpoints recover.
+            </CardContent>
+          </Card>
+        )}
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -232,7 +241,7 @@ export default function Diagnostics() {
                         </p>
                       </div>
                     ))}
-                    {issues.length === 0 && <div className="text-sm text-slate-500">No active issues detected.</div>}
+                    {issues.length === 0 && <div className="text-sm text-slate-500">{queryError ? "Issue feed unavailable." : "No active issues detected."}</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -254,7 +263,7 @@ export default function Diagnostics() {
                         <p className="text-xs text-slate-600">{warn.source}</p>
                       </div>
                     ))}
-                    {warnings.length === 0 && <div className="text-sm text-slate-500">No active warnings.</div>}
+                    {warnings.length === 0 && <div className="text-sm text-slate-500">{queryError ? "Warning feed unavailable." : "No active warnings."}</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -290,7 +299,7 @@ export default function Diagnostics() {
                         </Button>
                       </div>
                     ))}
-                    {issues.length === 0 && <div className="text-sm text-slate-500">No issues found.</div>}
+                    {issues.length === 0 && <div className="text-sm text-slate-500">{queryError ? "Issues could not be loaded." : "No issues found."}</div>}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -330,7 +339,7 @@ export default function Diagnostics() {
                         </div>
                       </div>
                     ))}
-                    {warnings.length === 0 && <div className="text-sm text-slate-500">No warnings found.</div>}
+                    {warnings.length === 0 && <div className="text-sm text-slate-500">{queryError ? "Warnings could not be loaded." : "No warnings found."}</div>}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -358,7 +367,7 @@ export default function Diagnostics() {
                         {log.duration && <p className="text-xs text-slate-500 mt-1">Duration: {log.duration}ms</p>}
                       </div>
                     ))}
-                    {debugLogs.length === 0 && <div className="text-sm text-slate-500">No debug entries available.</div>}
+                    {debugLogs.length === 0 && <div className="text-sm text-slate-500">{queryError ? "Debug logs could not be loaded." : "No debug entries available."}</div>}
                   </div>
                 </ScrollArea>
               </CardContent>
