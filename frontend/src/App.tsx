@@ -67,6 +67,11 @@ const ResearchLab = lazy(() => import("@/pages/ResearchLab"));
 const GameAssetsGallery = lazy(() => import("@/pages/GameAssetsGallery"));
 const PlanetDetail = lazy(() => import("@/pages/PlanetDetail"));
 const OgameCompendium = lazy(() => import("@/pages/OgameCompendium"));
+const Materials = lazy(() => import("@/pages/Materials"));
+const Manufacturing = lazy(() => import("@/pages/Manufacturing"));
+const Refining = lazy(() => import("@/pages/Refining"));
+const PlanetaryIndustry = lazy(() => import("@/pages/PlanetaryIndustry"));
+const Invention = lazy(() => import("@/pages/Invention"));
 
 function LoadingSplash() {
   return (
@@ -226,6 +231,11 @@ function RouterContent() {
       <Route path="/research-lab" component={ResearchLab} />
       <Route path="/ogame-compendium" component={OgameCompendium} />
       <Route path="/assets-gallery" component={GameAssetsGallery} />
+      <Route path="/materials" component={Materials} />
+      <Route path="/manufacturing" component={Manufacturing} />
+      <Route path="/refining" component={Refining} />
+      <Route path="/planetary-industry" component={PlanetaryIndustry} />
+      <Route path="/invention" component={Invention} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/server-console" component={ServerConsole} />

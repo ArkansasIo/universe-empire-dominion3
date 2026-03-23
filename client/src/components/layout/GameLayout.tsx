@@ -48,13 +48,13 @@ import {
   Coins,
   Droplets,
   FileText,
+  BookOpen,
   Trophy,
   Wheat,
   Crown,
   Satellite,
   Search,
   ScrollText,
-  BookOpen,
   Network,
   AlertTriangle,
   Image,
@@ -333,6 +333,7 @@ const menuSections: MenuSection[] = [
         description: "Operate research centers and queue scientific projects.",
         items: [
           { href: "/research", icon: FlaskConical, label: "Research Hub", description: "View current research priorities and laboratory output." },
+          { href: "/skills", icon: BookOpen, label: "Skills Training", description: "Train character skills for improved performance." },
           { href: "/research-lab", icon: Zap, label: "Research Management", description: "Allocate research capacity and manage active development." },
           { href: "/research-analytics", icon: ScrollText, label: "Research Analytics", description: "Track discovery streaks, tier spread, and science performance." },
         ],
@@ -368,6 +369,7 @@ const menuSections: MenuSection[] = [
         description: "Build and organize space and ground units.",
         items: [
           { href: "/shipyard", icon: Rocket, label: "Shipyard", description: "Construct ships and prepare new fleets for deployment." },
+          { href: "/fitting", icon: Settings, label: "Ship Fitting", description: "Customize ship modules, weapons, and equipment." },
           { href: "/fleet", icon: Send, label: "Fleet Command", description: "Dispatch fleets, track missions, and manage formations." },
           { href: "/army", icon: Users, label: "Army", description: "Review land units, formations, and force composition." },
           { href: "/army-management", icon: Swords, label: "Army Management", description: "Train, equip, and reorganize planetary armies." },
@@ -841,7 +843,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
   }, [isMobile]);
 
   const displayPreferences = {
-    themePreset: playerOptions?.display?.themePreset ?? "black-style",
+    themePreset: playerOptions?.display?.themePreset ?? "og-white",
     compactView: Boolean(playerOptions?.display?.compactView),
     showAnimations: playerOptions?.display?.showAnimations ?? true,
     showResourceRates: playerOptions?.display?.showResourceRates ?? true,
@@ -1456,7 +1458,6 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
-
 
 
 

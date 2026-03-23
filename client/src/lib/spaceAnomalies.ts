@@ -84,6 +84,28 @@ export const SPACE_ANOMALIES: SpaceAnomaly[] = [
     discovered: false,
     hazardLevel: 10,
     researchRequired: 7
+  },
+  {
+    id: "wormhole_2",
+    name: "Shattered Wormhole Chain",
+    type: "wormhole",
+    coordinates: "5:088:11",
+    rarity: "epic",
+    rewards: { metal: 45000, crystal: 110000, deuterium: 90000, xp: 9000, technology: "wormholeTheory" },
+    discovered: false,
+    hazardLevel: 8,
+    researchRequired: 6
+  },
+  {
+    id: "derelict_station_2",
+    name: "Sleeper Stronghold Ruin",
+    type: "derelict_station",
+    coordinates: "6:044:2",
+    rarity: "legendary",
+    rewards: { metal: 240000, crystal: 180000, deuterium: 120000, xp: 18000, technology: "fortressWarfare" },
+    discovered: false,
+    hazardLevel: 9,
+    researchRequired: 8
   }
 ];
 

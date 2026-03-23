@@ -2,7 +2,7 @@ export interface UniverseEvent {
   id: string;
   title: string;
   description: string;
-  type: "solar_flare" | "meteor_shower" | "cosmic_collision" | "wormhole_opening" | "faction_war" | "market_surge" | "plague" | "discovery";
+  type: "solar_flare" | "meteor_shower" | "cosmic_collision" | "wormhole_opening" | "wormhole_storm" | "stronghold_siege" | "frontier_incursion" | "faction_war" | "market_surge" | "plague" | "discovery";
   affectedSectors?: string[]; // Galaxy coordinates like "1:1" or "1:*" for all of galaxy 1
   severity: number; // 1-10
   startTime: number;
@@ -79,6 +79,30 @@ export const UNIVERSE_EVENTS: UniverseEvent[] = [
     endTime: Date.now() + 43200000,
     effects: { resourceBonus: 30 },
     active: true
+  },
+  {
+    id: "event_wormhole_storm_1",
+    title: "Wormhole Storm Front",
+    description: "Spatial turbulence is creating unstable exits and rare traversal opportunities across frontier sectors.",
+    type: "wormhole_storm",
+    affectedSectors: ["5:*", "6:*"],
+    severity: 8,
+    startTime: Date.now(),
+    endTime: Date.now() + 28800000,
+    effects: { fleetSpeedModifier: 0.1, dangerIncrease: 35, productionBonus: 10 },
+    active: true
+  },
+  {
+    id: "event_stronghold_siege_1",
+    title: "Stronghold Siege Window",
+    description: "A contested frontier stronghold has entered a vulnerability cycle, drawing fleets and raiders into the region.",
+    type: "stronghold_siege",
+    affectedSectors: ["6:044"],
+    severity: 9,
+    startTime: Date.now() + 1800000,
+    endTime: Date.now() + 12600000,
+    effects: { combatModifier: 1.15, dangerIncrease: 30 },
+    active: false
   }
 ];
 
@@ -117,7 +141,7 @@ export const DEBRIS_FIELDS: DebrisField[] = [
 ];
 
 export function generateRandomEvent(): UniverseEvent {
-  const types: UniverseEvent["type"][] = ["solar_flare", "meteor_shower", "cosmic_collision", "wormhole_opening", "market_surge"];
+  const types: UniverseEvent["type"][] = ["solar_flare", "meteor_shower", "cosmic_collision", "wormhole_opening", "wormhole_storm", "stronghold_siege", "market_surge"];
   const type = types[Math.floor(Math.random() * types.length)];
   const now = Date.now();
   

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ORBITAL_BUILDINGS, StationBuilding } from "@/lib/stationData";
+import { STRONGHOLD_PROGRAMS } from "@/lib/wormholeStrongholdCatalog";
 import {
   ORBITAL_STATION_CATEGORIES,
   ORBITAL_STATION_STATS,
@@ -454,9 +455,11 @@ export default function Stations() {
   const [activeTab, setActiveTab] = useState<StationsTab>("moon");
   const [buildingLevels, setBuildingLevels] = useState<Record<string, number>>({});
   const [infrastructureBuildCounts, setInfrastructureBuildCounts] = useState<Record<string, number>>({});
+  const [deployedStrongholds, setDeployedStrongholds] = useState<Record<string, number>>({});
   const activeBuildingPool = activeTab === "moon" ? moonBuildings : stationBuildings;
   const totalFacilityLevels = Object.values(buildingLevels).reduce((sum, level) => sum + level, 0);
   const totalInfrastructureBuilt = Object.values(infrastructureBuildCounts).reduce((sum, count) => sum + count, 0);
+  const totalStrongholds = Object.values(deployedStrongholds).reduce((sum, count) => sum + count, 0);
   const averageCostFactor =
     activeBuildingPool.length > 0
       ? (activeBuildingPool.reduce((sum, building) => sum + building.costFactor, 0) / activeBuildingPool.length).toFixed(2)
@@ -566,6 +569,34 @@ export default function Stations() {
     });
   };
 
+  const getStrongholdRequirementLabel = (program: typeof STRONGHOLD_PROGRAMS[number]) => {
+    if ((buildingLevels.starbaseHub ?? 0) === 0) {
+      return "Requires Starbase Command Hub level 1 before frontier stronghold deployment.";
+    }
+    if (program.tier !== "Frontier Tier I" && (buildingLevels.strongholdCommandNexus ?? 0) === 0) {
+      return "Requires Stronghold Command Nexus level 1 for advanced keep and citadel control.";
+    }
+    if (program.status === "contested" && (buildingLevels.defenseGrid ?? 0) < 1) {
+      return "Requires Orbital Defense Grid level 1 before contesting hostile strongholds.";
+    }
+    return null;
+  };
+
+  const handleDeployStronghold = (program: typeof STRONGHOLD_PROGRAMS[number]) => {
+    const requirementLabel = getStrongholdRequirementLabel(program);
+    if (requirementLabel) {
+      toast({ title: "Deployment blocked", description: requirementLabel, variant: "destructive" });
+      return;
+    }
+
+    const nextCount = (deployedStrongholds[program.id] ?? 0) + 1;
+    setDeployedStrongholds((current) => ({ ...current, [program.id]: nextCount }));
+    toast({
+      title: "Stronghold protocol deployed",
+      description: `${program.name} is now anchoring ${program.role.toLowerCase()}. Active count: ${nextCount}.`,
+    });
+  };
+
   useEffect(() => {
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
@@ -650,6 +681,27 @@ export default function Stations() {
             <CardContent className="pt-6">
               <div className="text-xs uppercase text-slate-500">Infrastructure Built</div>
               <div className="text-2xl font-bold text-rose-700">{totalInfrastructureBuilt}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Strongholds Online</div>
+              <div className="text-2xl font-bold text-indigo-700">{totalStrongholds}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Wormhole Anchors</div>
+              <div className="text-2xl font-bold text-cyan-700">{buildingLevels.wormholeAnchor ?? 0}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Command Nexus</div>
+              <div className="text-2xl font-bold text-amber-700">{buildingLevels.strongholdCommandNexus ?? 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -740,6 +792,63 @@ export default function Stations() {
                 />
               ))}
             </div>
+
+            <Card className="mt-6 bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle>Stronghold Command Programs</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {STRONGHOLD_PROGRAMS.map((program) => (
+                    <Card key={program.id} className="border-slate-200 bg-slate-50">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-slate-900">{program.name}</div>
+                            <div className="text-xs text-slate-500">{program.tier} · {program.orbit}</div>
+                          </div>
+                          <Badge className={program.status === "operational" ? "bg-green-100 text-green-900" : program.status === "contested" ? "bg-red-100 text-red-900" : "bg-blue-100 text-blue-900"}>
+                            {program.status}
+                          </Badge>
+                        </div>
+
+                        <p className="text-sm text-slate-600">{program.summary}</p>
+
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="rounded border border-slate-200 bg-white p-2">Defense <span className="font-bold text-slate-900">{program.defense}</span></div>
+                          <div className="rounded border border-slate-200 bg-white p-2">Logistics <span className="font-bold text-slate-900">{program.logistics}</span></div>
+                          <div className="rounded border border-slate-200 bg-white p-2">Command <span className="font-bold text-slate-900">{program.command}</span></div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
+                          {program.facilities.map((facility) => (
+                            <Badge key={facility} variant="outline">{facility}</Badge>
+                          ))}
+                        </div>
+
+                        <div className="space-y-1 text-xs text-slate-500">
+                          {program.upgradeTracks.map((track) => (
+                            <div key={track.name}>
+                              <span className="font-semibold text-slate-700">{track.name}:</span> {track.effect}
+                            </div>
+                          ))}
+                        </div>
+
+                        {getStrongholdRequirementLabel(program) && (
+                          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            {getStrongholdRequirementLabel(program)}
+                          </div>
+                        )}
+
+                        <Button className="w-full" onClick={() => handleDeployStronghold(program)} data-testid={`button-deploy-stronghold-${program.id}`}>
+                          Deploy Stronghold
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="infrastructure" className="mt-4">
@@ -784,6 +893,17 @@ export default function Stations() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card className="mb-6 bg-indigo-50 border-indigo-200">
+              <CardHeader>
+                <CardTitle className="text-indigo-900">Frontier Stronghold Logic</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-indigo-900">
+                <div className="rounded border border-indigo-200 bg-white/80 p-3">Strongholds act as frontier command nodes for siege timers, route control, and fleet tethering.</div>
+                <div className="rounded border border-indigo-200 bg-white/80 p-3">Wormhole Anchor Arrays and Stronghold Command Nexus upgrades unlock deeper keep and citadel programs.</div>
+                <div className="rounded border border-indigo-200 bg-white/80 p-3">Infrastructure, raids, and research now share the same bastion progression instead of living in separate systems.</div>
+              </CardContent>
+            </Card>
 
             {/* Category accordion list */}
             <div className="space-y-2">

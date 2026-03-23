@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import path from "path";
 import { logger } from "./logger";
 import { ConsoleMenu } from "./consoleMenu";
 import { setupAuth } from "./basicAuth";
@@ -244,6 +245,16 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
   registerGuildRoutes(app);
   registerForumRoutes(app);
   registerEmpireCombatUniverseRoutes(app);
+  const viewerRoot = path.resolve(import.meta.dirname, "..", "threejs_galaxy_viewer_project");
+  app.get("/api/viewer/status", (_req, res) => {
+    res.json({
+      ok: true,
+      viewerPath: "/viewer-3d/",
+      appPath: "/threejs-viewer",
+      mode: runtimeNodeEnv,
+    });
+  });
+  app.use("/viewer-3d", express.static(viewerRoot));
   app.use(turnSystemRoutes);
   app.use(researchXPRoutes);
   app.use(recommendationsRoutes);

@@ -14,6 +14,8 @@ const Overview = lazy(() => import("@/pages/Overview"));
 const Resources = lazy(() => import("@/pages/Resources"));
 const Facilities = lazy(() => import("@/pages/Facilities"));
 const Research = lazy(() => import("@/pages/Research"));
+const Skills = lazy(() => import("@/pages/Skills"));
+const Fitting = lazy(() => import("@/pages/Fitting"));
 const Shipyard = lazy(() => import("@/pages/Shipyard"));
 const Fleet = lazy(() => import("@/pages/Fleet"));
 const Galaxy = lazy(() => import("@/pages/Galaxy"));
@@ -84,6 +86,7 @@ const PlanetCommand = lazy(() => import("@/pages/PlanetCommand"));
 const PlanetaryOccupation = lazy(() => import("@/pages/PlanetaryOccupation"));
 const OgameCompendium = lazy(() => import("@/pages/OgameCompendium"));
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
+const ThreeDViewerPortal = lazy(() => import("@/pages/ThreeDViewerPortal"));
 
 function LoadingSplash() {
   return (
@@ -152,24 +155,14 @@ function RouterContent() {
     return () => clearTimeout(timeout);
   }, [isLoading]);
 
-  useEffect(() => {
-    if (!isLoading) return;
-
-    const maxSplashMs = 6000;
-    const timeout = setTimeout(() => {
-      setShowSplash(false);
-    }, maxSplashMs);
-
-    return () => clearTimeout(timeout);
-  }, [isLoading]);
-
-  if (isLoading && showSplash) {
+  if (isLoading || showSplash) {
     return <LoadingSplash />;
   }
 
   if (!isLoggedIn) {
     return (
       <Switch>
+        <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/about" component={About} />
         <Route path="/forums" component={Forums} />
@@ -183,6 +176,7 @@ function RouterContent() {
   if (needsSetup) {
     return (
       <Switch>
+        <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
         <Route path="/admin-login" component={AdminLogin} />
         <Route path="/about" component={About} />
         <Route path="/forums" component={Forums} />
@@ -195,6 +189,7 @@ function RouterContent() {
 
   return (
     <Switch>
+      <Route path="/threejs-viewer" component={ThreeDViewerPortal} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/" component={Overview} />
       <Route path="/about" component={About} />
@@ -204,6 +199,8 @@ function RouterContent() {
       <Route path="/resources" component={Resources} />
       <Route path="/facilities" component={Facilities} />
       <Route path="/research" component={Research} />
+      <Route path="/skills" component={Skills} />
+      <Route path="/fitting" component={Fitting} />
       <Route path="/artifacts" component={Artifacts} />
       <Route path="/shipyard" component={Shipyard} />
       <Route path="/fleet" component={Fleet} />
@@ -274,9 +271,11 @@ function RouterContent() {
 
 function Router() {
   return (
-    <Suspense fallback={<LoadingSplash />}>
-      <RouterContent />
-    </Suspense>
+    <GameProvider>
+      <Suspense fallback={<LoadingSplash />}>
+        <RouterContent />
+      </Suspense>
+    </GameProvider>
   );
 }
 
@@ -284,10 +283,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <GameProvider>
-          <Toaster />
-          <Router />
-        </GameProvider>
+        <Toaster />
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );

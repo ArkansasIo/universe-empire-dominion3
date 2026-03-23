@@ -1,251 +1,350 @@
 import GameLayout from "@/components/layout/GameLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  MEGA_STRUCTURES,
   MEGA_STRUCTURE_CATEGORIES,
   calculateConstructionCost,
   getMegaStructuresByCategory,
 } from "@/lib/megaStructures";
 import { useGame } from "@/lib/gameContext";
-import { Zap, Users, Building2, TrendingUp } from "lucide-react";
+import {
+  MEGASTRUCTURE_CATEGORY_SYSTEMS,
+  getMegastructureUpgradeSnapshot,
+} from "@/lib/megastructureExpansionCatalog";
+import { getCurrentKardashevUpgradeLevel } from "@/lib/kardashevUpgradeCatalog";
+import { cn } from "@/lib/utils";
+import {
+  Clock3,
+  Coins,
+  Compass,
+  Crosshair,
+  Factory,
+  FlaskConical,
+  Globe,
+  Handshake,
+  Hexagon,
+  Leaf,
+  Network,
+  Orbit,
+  Radio,
+  Rocket,
+  ScanSearch,
+  Shield,
+  Sparkles,
+  Sprout,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+
+const CATEGORY_ICON_MAP = {
+  network: Network,
+  factory: Factory,
+  flask: FlaskConical,
+  shield: Shield,
+  rocket: Rocket,
+  sparkles: Sparkles,
+  crosshair: Crosshair,
+  users: Users,
+  coins: Coins,
+  handshake: Handshake,
+  compass: Compass,
+  globe: Globe,
+  radio: Radio,
+  "scan-search": ScanSearch,
+  leaf: Leaf,
+  sprout: Sprout,
+  "clock-3": Clock3,
+  hexagon: Hexagon,
+} as const;
 
 export default function MegaStructures() {
-  const { constructMegastructure } = useGame();
-  const totalCategories = MEGA_STRUCTURE_CATEGORIES.length;
-  const totalStructures = MEGA_STRUCTURE_CATEGORIES.reduce(
-    (sum, category) => sum + getMegaStructuresByCategory(category.id).length,
-    0,
-  );
-  const averagePerCategory = totalCategories > 0 ? Math.round(totalStructures / totalCategories) : 0;
+  const {
+    constructMegastructure,
+    megastructureSystems,
+    technologyDivisionSystems,
+    kardashevSystems,
+    research,
+    resources,
+    upgradeMegastructureSystem,
+  } = useGame();
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      infrastructure: "bg-blue-50 border-blue-200",
-      production: "bg-orange-50 border-orange-200",
-      research: "bg-purple-50 border-purple-200",
-      defense: "bg-red-50 border-red-200",
-      mobility: "bg-cyan-50 border-cyan-200",
-      exotic: "bg-pink-50 border-pink-200",
-      superweapon: "bg-amber-50 border-amber-200",
+  const researchTotal = Object.values(research).reduce((sum, value) => sum + (value || 0), 0);
+  const technologyDivisionTotal = Object.values(technologyDivisionSystems).reduce((sum, value) => sum + (value || 0), 0);
+  const kardashevLevel = getCurrentKardashevUpgradeLevel(kardashevSystems);
+
+  const categoryStates = MEGASTRUCTURE_CATEGORY_SYSTEMS.map((system) => {
+    const level = megastructureSystems[system.id] || 0;
+    const snapshot = getMegastructureUpgradeSnapshot(system, level);
+    const structureCount = getMegaStructuresByCategory(system.category).length;
+    const unlocked =
+      kardashevLevel >= system.requirements.kardashevLevel &&
+      researchTotal >= system.requirements.totalResearch &&
+      technologyDivisionTotal >= system.requirements.totalTechnologyDivisions;
+    const canAfford =
+      resources.metal >= snapshot.cost.metal &&
+      resources.crystal >= snapshot.cost.crystal &&
+      resources.deuterium >= snapshot.cost.deuterium;
+
+    return {
+      ...system,
+      level,
+      snapshot,
+      structureCount,
+      unlocked,
+      canAfford,
+      maxed: level >= snapshot.maxLevel,
     };
-    return colors[category as keyof typeof colors] || "bg-slate-50 border-slate-200";
-  };
+  });
 
-  const getCategoryBadgeColor = (category: string) => {
-    const colors = {
-      infrastructure: "bg-blue-100 text-blue-800",
-      production: "bg-orange-100 text-orange-800",
-      research: "bg-purple-100 text-purple-800",
-      defense: "bg-red-100 text-red-800",
-      mobility: "bg-cyan-100 text-cyan-800",
-      exotic: "bg-pink-100 text-pink-800",
-      superweapon: "bg-amber-100 text-amber-800",
-    };
-    return colors[category as keyof typeof colors] || "bg-slate-100 text-slate-800";
-  };
-
-  const handleConstruct = (structure: any) => {
-    constructMegastructure(structure.templateId, structure.name, structure.stats.constructionTime);
-  };
+  const activeCategories = categoryStates.filter((system) => system.level > 0).length;
+  const totalCategoryLevels = categoryStates.reduce((sum, system) => sum + system.level, 0);
+  const constructableCategories = MEGA_STRUCTURE_CATEGORIES;
 
   return (
     <GameLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-4xl font-bold text-slate-900">Megastructures</h1>
-          <p className="text-slate-600 mt-2">Cosmic engineering marvels that reshape civilization itself</p>
+          <p className="mt-2 text-slate-600">All 18 megastructure categories now have their own upgrade systems, layered on top of the existing cosmic build projects.</p>
         </div>
 
-        {/* Tabs for different categories */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white border-slate-200"><CardContent className="pt-6"><div className="text-xs uppercase text-slate-500">Structure Categories</div><div className="text-2xl font-bold text-slate-900">{totalCategories}</div></CardContent></Card>
-          <Card className="bg-white border-slate-200"><CardContent className="pt-6"><div className="text-xs uppercase text-slate-500">Total Structures</div><div className="text-2xl font-bold text-indigo-700">{totalStructures}</div></CardContent></Card>
-          <Card className="bg-white border-slate-200"><CardContent className="pt-6"><div className="text-xs uppercase text-slate-500">Avg / Category</div><div className="text-2xl font-bold text-emerald-700">{averagePerCategory}</div></CardContent></Card>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Category Systems</div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">{categoryStates.length}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Active Categories</div>
+              <div className="mt-1 text-2xl font-bold text-emerald-700">{activeCategories}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Total Category Levels</div>
+              <div className="mt-1 text-2xl font-bold text-violet-700">{totalCategoryLevels}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Kardashev Gate</div>
+              <div className="mt-1 text-2xl font-bold text-amber-700">Level {kardashevLevel}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue={MEGA_STRUCTURE_CATEGORIES[0]?.id || "infrastructure"} className="w-full">
-          <TabsList className="bg-white border border-slate-200 h-auto flex-wrap w-full justify-start gap-2 p-2">
-            {MEGA_STRUCTURE_CATEGORIES.map(category => (
-              <TabsTrigger key={category.id} value={category.id} className="capitalize">
-                {category.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {MEGA_STRUCTURE_CATEGORIES.map(category => (
-            <TabsContent key={category.id} value={category.id} className="space-y-4">
-              <p className="text-sm text-slate-600">{category.description}</p>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {getMegaStructuresByCategory(category.id)
-                  .map(structure => {
-                    const cost = calculateConstructionCost(structure);
-                    return (
-                      <Card key={structure.id} className={`border-2 ${getCategoryColor(category.id)}`}>
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-5xl">{structure.icon}</span>
-                              <div>
-                                <CardTitle className="text-slate-900">{structure.name}</CardTitle>
-                                <p className="text-xs text-slate-600 mt-1">{structure.type.replace(/_/g, " ").toUpperCase()}</p>
-                              </div>
-                            </div>
-                            <Badge className={getCategoryBadgeColor(category.id)}>
-                              Tier {structure.tier}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-4">
-                          {/* Description */}
-                          <p className="text-sm text-slate-700">{structure.description}</p>
-
-                          {/* Special Ability */}
-                          <div className="p-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded">
-                            <p className="text-xs font-bold text-amber-900 mb-1">⭐ SPECIAL ABILITY</p>
-                            <p className="text-xs text-amber-800">{structure.specialAbility}</p>
-                          </div>
-
-                          {/* Main Stats */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="flex items-center gap-2 p-2 bg-white rounded border border-slate-200">
-                              <Zap className="w-4 h-4 text-yellow-600" />
-                              <div>
-                                <p className="text-xs text-slate-600">Energy Output</p>
-                                <p className="font-bold text-slate-900">{structure.stats.energyOutput.toLocaleString()}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 p-2 bg-white rounded border border-slate-200">
-                              <Building2 className="w-4 h-4 text-blue-600" />
-                              <div>
-                                <p className="text-xs text-slate-600">Production</p>
-                                <p className="font-bold text-slate-900">+{structure.stats.productionBonus}%</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 p-2 bg-white rounded border border-slate-200">
-                              <TrendingUp className="w-4 h-4 text-green-600" />
-                              <div>
-                                <p className="text-xs text-slate-600">Research</p>
-                                <p className="font-bold text-slate-900">+{structure.stats.researchBonus}%</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 p-2 bg-white rounded border border-slate-200">
-                              <Users className="w-4 h-4 text-purple-600" />
-                              <div>
-                                <p className="text-xs text-slate-600">Population</p>
-                                <p className="font-bold text-slate-900">{(structure.stats.populationCapacity / 1000000).toFixed(1)}M</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Sub Stats */}
-                          <div className="space-y-2">
-                            <p className="text-xs font-bold text-slate-600">ATTRIBUTE BREAKDOWN</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {structure.subStats.map((stat: any, idx: number) => (
-                                <div key={idx} className="p-2 bg-slate-50 rounded border border-slate-200">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-bold text-slate-900">{stat.icon} {stat.name}</span>
-                                    <span className="text-xs font-bold text-primary">{stat.value}</span>
-                                  </div>
-                                  <div className="bg-white rounded h-2 overflow-hidden">
-                                    <div 
-                                      className="bg-gradient-to-r from-primary to-purple-500 h-full"
-                                      style={{ width: `${stat.value}%` }}
-                                    />
-                                  </div>
-                                  <p className="text-xs text-slate-600 mt-1">{stat.description}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Maintenance Cost */}
-                          <div className="p-3 bg-red-50 border border-red-200 rounded">
-                            <p className="text-xs font-bold text-red-900 mb-2">⚙️ MAINTENANCE COST (per cycle)</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span className="text-red-700">Metal:</span> <span className="font-bold text-red-900">{structure.stats.maintenanceCost.metal}</span></div>
-                              <div><span className="text-red-700">Crystal:</span> <span className="font-bold text-red-900">{structure.stats.maintenanceCost.crystal}</span></div>
-                              <div><span className="text-red-700">Deuterium:</span> <span className="font-bold text-red-900">{structure.stats.maintenanceCost.deuterium}</span></div>
-                              <div><span className="text-red-700">Energy:</span> <span className="font-bold text-red-900">{structure.stats.maintenanceCost.energy}</span></div>
-                            </div>
-                          </div>
-
-                          {/* Construction Cost */}
-                          <div className="p-3 bg-green-50 border border-green-200 rounded">
-                            <p className="text-xs font-bold text-green-900 mb-2">📦 CONSTRUCTION COST</p>
-                            <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-                              <div><span className="text-green-700">Metal:</span> <span className="font-bold text-green-900">{cost.metal}</span></div>
-                              <div><span className="text-green-700">Crystal:</span> <span className="font-bold text-green-900">{cost.crystal}</span></div>
-                              <div><span className="text-green-700">Deuterium:</span> <span className="font-bold text-green-900">{cost.deuterium}</span></div>
-                            </div>
-                            <p className="text-xs text-green-700">⏱️ Construction Time: {structure.stats.constructionTime.toLocaleString()} turns</p>
-                          </div>
-
-                          {/* Requirements */}
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded space-y-2">
-                            <div>
-                              <p className="text-xs font-bold text-blue-900 mb-1">📚 RESEARCH REQUIRED</p>
-                              <div className="flex flex-wrap gap-1">
-                                {structure.researchRequired.map((tech: any, idx: number) => (
-                                  <Badge key={idx} className="bg-blue-200 text-blue-800 text-xs">{tech}</Badge>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-blue-900 mb-1">🏗️ BUILDING REQUIREMENTS</p>
-                              {structure.buildingRequirements.map((req: any, idx: number) => (
-                                <div key={idx} className="text-xs text-blue-800">
-                                  {req.name} Level {req.level}+
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => handleConstruct(structure)} data-testid={`button-construct-${structure.id}`}>
-                            Begin Construction
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-
-        {/* Info Section */}
-        <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-lg">Megastructure Progression</CardTitle>
+        <Card className="border-slate-200 bg-slate-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">18 Category Upgrade Matrix</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-700">
-            <p>
-              <strong>Levels 1-999:</strong> Every megastructure scales continuously with level-based progression.
-            </p>
-            <p>
-              <strong>Tiers 1-99:</strong> Tier upgrades unlock large multiplier jumps and strategic breakpoints.
-            </p>
-            <p>
-              <strong>Category Systems:</strong> Infrastructure, production, research, defense, mobility, exotic, and superweapon paths.
-            </p>
-            <p>
-              <strong>Unified Scaling:</strong> Construction and upgrade costs now follow shared progression formulas for all categories.
-            </p>
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {categoryStates.map((system) => {
+              const Icon = CATEGORY_ICON_MAP[system.icon as keyof typeof CATEGORY_ICON_MAP] || Orbit;
+
+              return (
+                <Card key={system.id} className={cn("border-slate-200 bg-white shadow-sm", !system.unlocked && "opacity-80")}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base text-slate-900">{system.label}</CardTitle>
+                          <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Category mastery level {system.level}</div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                        {system.structureCount} projects
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-slate-600">{system.description}</p>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Strategic Doctrine</div>
+                      <div className="mt-1 text-sm font-medium text-slate-900">{system.doctrine}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="text-xs uppercase tracking-widest text-slate-500">Current Bonus</div>
+                        <div className="mt-1 text-lg font-bold text-emerald-700">+{system.snapshot.currentBonus}%</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="text-xs uppercase tracking-widest text-slate-500">Next Level</div>
+                        <div className="mt-1 text-lg font-bold text-blue-700">+{system.snapshot.nextBonus}%</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-white p-3 text-sm">
+                      <div className="mb-2 text-xs uppercase tracking-widest text-slate-500">Unlock Gate</div>
+                      <div className="space-y-1 text-slate-700">
+                        <div>Kardashev: {kardashevLevel} / {system.requirements.kardashevLevel}</div>
+                        <div>Research: {researchTotal} / {system.requirements.totalResearch}</div>
+                        <div>Division Levels: {technologyDivisionTotal} / {system.requirements.totalTechnologyDivisions}</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                      <div className="mb-2 text-xs uppercase tracking-widest text-slate-500">Upgrade Costs</div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Metal</span>
+                          <span className={cn(resources.metal < system.snapshot.cost.metal && "font-bold text-red-600")}>{system.snapshot.cost.metal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Crystal</span>
+                          <span className={cn(resources.crystal < system.snapshot.cost.crystal && "font-bold text-red-600")}>{system.snapshot.cost.crystal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Deuterium</span>
+                          <span className={cn(resources.deuterium < system.snapshot.cost.deuterium && "font-bold text-red-600")}>{system.snapshot.cost.deuterium.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+                          <span>Upgrade Time</span>
+                          <span>{system.snapshot.buildTimeSeconds}s</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      className="w-full font-orbitron tracking-wider"
+                      disabled={!system.unlocked || !system.canAfford || system.maxed}
+                      onClick={() =>
+                        upgradeMegastructureSystem(
+                          system.id,
+                          `${system.label} Category Mastery`,
+                          system.snapshot.cost,
+                          system.snapshot.buildTimeSeconds * 1000,
+                        )
+                      }
+                    >
+                      {system.maxed ? "MAX LEVEL" : !system.unlocked ? "REQUIREMENTS NOT MET" : system.canAfford ? `UPGRADE TO LEVEL ${system.level + 1}` : "INSUFFICIENT RESOURCES"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-lg">Strategic Build Doctrine</CardTitle>
+        <Card className="border-slate-200 bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Constructable Megaprojects</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-slate-600">
-            <div className="rounded border border-slate-200 bg-slate-50 p-3">Prioritize infrastructure/production first to sustain heavy maintenance cycles.</div>
-            <div className="rounded border border-slate-200 bg-slate-50 p-3">Sequence research and mobility upgrades before defense spikes for flexibility.</div>
-            <div className="rounded border border-slate-200 bg-slate-50 p-3">Reserve exotic and superweapon projects for stabilized resource throughput phases.</div>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-slate-600">Existing megastructure projects remain constructable here. Category mastery upgrades now sit above them and improve the strategic value of each class.</p>
+
+            <Tabs defaultValue={constructableCategories[0]?.id || "infrastructure"} className="w-full">
+              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 border border-slate-200 bg-slate-50 p-2">
+                {constructableCategories.map((category) => (
+                  <TabsTrigger key={category.id} value={category.id} className="capitalize data-[state=active]:bg-white">
+                    {category.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {constructableCategories.map((category) => {
+                const structures = getMegaStructuresByCategory(category.id);
+                const categoryMastery = categoryStates.find((system) => system.category === category.id);
+
+                return (
+                  <TabsContent key={category.id} value={category.id} className="mt-6 space-y-4">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{category.label}</div>
+                          <div className="mt-1 text-sm text-slate-600">{category.description}</div>
+                        </div>
+                        <Badge className="bg-violet-100 text-violet-800">
+                          Mastery Bonus +{categoryMastery?.snapshot.currentBonus || 0}%
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {structures.length === 0 ? (
+                      <Card className="border-dashed border-slate-300 bg-slate-50">
+                        <CardContent className="p-6 text-sm text-slate-600">
+                          This category is now represented in the mastery system even if no direct constructable template is exposed yet.
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        {structures.map((structure) => {
+                          const cost = calculateConstructionCost(structure);
+
+                          return (
+                            <Card key={structure.id} className="border-slate-200 bg-white shadow-sm">
+                              <CardHeader className="pb-2">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <CardTitle className="text-lg text-slate-900">{structure.name}</CardTitle>
+                                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{structure.type.replace(/_/g, " ")}</div>
+                                  </div>
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                                    Tier {structure.tier}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <p className="text-sm text-slate-600">{structure.description}</p>
+
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                  <div className="text-xs uppercase tracking-widest text-amber-700">Special Ability</div>
+                                  <div className="mt-1 text-sm font-medium text-amber-900">{structure.specialAbility}</div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div className="text-xs uppercase tracking-widest text-slate-500">Energy</div>
+                                    <div className="mt-1 text-lg font-bold text-yellow-700">{structure.stats.energyOutput.toLocaleString()}</div>
+                                  </div>
+                                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div className="text-xs uppercase tracking-widest text-slate-500">Research</div>
+                                    <div className="mt-1 text-lg font-bold text-violet-700">+{structure.stats.researchBonus}%</div>
+                                  </div>
+                                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div className="text-xs uppercase tracking-widest text-slate-500">Production</div>
+                                    <div className="mt-1 text-lg font-bold text-emerald-700">+{structure.stats.productionBonus}%</div>
+                                  </div>
+                                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div className="text-xs uppercase tracking-widest text-slate-500">Population</div>
+                                    <div className="mt-1 text-lg font-bold text-sky-700">{(structure.stats.populationCapacity / 1000000).toFixed(1)}M</div>
+                                  </div>
+                                </div>
+
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                                  <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500">
+                                    <TrendingUp className="h-3.5 w-3.5 text-primary" /> Construction Cost
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between"><span className="text-slate-600">Metal</span><span>{cost.metal.toLocaleString()}</span></div>
+                                    <div className="flex items-center justify-between"><span className="text-slate-600">Crystal</span><span>{cost.crystal.toLocaleString()}</span></div>
+                                    <div className="flex items-center justify-between"><span className="text-slate-600">Deuterium</span><span>{cost.deuterium.toLocaleString()}</span></div>
+                                    <div className="flex items-center justify-between pt-1 text-xs text-slate-500"><span>Build Time</span><span>{structure.stats.constructionTime.toLocaleString()} turns</span></div>
+                                  </div>
+                                </div>
+
+                                <Button className="w-full font-orbitron tracking-wider" onClick={() => constructMegastructure(structure.templateId, structure.name, structure.stats.constructionTime)}>
+                                  Begin Construction
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+                );
+              })}
+            </Tabs>
           </CardContent>
         </Card>
       </div>

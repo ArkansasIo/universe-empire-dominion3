@@ -42,7 +42,11 @@ from universe_config import (
     GOVERNMENT_TYPES, GOVERNMENT_POLICIES,
     POPULATION_CONFIG, POPULATION_CLASSES, POPULATION_NEEDS, HAPPINESS_FACTORS,
     SCANNER_CONFIG, SCANNER_LEVELS, SCAN_DETAIL_LEVELS,
-    STATION_FIELD_CONFIG, MOON_FIELD_CONFIG, STARBASE_FACILITIES
+    STATION_FIELD_CONFIG, MOON_FIELD_CONFIG, STARBASE_FACILITIES,
+    SKILLS, ATTRIBUTES, SHIP_MODULES,
+    RAW_MATERIALS, PROCESSED_MATERIALS, PLANETARY_COMMODITIES,
+    BLUEPRINTS, MANUFACTURING_FACILITIES, INVENTION_DATACORES,
+    REFINING_SKILLS, PLANETARY_INDUSTRY_SKILLS, MANUFACTURING_SKILLS, INVENTION_SKILLS
 )
 
 load_dotenv()
@@ -67,6 +71,10 @@ alliances_collection = db["alliances"]
 market_orders_collection = db["market_orders"]
 combat_reports_collection = db["combat_reports"]
 expeditions_collection = db["expeditions"]
+skills_collection = db["skills"]
+market_orders_collection = db["market_orders"]
+ship_fittings_collection = db["ship_fittings"]
+planetary_colonies_collection = db["planetary_colonies"]
 
 
 # ==================== GAME CONFIGURATION ====================
@@ -252,6 +260,86 @@ def calculate_cost(base_costs: dict, level: int) -> dict:
         if resource not in ["factor", "buildTime"]:
             costs[resource] = int(amount * (factor ** level))
     return costs
+
+
+def calculate_skill_training_time(skill_id: str, level: int, attributes: dict) -> float:
+    """Calculate training time in seconds for a skill level"""
+    if skill_id not in SKILLS:
+        return 0
+    
+    skill = SKILLS[skill_id]
+    base_time = skill["base_training_time"]
+    
+    # Exponential growth like EVE
+    time_multiplier = 2 ** (level - 1)
+    
+    # Attribute bonus (simplified)
+    primary_attr = attributes.get(skill["attributes"][0], 5)
+    secondary_attr = attributes.get(skill["attributes"][1], 5) if len(skill["attributes"]) > 1 else primary_attr
+    
+    attr_bonus = (primary_attr + secondary_attr / 2) / 10  # Normalize
+    
+    training_time = (base_time * time_multiplier) / attr_bonus
+    
+    return training_time
+
+
+def get_current_timestamp():
+    return datetime.now(timezone.utc).timestamp()
+
+
+class SkillTrain(BaseModel):
+    skillId: str
+
+
+class SkillQueueItem(BaseModel):
+    skillId: str
+    level: int
+    startTime: float
+    endTime: float
+
+
+class ManufacturingJob(BaseModel):
+    blueprintId: str
+    quantity: int = 1
+    facilityId: Optional[str] = None
+    stationId: Optional[str] = None
+
+
+class InventionJob(BaseModel):
+    blueprintId: str
+    quantity: int = 1
+    decryptorId: Optional[str] = None
+
+
+class RefiningJob(BaseModel):
+    oreType: str
+    quantity: int
+    stationId: Optional[str] = None
+
+
+class BlueprintResearch(BaseModel):
+    blueprintId: str
+    researchType: str  # "material_efficiency" or "time_efficiency"
+
+
+class PlanetaryColony(BaseModel):
+    planetId: str
+    commandCenterLevel: int = 1
+
+
+class PlanetaryExtractor(BaseModel):
+    colonyId: str
+    resourceType: str
+    quantity: int = 1
+
+
+class PlanetaryFactory(BaseModel):
+    colonyId: str
+    productType: str
+    schematicId: str
+    quantity: int = 1
+
 
 def calculate_production(buildings: dict) -> dict:
     production = {"metal": 20, "crystal": 10, "deuterium": 0, "energy": 0}
@@ -819,6 +907,15 @@ async def setup_player(data: AccountSetup, request: Request):
         "moons": [],
         "stations": [],
         "research": {},
+        "skills": {},
+        "skillQueue": [],
+        "attributes": {
+            "intelligence": 5,
+            "memory": 5,
+            "charisma": 5,
+            "perception": 5,
+            "willpower": 5
+        },
         "empireLevel": 1,
         "empireExperience": 0,
         "tier": 1,
@@ -1364,6 +1461,471 @@ async def get_available_research(request: Request):
     return available
 
 
+# ==================== SKILLS ENDPOINTS ====================
+
+@app.post("/api/skills/train")
+async def train_skill(data: SkillTrain, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    skills = player_state.get("skills", {})
+    skill_queue = player_state.get("skillQueue", [])
+    attributes = player_state.get("attributes", {})
+    
+    if data.skillId not in SKILLS:
+        raise HTTPException(status_code=400, detail="Invalid skill")
+    
+    skill_info = SKILLS[data.skillId]
+    current_level = skills.get(data.skillId, 0)
+    
+    if current_level >= skill_info["max_level"]:
+        raise HTTPException(status_code=400, detail="Skill already at max level")
+    
+    # Check if skill is already in queue
+    for queued in skill_queue:
+        if queued["skillId"] == data.skillId:
+            raise HTTPException(status_code=400, detail="Skill already training")
+    
+    next_level = current_level + 1
+    training_time = calculate_skill_training_time(data.skillId, next_level, attributes)
+    
+    start_time = get_current_timestamp()
+    end_time = start_time + training_time
+    
+    queue_item = {
+        "skillId": data.skillId,
+        "level": next_level,
+        "startTime": start_time,
+        "endTime": end_time
+    }
+    
+    skill_queue.append(queue_item)
+    
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {"$set": {"skillQueue": skill_queue, "updatedAt": get_timestamp()}}
+    )
+    
+    return {
+        "success": True,
+        "skillId": data.skillId,
+        "level": next_level,
+        "trainingTime": training_time,
+        "endTime": end_time
+    }
+
+
+@app.get("/api/skills/available")
+async def get_available_skills(request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    skills = player_state.get("skills", {}) if player_state else {}
+    skill_queue = player_state.get("skillQueue", []) if player_state else []
+    attributes = player_state.get("attributes", {}) if player_state else {}
+    
+    available = []
+    for skill_id, skill_info in SKILLS.items():
+        current_level = skills.get(skill_id, 0)
+        in_queue = any(q["skillId"] == skill_id for q in skill_queue)
+        
+        if current_level < skill_info["max_level"] and not in_queue:
+            next_level = current_level + 1
+            training_time = calculate_skill_training_time(skill_id, next_level, attributes)
+            
+            available.append({
+                "skillId": skill_id,
+                "name": skill_info["name"],
+                "description": skill_info["description"],
+                "category": skill_info["category"],
+                "currentLevel": current_level,
+                "maxLevel": skill_info["max_level"],
+                "trainingTime": training_time,
+                "attributes": skill_info["attributes"]
+            })
+    
+    return available
+
+
+@app.get("/api/skills/queue")
+async def get_skill_queue(request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    skill_queue = player_state.get("skillQueue", [])
+    current_time = get_current_timestamp()
+    
+    # Process completed skills
+    completed = []
+    remaining_queue = []
+    
+    for item in skill_queue:
+        if current_time >= item["endTime"]:
+            completed.append(item)
+        else:
+            remaining_queue.append(item)
+    
+    # Update player state with completed skills
+    if completed:
+        skills = player_state.get("skills", {})
+        for item in completed:
+            skills[item["skillId"]] = item["level"]
+        
+        player_states_collection.update_one(
+            {"userId": user_id},
+            {"$set": {"skills": skills, "skillQueue": remaining_queue, "updatedAt": get_timestamp()}}
+        )
+    
+    return {
+        "queue": remaining_queue,
+        "completed": completed
+    }
+
+
+@app.get("/api/skills")
+async def get_player_skills(request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    skills = player_state.get("skills", {}) if player_state else {}
+    attributes = player_state.get("attributes", {}) if player_state else {}
+    
+    skill_list = []
+    for skill_id, level in skills.items():
+        if skill_id in SKILLS:
+            skill_info = SKILLS[skill_id]
+            skill_list.append({
+                "skillId": skill_id,
+                "name": skill_info["name"],
+                "description": skill_info["description"],
+                "category": skill_info["category"],
+                "level": level,
+                "maxLevel": skill_info["max_level"],
+                "effect": skill_info["effect"]
+            })
+    
+    return {
+        "skills": skill_list,
+        "attributes": attributes
+    }
+
+
+# ==================== SHIP FITTING ENDPOINTS ====================
+
+@app.get("/api/fitting/modules")
+async def get_available_modules(request: Request):
+    session = require_auth(request)
+    # Return all available modules
+    return SHIP_MODULES
+
+
+@app.post("/api/fitting/fit")
+async def fit_ship_modules(data: dict, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    ship_id = data.get("shipId")
+    modules = data.get("modules", {})  # {slot_type: {slot_index: module_id}}
+    
+    # Get ship info
+    ship = ALL_STARSHIPS.get(ship_id)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    # Get ship slots and resources
+    ship_class = STARSHIP_CLASSES.get(ship["class"], {})
+    size = ship_class.get("size", "small")
+    
+    if size == "small":
+        max_slots = {"high": 3, "mid": 2, "low": 2, "rig": 1}
+        max_cpu = 100
+        max_powergrid = 50
+        max_calibration = 200
+    elif size == "medium":
+        max_slots = {"high": 4, "mid": 3, "low": 3, "rig": 2}
+        max_cpu = 150
+        max_powergrid = 75
+        max_calibration = 300
+    else:  # large
+        max_slots = {"high": 5, "mid": 4, "low": 4, "rig": 3}
+        max_cpu = 200
+        max_powergrid = 100
+        max_calibration = 400
+    
+    # Validate fitting
+    used_cpu = 0
+    used_powergrid = 0
+    used_calibration = 0
+    fitted_modules = {}
+    
+    for slot_type, slot_modules in modules.items():
+        if slot_type not in max_slots:
+            raise HTTPException(status_code=400, detail=f"Invalid slot type: {slot_type}")
+        
+        slot_count = len(slot_modules)
+        if slot_count > max_slots[slot_type]:
+            raise HTTPException(status_code=400, detail=f"Too many {slot_type} slots used")
+        
+        fitted_modules[slot_type] = {}
+        
+        for slot_index, module_id in slot_modules.items():
+            if module_id not in SHIP_MODULES:
+                raise HTTPException(status_code=400, detail=f"Invalid module: {module_id}")
+            
+            module = SHIP_MODULES[module_id]
+            
+            # Check module size compatibility
+            if module.get("size") != size and module.get("size") != "universal":
+                raise HTTPException(status_code=400, detail=f"Module {module_id} incompatible with {size} ship")
+            
+            # Check module type fits slot
+            if module["type"] != slot_type:
+                raise HTTPException(status_code=400, detail=f"Module {module_id} doesn't fit {slot_type} slot")
+            
+            # Accumulate resource usage
+            used_cpu += module.get("cpu", 0)
+            used_powergrid += module.get("powergrid", 0)
+            if slot_type == "rig":
+                used_calibration += module.get("calibration", 0)
+            
+            fitted_modules[slot_type][slot_index] = module_id
+    
+    # Check resource limits
+    if used_cpu > max_cpu:
+        raise HTTPException(status_code=400, detail=f"CPU usage {used_cpu} exceeds limit {max_cpu}")
+    if used_powergrid > max_powergrid:
+        raise HTTPException(status_code=400, detail=f"Powergrid usage {used_powergrid} exceeds limit {max_powergrid}")
+    if used_calibration > max_calibration:
+        raise HTTPException(status_code=400, detail=f"Calibration usage {used_calibration} exceeds limit {max_calibration}")
+    
+    # Store fitting (in a real implementation, save to database)
+    # For now, just return success
+    
+    return {
+        "success": True,
+        "fitting": {
+            "shipId": ship_id,
+            "modules": fitted_modules,
+            "resources": {
+                "cpu": {"used": used_cpu, "total": max_cpu},
+                "powergrid": {"used": used_powergrid, "total": max_powergrid},
+                "calibration": {"used": used_calibration, "total": max_calibration}
+            }
+        }
+    }
+
+
+@app.get("/api/fitting/ship/{ship_id}")
+async def get_ship_fitting(ship_id: str, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    ship = ALL_STARSHIPS.get(ship_id)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    # Get ship slots and resources based on class
+    ship_class = STARSHIP_CLASSES.get(ship["class"], {})
+    size = ship_class.get("size", "small")
+    
+    if size == "small":
+        slots = {"high": 3, "mid": 2, "low": 2, "rig": 1}
+        cpu = 100
+        powergrid = 50
+        calibration = 200
+    elif size == "medium":
+        slots = {"high": 4, "mid": 3, "low": 3, "rig": 2}
+        cpu = 150
+        powergrid = 75
+        calibration = 300
+    else:  # large
+        slots = {"high": 5, "mid": 4, "low": 4, "rig": 3}
+        cpu = 200
+        powergrid = 100
+        calibration = 400
+    
+    # In a real implementation, load saved fitting from database
+    fitted_modules = {}  # Placeholder
+    
+    # Calculate used resources
+    used_cpu = 0
+    used_powergrid = 0
+    used_calibration = 0
+    
+    for slot_type, slot_modules in fitted_modules.items():
+        for module_id in slot_modules.values():
+            if module_id in SHIP_MODULES:
+                module = SHIP_MODULES[module_id]
+                used_cpu += module.get("cpu", 0)
+                used_powergrid += module.get("powergrid", 0)
+                if slot_type == "rig":
+                    used_calibration += module.get("calibration", 0)
+    
+    return {
+        "shipId": ship_id,
+        "name": ship["name"],
+        "size": size,
+        "slots": slots,
+        "cpu": {"total": cpu, "used": used_cpu},
+        "powergrid": {"total": powergrid, "used": used_powergrid},
+        "calibration": {"total": calibration, "used": used_calibration},
+        "fitted_modules": fitted_modules
+    }
+
+
+# ==================== MARKET ENDPOINTS ====================
+
+class MarketOrder(BaseModel):
+    type: str  # "buy" or "sell"
+    itemId: str
+    quantity: int
+    price: float
+    location: str  # system or station ID
+
+
+@app.post("/api/market/order")
+async def create_market_order(data: MarketOrder, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    # Validate item exists (simplified)
+    if data.itemId not in ["metal", "crystal", "deuterium", "energy"]:
+        raise HTTPException(status_code=400, detail="Invalid item")
+    
+    # For sell orders, check if player has the item
+    if data.type == "sell":
+        # In a real implementation, check inventory
+        pass
+    elif data.type == "buy":
+        # Check if player has enough credits
+        credits = player_state.get("credits", 0)
+        total_cost = data.quantity * data.price
+        if credits < total_cost:
+            raise HTTPException(status_code=400, detail="Not enough credits")
+    
+    order = {
+        "userId": user_id,
+        "type": data.type,
+        "itemId": data.itemId,
+        "quantity": data.quantity,
+        "price": data.price,
+        "location": data.location,
+        "createdAt": get_timestamp(),
+        "status": "active"
+    }
+    
+    result = market_orders_collection.insert_one(order)
+    order["_id"] = str(result.inserted_id)
+    
+    return {"success": True, "order": order}
+
+
+@app.get("/api/market/orders")
+async def get_market_orders(request: Request, itemId: str = None, location: str = None):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    query = {"status": "active"}
+    if itemId:
+        query["itemId"] = itemId
+    if location:
+        query["location"] = location
+    
+    orders = list(market_orders_collection.find(query))
+    for order in orders:
+        order["_id"] = str(order["_id"])
+    
+    return orders
+
+
+@app.delete("/api/market/order/{order_id}")
+async def cancel_market_order(order_id: str, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    order = market_orders_collection.find_one({"_id": ObjectId(order_id), "userId": user_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    market_orders_collection.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"status": "cancelled"}}
+    )
+    
+    return {"success": True}
+
+
+@app.post("/api/market/buy")
+async def buy_from_market(data: dict, request: Request):
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    order_id = data.get("orderId")
+    quantity = data.get("quantity", 1)
+    
+    order = market_orders_collection.find_one({"_id": ObjectId(order_id), "type": "sell"})
+    if not order:
+        raise HTTPException(status_code=404, detail="Sell order not found")
+    
+    if quantity > order["quantity"]:
+        raise HTTPException(status_code=400, detail="Not enough quantity available")
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    credits = player_state.get("credits", 0)
+    total_cost = quantity * order["price"]
+    
+    if credits < total_cost:
+        raise HTTPException(status_code=400, detail="Not enough credits")
+    
+    # Update player credits and resources
+    new_credits = credits - total_cost
+    resources = player_state.get("resources", {})
+    resources[order["itemId"]] = resources.get(order["itemId"], 0) + quantity
+    
+    player_states_collection.update_one(
+        {"userId": user_id},
+        {"$set": {"credits": new_credits, "resources": resources}}
+    )
+    
+    # Update or remove order
+    new_quantity = order["quantity"] - quantity
+    if new_quantity <= 0:
+        market_orders_collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {"status": "filled"}}
+        )
+    else:
+        market_orders_collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {"quantity": new_quantity}}
+        )
+    
+    # Credit seller
+    seller_state = player_states_collection.find_one({"userId": order["userId"]})
+    if seller_state:
+        seller_credits = seller_state.get("credits", 0) + total_cost
+        player_states_collection.update_one(
+            {"userId": order["userId"]},
+            {"$set": {"credits": seller_credits}}
+        )
+    
+    return {"success": True, "bought": quantity, "cost": total_cost}
+
+
 # ==================== SHIPYARD ENDPOINTS ====================
 
 @app.post("/api/shipyard/build")
@@ -1490,6 +2052,698 @@ async def get_available_defense(request: Request):
             "stats": COMBAT_DEFENSE_STATS.get(def_type, {})
         })
     return defense_list
+
+
+# ==================== MANUFACTURING ENDPOINTS ====================
+
+@app.post("/api/manufacturing/start")
+async def start_manufacturing(data: ManufacturingJob, request: Request):
+    """Start a manufacturing job using a blueprint"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Validate blueprint exists
+    if data.blueprintId not in BLUEPRINTS:
+        raise HTTPException(status_code=400, detail="Invalid blueprint")
+    
+    blueprint = BLUEPRINTS[data.blueprintId]
+    
+    # Get player state and current station
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    station_id = data.stationId or player_state.get("currentStationId")
+    if not station_id:
+        raise HTTPException(status_code=400, detail="No station selected")
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+    
+    # Check if station has manufacturing facility
+    facilities = station.get("facilities", {})
+    manufacturing_facility = None
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "manufacturing":
+            manufacturing_facility = facility_data
+            break
+    
+    if not manufacturing_facility:
+        raise HTTPException(status_code=400, detail="Station has no manufacturing facility")
+    
+    # Check facility capacity
+    active_jobs = manufacturing_facility.get("activeJobs", [])
+    if len(active_jobs) >= manufacturing_facility.get("capacity", 1):
+        raise HTTPException(status_code=400, detail="Manufacturing facility at capacity")
+    
+    # Calculate material requirements with ME bonus
+    me_bonus = manufacturing_facility.get("materialEfficiency", 0)
+    materials_needed = {}
+    for material, amount in blueprint["materials"].items():
+        waste_factor = blueprint.get("waste_factor", 0.1)
+        waste = amount * waste_factor * (1 - me_bonus)
+        materials_needed[material] = int(amount * data.quantity + waste)
+    
+    # Check if station has enough materials
+    station_resources = station.get("resources", {})
+    for material, amount in materials_needed.items():
+        if station_resources.get(material, 0) < amount:
+            raise HTTPException(status_code=400, detail=f"Not enough {material}")
+    
+    # Deduct materials
+    for material, amount in materials_needed.items():
+        station_resources[material] -= amount
+    
+    # Calculate production time with TE bonus
+    base_time = blueprint["production_time"]
+    te_bonus = manufacturing_facility.get("timeEfficiency", 0)
+    production_time = base_time * data.quantity * (1 - te_bonus)
+    
+    # Create manufacturing job
+    job = {
+        "blueprintId": data.blueprintId,
+        "quantity": data.quantity,
+        "startTime": get_current_timestamp(),
+        "endTime": get_current_timestamp() + production_time,
+        "materialsUsed": materials_needed,
+        "product": blueprint["product"],
+        "facilityId": manufacturing_facility.get("id")
+    }
+    
+    # Add job to facility
+    active_jobs.append(job)
+    manufacturing_facility["activeJobs"] = active_jobs
+    
+    # Update station
+    stations_collection.update_one(
+        {"_id": ObjectId(station_id)},
+        {"$set": {"facilities": facilities, "resources": station_resources}}
+    )
+    
+    return {
+        "success": True,
+        "job": job,
+        "productionTime": production_time,
+        "materialsUsed": materials_needed
+    }
+
+
+@app.get("/api/manufacturing/jobs")
+async def get_manufacturing_jobs(request: Request):
+    """Get active manufacturing jobs for current station"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    station_id = player_state.get("currentStationId")
+    
+    if not station_id:
+        return {"jobs": []}
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        return {"jobs": []}
+    
+    facilities = station.get("facilities", {})
+    all_jobs = []
+    
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "manufacturing":
+            jobs = facility_data.get("activeJobs", [])
+            for job in jobs:
+                job["facilityId"] = facility_id
+                all_jobs.append(job)
+    
+    return {"jobs": all_jobs}
+
+
+@app.post("/api/manufacturing/complete/{job_id}")
+async def complete_manufacturing_job(job_id: str, request: Request):
+    """Complete a finished manufacturing job"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    station_id = player_state.get("currentStationId")
+    
+    if not station_id:
+        raise HTTPException(status_code=400, detail="No station selected")
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+    
+    facilities = station.get("facilities", {})
+    completed_job = None
+    
+    # Find and remove completed job
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "manufacturing":
+            jobs = facility_data.get("activeJobs", [])
+            for i, job in enumerate(jobs):
+                if str(job.get("startTime", 0)) == job_id:  # Simple ID match
+                    current_time = get_current_timestamp()
+                    if current_time >= job["endTime"]:
+                        completed_job = job
+                        jobs.pop(i)
+                        facility_data["activeJobs"] = jobs
+                        break
+            if completed_job:
+                break
+    
+    if not completed_job:
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    
+    # Add product to station inventory
+    inventory = station.get("inventory", {})
+    product = completed_job["product"]
+    inventory[product] = inventory.get(product, 0) + completed_job["quantity"]
+    
+    # Update station
+    stations_collection.update_one(
+        {"_id": ObjectId(station_id)},
+        {"$set": {"facilities": facilities, "inventory": inventory}}
+    )
+    
+    return {
+        "success": True,
+        "product": product,
+        "quantity": completed_job["quantity"],
+        "inventory": inventory
+    }
+
+
+@app.post("/api/invention/start")
+async def start_invention(data: InventionJob, request: Request):
+    """Start an invention job to create a blueprint copy"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Validate blueprint exists
+    if data.blueprintId not in BLUEPRINTS:
+        raise HTTPException(status_code=400, detail="Invalid blueprint")
+    
+    blueprint = BLUEPRINTS[data.blueprintId]
+    
+    # Get player state and current station
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    station_id = player_state.get("currentStationId")
+    if not station_id:
+        raise HTTPException(status_code=400, detail="No station selected")
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+    
+    # Check if station has invention facility
+    facilities = station.get("facilities", {})
+    invention_facility = None
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "invention":
+            invention_facility = facility_data
+            break
+    
+    if not invention_facility:
+        raise HTTPException(status_code=400, detail="Station has no invention facility")
+    
+    # Calculate datacore requirements
+    datacores_needed = {}
+    for datacore, amount in blueprint.get("invention_materials", {}).items():
+        datacores_needed[datacore] = amount * data.quantity
+    
+    # Check if station has enough datacores
+    station_resources = station.get("resources", {})
+    for datacore, amount in datacores_needed.items():
+        if station_resources.get(datacore, 0) < amount:
+            raise HTTPException(status_code=400, detail=f"Not enough {datacore}")
+    
+    # Deduct datacores
+    for datacore, amount in datacores_needed.items():
+        station_resources[datacore] -= amount
+    
+    # Calculate invention time and chance
+    base_time = blueprint.get("research_time_time", 3600)  # Default 1 hour
+    invention_time = base_time * data.quantity
+    
+    # Calculate success chance (simplified)
+    base_chance = blueprint.get("invention_chance", 0.3)
+    success_chance = base_chance  # Could add skill bonuses here
+    
+    # Create invention job
+    job = {
+        "blueprintId": data.blueprintId,
+        "quantity": data.quantity,
+        "startTime": get_current_timestamp(),
+        "endTime": get_current_timestamp() + invention_time,
+        "datacoresUsed": datacores_needed,
+        "successChance": success_chance,
+        "decryptorId": data.decryptorId
+    }
+    
+    # Add to invention jobs
+    invention_jobs = invention_facility.get("activeJobs", [])
+    invention_jobs.append(job)
+    invention_facility["activeJobs"] = invention_jobs
+    
+    # Update station
+    stations_collection.update_one(
+        {"_id": ObjectId(station_id)},
+        {"$set": {"facilities": facilities, "resources": station_resources}}
+    )
+    
+    return {
+        "success": True,
+        "job": job,
+        "inventionTime": invention_time,
+        "successChance": success_chance
+    }
+
+
+@app.post("/api/refining/start")
+async def start_refining(data: RefiningJob, request: Request):
+    """Start an ore refining job"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Validate ore type
+    if data.oreType not in RAW_MATERIALS:
+        raise HTTPException(status_code=400, detail="Invalid ore type")
+    
+    ore_data = RAW_MATERIALS[data.oreType]
+    
+    # Get player state and current station
+    player_state = player_states_collection.find_one({"userId": user_id})
+    if not player_state:
+        raise HTTPException(status_code=404, detail="Player state not found")
+    
+    station_id = data.stationId or player_state.get("currentStationId")
+    if not station_id:
+        raise HTTPException(status_code=400, detail="No station selected")
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+    
+    # Check if station has refinery
+    facilities = station.get("facilities", {})
+    refinery = None
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "refinery":
+            refinery = facility_data
+            break
+    
+    if not refinery:
+        raise HTTPException(status_code=400, detail="Station has no refinery")
+    
+    # Check if station has enough ore
+    station_resources = station.get("resources", {})
+    if station_resources.get(data.oreType, 0) < data.quantity:
+        raise HTTPException(status_code=400, detail=f"Not enough {data.oreType}")
+    
+    # Calculate refining yield with skills
+    refining_skill = player_state.get("skills", {}).get("refining", {}).get("level", 0)
+    yield_bonus = refining_skill * 0.03  # 3% per level
+    
+    minerals_produced = {}
+    for mineral, amount in ore_data["refined_materials"].items():
+        minerals_produced[mineral] = int(amount * data.quantity * (1 + yield_bonus))
+    
+    # Deduct ore
+    station_resources[data.oreType] -= data.quantity
+    
+    # Calculate refining time
+    refining_time = data.quantity * 60  # 1 minute per unit (simplified)
+    
+    # Create refining job
+    job = {
+        "oreType": data.oreType,
+        "quantity": data.quantity,
+        "startTime": get_current_timestamp(),
+        "endTime": get_current_timestamp() + refining_time,
+        "mineralsProduced": minerals_produced
+    }
+    
+    # Add to refinery jobs
+    refining_jobs = refinery.get("activeJobs", [])
+    refining_jobs.append(job)
+    refinery["activeJobs"] = refining_jobs
+    
+    # Update station
+    stations_collection.update_one(
+        {"_id": ObjectId(station_id)},
+        {"$set": {"facilities": facilities, "resources": station_resources}}
+    )
+    
+    return {
+        "success": True,
+        "job": job,
+        "refiningTime": refining_time,
+        "mineralsProduced": minerals_produced
+    }
+
+
+@app.post("/api/refining/complete/{job_id}")
+async def complete_refining_job(job_id: str, request: Request):
+    """Complete a finished refining job"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    player_state = player_states_collection.find_one({"userId": user_id})
+    station_id = player_state.get("currentStationId")
+    
+    if not station_id:
+        raise HTTPException(status_code=400, detail="No station selected")
+    
+    station = stations_collection.find_one({"_id": ObjectId(station_id)})
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+    
+    facilities = station.get("facilities", {})
+    completed_job = None
+    
+    # Find and remove completed job
+    for facility_id, facility_data in facilities.items():
+        if facility_data.get("type") == "refinery":
+            jobs = facility_data.get("activeJobs", [])
+            for i, job in enumerate(jobs):
+                if str(job.get("startTime", 0)) == job_id:
+                    current_time = get_current_timestamp()
+                    if current_time >= job["endTime"]:
+                        completed_job = job
+                        jobs.pop(i)
+                        facility_data["activeJobs"] = jobs
+                        break
+            if completed_job:
+                break
+    
+    if not completed_job:
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    
+    # Add minerals to station inventory
+    inventory = station.get("inventory", {})
+    for mineral, amount in completed_job["mineralsProduced"].items():
+        inventory[mineral] = inventory.get(mineral, 0) + amount
+    
+    # Update station
+    stations_collection.update_one(
+        {"_id": ObjectId(station_id)},
+        {"$set": {"facilities": facilities, "inventory": inventory}}
+    )
+    
+    return {
+        "success": True,
+        "mineralsProduced": completed_job["mineralsProduced"],
+        "inventory": inventory
+    }
+
+
+@app.get("/api/materials/blueprints")
+async def get_blueprints(request: Request):
+    """Get all available blueprints"""
+    blueprints_list = []
+    for bp_id, bp_data in BLUEPRINTS.items():
+        blueprints_list.append({
+            "id": bp_id,
+            **bp_data
+        })
+    return {"blueprints": blueprints_list}
+
+
+@app.get("/api/materials/facilities")
+async def get_manufacturing_facilities(request: Request):
+    """Get all manufacturing facility types"""
+    facilities_list = []
+    for facility_id, facility_data in MANUFACTURING_FACILITIES.items():
+        facilities_list.append({
+            "id": facility_id,
+            **facility_data
+        })
+    return {"facilities": facilities_list}
+
+
+@app.get("/api/materials/raw")
+async def get_raw_materials(request: Request):
+    """Get all raw materials"""
+    materials_list = []
+    for mat_id, mat_data in RAW_MATERIALS.items():
+        materials_list.append({
+            "id": mat_id,
+            **mat_data
+        })
+    return {"materials": materials_list}
+
+
+@app.get("/api/materials/processed")
+async def get_processed_materials(request: Request):
+    """Get all processed materials"""
+    materials_list = []
+    for mat_id, mat_data in PROCESSED_MATERIALS.items():
+        materials_list.append({
+            "id": mat_id,
+            **mat_data
+        })
+    return {"materials": materials_list}
+
+
+# ==================== PLANETARY INDUSTRY ENDPOINTS ====================
+
+@app.post("/api/planetary/colony/create")
+async def create_planetary_colony(data: PlanetaryColony, request: Request):
+    """Create a planetary colony on a planet"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Get planet
+    planet = planets_collection.find_one({"_id": ObjectId(data.planetId)})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    
+    if planet.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Planet not owned by user")
+    
+    # Check if colony already exists
+    existing_colony = planetary_colonies_collection.find_one({"planetId": data.planetId})
+    if existing_colony:
+        raise HTTPException(status_code=400, detail="Colony already exists on this planet")
+    
+    # Create colony
+    colony = {
+        "planetId": data.planetId,
+        "userId": user_id,
+        "commandCenterLevel": data.commandCenterLevel,
+        "extractors": {},
+        "factories": {},
+        "storage": {},
+        "links": [],
+        "createdAt": get_current_timestamp()
+    }
+    
+    planetary_colonies_collection.insert_one(colony)
+    
+    return {
+        "success": True,
+        "colony": colony
+    }
+
+
+@app.post("/api/planetary/extractor/build")
+async def build_planetary_extractor(data: PlanetaryExtractor, request: Request):
+    """Build an extractor on a planetary colony"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Get colony
+    colony = planetary_colonies_collection.find_one({"_id": ObjectId(data.colonyId)})
+    if not colony:
+        raise HTTPException(status_code=404, detail="Colony not found")
+    
+    if colony.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Colony not owned by user")
+    
+    # Validate resource type
+    planet = planets_collection.find_one({"_id": ObjectId(colony["planetId"])})
+    planet_type = planet.get("planetType", "temperate")
+    
+    available_resources = []
+    if planet_type == "temperate":
+        available_resources = ["aqueous_liquids", "autotrophs", "complex_organisms", "microorganisms", "planktic_colonies"]
+    elif planet_type == "gas":
+        available_resources = ["carbon_compounds", "noble_gas", "reactive_gas"]
+    elif planet_type == "ice":
+        available_resources = ["non_cs_crystals"]
+    elif planet_type == "lava":
+        available_resources = ["felsic_magma"]
+    elif planet_type == "storm":
+        available_resources = ["base_metals", "ionic_solutions", "reactive_gas"]
+    elif planet_type == "plasma":
+        available_resources = ["heavy_metals", "noble_metals", "suspended_plasma"]
+    elif planet_type == "barren":
+        available_resources = ["microorganisms"]
+    elif planet_type == "oceanic":
+        available_resources = ["planktic_colonies"]
+    
+    if data.resourceType not in available_resources:
+        raise HTTPException(status_code=400, detail=f"Resource {data.resourceType} not available on {planet_type} planets")
+    
+    # Add extractor
+    extractors = colony.get("extractors", {})
+    extractor_id = f"extractor_{len(extractors)}"
+    extractors[extractor_id] = {
+        "resourceType": data.resourceType,
+        "quantity": data.quantity,
+        "cycleTime": 3600,  # 1 hour cycles
+        "outputPerCycle": 40 * data.quantity,  # Base output
+        "lastCycle": get_current_timestamp()
+    }
+    
+    planetary_colonies_collection.update_one(
+        {"_id": ObjectId(data.colonyId)},
+        {"$set": {"extractors": extractors}}
+    )
+    
+    return {
+        "success": True,
+        "extractor": extractors[extractor_id]
+    }
+
+
+@app.post("/api/planetary/factory/build")
+async def build_planetary_factory(data: PlanetaryFactory, request: Request):
+    """Build a factory on a planetary colony"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Get colony
+    colony = planetary_colonies_collection.find_one({"_id": ObjectId(data.colonyId)})
+    if not colony:
+        raise HTTPException(status_code=404, detail="Colony not found")
+    
+    if colony.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Colony not owned by user")
+    
+    # Validate schematic
+    if data.schematicId not in PLANETARY_COMMODITIES:
+        raise HTTPException(status_code=400, detail="Invalid schematic")
+    
+    schematic = PLANETARY_COMMODITIES[data.schematicId]
+    
+    # Add factory
+    factories = colony.get("factories", {})
+    factory_id = f"factory_{len(factories)}"
+    factories[factory_id] = {
+        "productType": data.productType,
+        "schematicId": data.schematicId,
+        "quantity": data.quantity,
+        "cycleTime": schematic.get("cycle_time", 60),
+        "outputPerCycle": schematic.get("output_quantity", 20) * data.quantity,
+        "inputMaterials": schematic.get("input_materials", {}),
+        "lastCycle": get_current_timestamp()
+    }
+    
+    planetary_colonies_collection.update_one(
+        {"_id": ObjectId(data.colonyId)},
+        {"$set": {"factories": factories}}
+    )
+    
+    return {
+        "success": True,
+        "factory": factories[factory_id]
+    }
+
+
+@app.get("/api/planetary/colonies")
+async def get_planetary_colonies(request: Request):
+    """Get all planetary colonies for the user"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    colonies = list(planetary_colonies_collection.find({"userId": user_id}))
+    
+    # Convert ObjectIds to strings
+    for colony in colonies:
+        colony["_id"] = str(colony["_id"])
+        colony["planetId"] = str(colony["planetId"])
+    
+    return {"colonies": colonies}
+
+
+@app.post("/api/planetary/colony/{colony_id}/process")
+async def process_planetary_colony(colony_id: str, request: Request):
+    """Process extractors and factories for a colony"""
+    session = require_auth(request)
+    user_id = session["userId"]
+    
+    # Get colony
+    colony = planetary_colonies_collection.find_one({"_id": ObjectId(colony_id)})
+    if not colony:
+        raise HTTPException(status_code=404, detail="Colony not found")
+    
+    if colony.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Colony not owned by user")
+    
+    current_time = get_current_timestamp()
+    storage = colony.get("storage", {})
+    
+    # Process extractors
+    extractors = colony.get("extractors", {})
+    for extractor_id, extractor in extractors.items():
+        cycles_passed = int((current_time - extractor["lastCycle"]) / extractor["cycleTime"])
+        if cycles_passed > 0:
+            output = cycles_passed * extractor["outputPerCycle"]
+            resource_type = extractor["resourceType"]
+            storage[resource_type] = storage.get(resource_type, 0) + output
+            extractor["lastCycle"] = current_time
+    
+    # Process factories
+    factories = colony.get("factories", {})
+    for factory_id, factory in factories.items():
+        cycles_passed = int((current_time - factory["lastCycle"]) / factory["cycleTime"])
+        if cycles_passed > 0:
+            # Check if we have input materials
+            can_produce = True
+            for material, amount_needed in factory["inputMaterials"].items():
+                if storage.get(material, 0) < amount_needed * cycles_passed:
+                    can_produce = False
+                    break
+            
+            if can_produce:
+                # Consume inputs
+                for material, amount_needed in factory["inputMaterials"].items():
+                    storage[material] -= amount_needed * cycles_passed
+                
+                # Produce output
+                output = cycles_passed * factory["outputPerCycle"]
+                product_type = factory["productType"]
+                storage[product_type] = storage.get(product_type, 0) + output
+                
+                factory["lastCycle"] = current_time
+    
+    # Update colony
+    planetary_colonies_collection.update_one(
+        {"_id": ObjectId(colony_id)},
+        {"$set": {"extractors": extractors, "factories": factories, "storage": storage}}
+    )
+    
+    return {
+        "success": True,
+        "storage": storage
+    }
+
+
+@app.get("/api/planetary/commodities")
+async def get_planetary_commodities(request: Request):
+    """Get all planetary commodities"""
+    commodities_list = []
+    for comm_id, comm_data in PLANETARY_COMMODITIES.items():
+        commodities_list.append({
+            "id": comm_id,
+            **comm_data
+        })
+    return {"commodities": commodities_list}
 
 
 # ==================== COMBAT ENDPOINTS ====================
@@ -3085,6 +4339,55 @@ async def get_moon_fields(moon_id: str, request: Request):
         "totalFields": min(total_fields, MOON_FIELD_CONFIG["max_fields"]),
         "maxFields": MOON_FIELD_CONFIG["max_fields"],
         "currentFields": moon.get("currentFields", 0)
+    }
+
+
+# ==================== MATERIALS CONFIG ENDPOINTS ====================
+
+@app.get("/api/config/materials/raw")
+async def get_raw_materials_config(request: Request):
+    """Get raw materials configuration"""
+    return RAW_MATERIALS
+
+
+@app.get("/api/config/materials/processed")
+async def get_processed_materials_config(request: Request):
+    """Get processed materials configuration"""
+    return PROCESSED_MATERIALS
+
+
+@app.get("/api/config/materials/planetary")
+async def get_planetary_commodities_config(request: Request):
+    """Get planetary commodities configuration"""
+    return PLANETARY_COMMODITIES
+
+
+@app.get("/api/config/materials/blueprints")
+async def get_blueprints_config(request: Request):
+    """Get blueprints configuration"""
+    return BLUEPRINTS
+
+
+@app.get("/api/config/materials/facilities")
+async def get_manufacturing_facilities_config(request: Request):
+    """Get manufacturing facilities configuration"""
+    return MANUFACTURING_FACILITIES
+
+
+@app.get("/api/config/materials/datacores")
+async def get_invention_datacores_config(request: Request):
+    """Get invention datacores configuration"""
+    return INVENTION_DATACORES
+
+
+@app.get("/api/config/materials/skills")
+async def get_materials_skills_config(request: Request):
+    """Get materials-related skills configuration"""
+    return {
+        "refining": REFINING_SKILLS,
+        "planetary_industry": PLANETARY_INDUSTRY_SKILLS,
+        "manufacturing": MANUFACTURING_SKILLS,
+        "invention": INVENTION_SKILLS
     }
 
 

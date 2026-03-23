@@ -94,5 +94,25 @@ export const ORBITAL_BUILDINGS: StationBuilding[] = [
     baseCost: { metal: 20000, crystal: 10000, deuterium: 5000 },
     costFactor: 2,
     buildTime: 20000
+  },
+  {
+    id: "wormholeAnchor",
+    name: "Wormhole Anchor Array",
+    description: "Stabilizes frontier exits, projects observatory telemetry, and reduces collapse during controlled transit.",
+    type: "station",
+    icon: Share2,
+    baseCost: { metal: 125000, crystal: 180000, deuterium: 95000 },
+    costFactor: 1.85,
+    buildTime: 64000
+  },
+  {
+    id: "strongholdCommandNexus",
+    name: "Stronghold Command Nexus",
+    description: "Coordinates stronghold doctrines, tether defenses, siege windows, and regional response fleets.",
+    type: "station",
+    icon: Zap,
+    baseCost: { metal: 220000, crystal: 160000, deuterium: 110000 },
+    costFactor: 1.9,
+    buildTime: 82000
   }
 ];

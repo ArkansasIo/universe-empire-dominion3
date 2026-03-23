@@ -233,8 +233,8 @@ export default function Settings() {
   });
   
   const [displaySettings, setDisplaySettings] = useState({
-    darkMode: true,
-    themePreset: "black-style" as ThemePreset,
+    darkMode: false,
+    themePreset: "og-white" as ThemePreset,
     compactView: false,
     showAnimations: true,
     showResourceRates: true,
@@ -333,7 +333,7 @@ export default function Settings() {
       setNotifications(playerOptions.notifications);
       setDisplaySettings({
          darkMode: playerOptions.display.themePreset === "black-style",
-         themePreset: playerOptions.display.themePreset || "black-style",
+         themePreset: playerOptions.display.themePreset || "og-white",
          compactView: playerOptions.display.compactView,
          showAnimations: playerOptions.display.showAnimations,
          showResourceRates: playerOptions.display.showResourceRates,

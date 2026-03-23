@@ -51,7 +51,7 @@ This shell is the core navigation rule of the game and is intended to stay consi
 2. Allocate resources into facilities, research, fleets, armies, or expansion
 3. Use exploration, raids, combat, and occupation systems to create pressure or gain rewards
 4. Return to empire, diplomacy, and economy pages to stabilize and scale
-5. Tune display, notification, and control settings for the player’s device
+5. Tune display, notification, and control settings for the playerï¿½s device
 
 ## Major Design Domains
 

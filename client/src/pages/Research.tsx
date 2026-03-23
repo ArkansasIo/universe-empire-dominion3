@@ -1,296 +1,459 @@
 import GameLayout from "@/components/layout/GameLayout";
-import { useGame } from "@/lib/gameContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpCircle, Box, Gem, Database, Zap, Info, FlaskConical, Clock, Atom, Microscope, Cog } from "lucide-react";
-import { TECHS, TechItem, TechArea, TechCategory } from "@/lib/techData";
-import { TECH_BRANCH_ASSETS } from "@shared/config";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGame } from "@/lib/gameContext";
+import { TECHS, type TechArea, type TechItem } from "@/lib/techData";
+import {
+  TECHNOLOGY_DIVISIONS,
+  TECHNOLOGY_DIVISION_COUNTS,
+  getTechnologyDivisionSystemsByDivision,
+  getTechnologyDivisionUpgradeSnapshot,
+} from "@/lib/technologyDivisionCatalog";
+import { getCurrentKardashevUpgradeLevel } from "@/lib/kardashevUpgradeCatalog";
 import { cn } from "@/lib/utils";
+import {
+  ArrowUpCircle,
+  Atom,
+  Bot,
+  Box,
+  Clock,
+  Cog,
+  Cpu,
+  Crosshair,
+  Eye,
+  Flame,
+  FlaskConical,
+  Gauge,
+  Gem,
+  Globe,
+  Layers,
+  Microscope,
+  MoveRight,
+  Network,
+  Orbit,
+  Rocket,
+  Shield,
+  Sparkles,
+  Swords,
+  Telescope,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 
-const TEMP_THEME_IMAGE = "/theme-temp.png";
+const DIVISION_ICON_MAP = {
+  zap: Zap,
+  crosshair: Crosshair,
+  flask: FlaskConical,
+  layers: Layers,
+  flame: Flame,
+  rocket: Rocket,
+  gauge: Gauge,
+  "move-right": MoveRight,
+  eye: Eye,
+  cpu: Cpu,
+  telescope: Telescope,
+  network: Network,
+  orbit: Orbit,
+  swords: Swords,
+  shield: Shield,
+  box: Box,
+  bot: Bot,
+  sparkles: Sparkles,
+} as const;
 
-function getTechAreaImagePath(area: TechArea, category: TechCategory): string {
-  // Map category first for specificity
-  if (category === "propulsion") return TECH_BRANCH_ASSETS.PROPULSION.path;
-  if (category === "particles" || category === "field_manipulation") return TECH_BRANCH_ASSETS.SHIELDS.path;
-  if (category === "computing") return TECH_BRANCH_ASSETS.COMPUTING.path;
-  if (category === "biology") return TECH_BRANCH_ASSETS.MEDICAL.path;
-  if (category === "statecraft") return TECH_BRANCH_ASSETS.ENGINEERING.path;
-  if (category === "psionics") return TECH_BRANCH_ASSETS.SENSORS.path;
-  if (category === "voidcraft") return TECH_BRANCH_ASSETS.HYPERSPACE.path;
-  if (category === "industry" || category === "materials") return TECH_BRANCH_ASSETS.RESOURCES.path;
-  if (category === "military_theory") return TECH_BRANCH_ASSETS.WEAPONS.path;
-  // Fall back to area
-  if (area === "physics") return TECH_BRANCH_ASSETS.POWER.path;
-  if (area === "society") return TECH_BRANCH_ASSETS.MEDICAL.path;
-  return TECH_BRANCH_ASSETS.ENGINEERING.path;
+function areaTone(area: TechArea) {
+  if (area === "physics") return "border-blue-200 bg-blue-50 text-blue-700";
+  if (area === "society") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  return "border-orange-200 bg-orange-50 text-orange-700";
 }
 
-// Helper for category colors
-const getAreaColor = (area: TechArea) => {
-  switch(area) {
-    case "physics": return "text-blue-500 border-blue-200 bg-blue-50";
-    case "society": return "text-green-500 border-green-200 bg-green-50";
-    case "engineering": return "text-orange-500 border-orange-200 bg-orange-50";
-    default: return "text-slate-500";
-  }
-};
-
-const getCategoryIcon = (cat: TechCategory) => {
-  // Just a visual indicator text for now
-  return cat.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-};
-
-const ResearchCard = ({ 
-  item, 
-  level, 
-  onUpgrade, 
-  resources 
-}: { 
-  item: TechItem, 
-  level: number, 
-  onUpgrade: (id: string, name: string, time: number) => void, 
-  resources: any 
-}) => {
+function ResearchCard({
+  item,
+  level,
+  resources,
+  onUpgrade,
+}: {
+  item: TechItem;
+  level: number;
+  resources: { metal: number; crystal: number; deuterium: number; energy: number };
+  onUpgrade: (id: string, name: string, time: number) => void;
+}) {
+  const Icon = item.icon;
   const metalCost = Math.floor(item.baseCost.metal * Math.pow(item.costFactor, level));
   const crystalCost = Math.floor(item.baseCost.crystal * Math.pow(item.costFactor, level));
-  const deutCost = Math.floor(item.baseCost.deuterium * Math.pow(item.costFactor, level));
+  const deuteriumCost = Math.floor(item.baseCost.deuterium * Math.pow(item.costFactor, level));
   const energyCost = item.baseCost.energy ? Math.floor(item.baseCost.energy * Math.pow(item.costFactor, level)) : 0;
-  const buildTime = (level + 1) * 5000; // Mock time 5s
+  const buildTime = (level + 1) * 5000;
 
-  const canAfford = 
-    resources.metal >= metalCost && 
-    resources.crystal >= crystalCost && 
-    resources.deuterium >= deutCost &&
+  const canAfford =
+    resources.metal >= metalCost &&
+    resources.crystal >= crystalCost &&
+    resources.deuterium >= deuteriumCost &&
     (energyCost === 0 || resources.energy >= energyCost);
 
-  const areaColorClass = getAreaColor(item.area);
-  const borderColorClass = item.area === "physics" ? "hover:border-blue-400" : item.area === "society" ? "hover:border-green-400" : "hover:border-orange-400";
-  const btnColorClass = item.area === "physics" ? "bg-blue-600 hover:bg-blue-700" : item.area === "society" ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700";
-
   return (
-    <Card className={cn("bg-white border-slate-200 transition-all group overflow-hidden shadow-sm flex flex-col h-full", borderColorClass)}>
-       <div className={cn("h-32 relative transition-colors duration-500 border-b border-slate-200", areaColorClass.replace("text", "bg").replace("border", "border-transparent"))}>
-          <img
-            src={getTechAreaImagePath(item.area, item.category)}
-            alt={item.name}
-            className="absolute inset-0 w-full h-full object-contain opacity-20 pointer-events-none"
-            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <img
-              src={getTechAreaImagePath(item.area, item.category)}
-              alt={item.name}
-              className={cn("w-16 h-16 object-contain drop-shadow", item.area === "physics" ? "opacity-80" : item.area === "society" ? "opacity-75" : "opacity-70")}
-              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
-            />
-          </div>
-          <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-mono font-bold shadow-sm border border-slate-200">
-            Level {level}
-          </div>
-          <div className="absolute top-2 left-2">
-             <Badge variant="outline" className="bg-white/80 backdrop-blur border-slate-300 text-slate-700 text-[10px] uppercase">
-                {getCategoryIcon(item.category)}
-             </Badge>
-          </div>
-       </div>
-       
-       <CardHeader className="pb-2">
-         <CardTitle className="text-lg font-orbitron text-slate-900">{item.name}</CardTitle>
-       </CardHeader>
-       
-       <CardContent className="pb-2 flex-1">
-         <p className="text-xs text-slate-500 mb-4 italic">"{item.description}"</p>
-         
-         <div className="space-y-3">
-            <div className="space-y-1">
-               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-2">
-                  <Info className="w-3 h-3" /> Research Effects
-               </div>
-               {item.effects.map((effect, i) => (
-                  <div key={i} className="flex justify-between text-xs border-b border-slate-100 pb-1 last:border-0">
-                     <span className="text-slate-700 font-medium">{effect.name}</span>
-                     <span className={cn("font-mono font-bold", item.area === "physics" ? "text-blue-600" : item.area === "society" ? "text-green-600" : "text-orange-600")}>
-                        {effect.value} {effect.perLevel && <span className="text-slate-400 font-normal">({effect.perLevel})</span>}
-                     </span>
-                  </div>
-               ))}
+    <Card className="border-slate-200 bg-white shadow-sm">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={cn("flex h-11 w-11 items-center justify-center rounded-full border", areaTone(item.area))}>
+              <Icon className="h-5 w-5" />
             </div>
-
-            <Separator className="bg-slate-100" />
-
-            <div className="space-y-1">
-               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">Cost</div>
-               {metalCost > 0 && (
-                 <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-slate-600"><Box className="w-3 h-3" /> Metal</span>
-                    <span className={resources.metal < metalCost ? "text-red-600 font-bold" : "text-slate-900"}>{metalCost.toLocaleString()}</span>
-                 </div>
-               )}
-               {crystalCost > 0 && (
-                 <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-blue-600"><Gem className="w-3 h-3" /> Crystal</span>
-                    <span className={resources.crystal < crystalCost ? "text-red-600 font-bold" : "text-slate-900"}>{crystalCost.toLocaleString()}</span>
-                 </div>
-               )}
-               {deutCost > 0 && (
-                 <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-green-600"><Database className="w-3 h-3" /> Deuterium</span>
-                    <span className={resources.deuterium < deutCost ? "text-red-600 font-bold" : "text-slate-900"}>{deutCost.toLocaleString()}</span>
-                 </div>
-               )}
-               {energyCost > 0 && (
-                 <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-yellow-600"><Zap className="w-3 h-3" /> Energy</span>
-                    <span className={resources.energy < energyCost ? "text-red-600 font-bold" : "text-slate-900"}>{energyCost.toLocaleString()}</span>
-                 </div>
-               )}
-               <div className="flex items-center justify-between text-xs pt-1">
-                   <span className="flex items-center gap-2 text-slate-500"><Clock className="w-3 h-3" /> Duration</span>
-                   <span className="text-slate-900 font-mono">{buildTime / 1000}s</span>
-               </div>
+            <div>
+              <CardTitle className="text-base text-slate-900">{item.name}</CardTitle>
+              <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Level {level}</div>
             </div>
-         </div>
-       </CardContent>
-       
-       <CardFooter className="pt-2">
-         <Button 
-            className={cn("w-full text-white font-orbitron tracking-wider", btnColorClass)}
-            disabled={!canAfford}
-            onClick={() => {
-               if (canAfford) {
-                  onUpgrade(item.id, item.name, buildTime);
-               }
-            }}
-         >
-           {canAfford ? (
-             <>
-               <ArrowUpCircle className="w-4 h-4 mr-2" /> {level === 0 ? "RESEARCH" : "IMPROVE"}
-             </>
-           ) : (
-             "INSUFFICIENT"
-           )}
-         </Button>
-       </CardFooter>
+          </div>
+          <Badge variant="outline" className={areaTone(item.area)}>
+            {item.category.replace(/_/g, " ")}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-600">{item.description}</p>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="mb-2 text-xs uppercase tracking-widest text-slate-500">Research Effects</div>
+          <div className="space-y-2">
+            {item.effects.map((effect) => (
+              <div key={`${item.id}-${effect.name}`} className="flex items-center justify-between text-sm">
+                <span className="text-slate-700">{effect.name}</span>
+                <span className="font-medium text-slate-900">
+                  {effect.value}
+                  {effect.perLevel ? ` (${effect.perLevel})` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+          <div className="mb-2 text-xs uppercase tracking-widest text-slate-500">Upgrade Costs</div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between"><span className="text-slate-600">Metal</span><span className={cn(resources.metal < metalCost && "font-bold text-red-600")}>{metalCost.toLocaleString()}</span></div>
+            <div className="flex items-center justify-between"><span className="text-slate-600">Crystal</span><span className={cn(resources.crystal < crystalCost && "font-bold text-red-600")}>{crystalCost.toLocaleString()}</span></div>
+            <div className="flex items-center justify-between"><span className="text-slate-600">Deuterium</span><span className={cn(resources.deuterium < deuteriumCost && "font-bold text-red-600")}>{deuteriumCost.toLocaleString()}</span></div>
+            {energyCost > 0 && (
+              <div className="flex items-center justify-between"><span className="text-slate-600">Energy</span><span className={cn(resources.energy < energyCost && "font-bold text-red-600")}>{energyCost.toLocaleString()}</span></div>
+            )}
+            <div className="flex items-center justify-between pt-1 text-xs text-slate-500"><span>Duration</span><span>{buildTime / 1000}s</span></div>
+          </div>
+        </div>
+
+        <Button className="w-full font-orbitron tracking-wider" disabled={!canAfford} onClick={() => onUpgrade(item.id, item.name, buildTime)}>
+          {canAfford ? (
+            <>
+              <ArrowUpCircle className="mr-2 h-4 w-4" /> {level === 0 ? "RESEARCH" : "IMPROVE"}
+            </>
+          ) : (
+            "INSUFFICIENT RESOURCES"
+          )}
+        </Button>
+      </CardContent>
     </Card>
   );
-};
+}
 
 export default function Research() {
-  const { research, resources, updateResearch, queue } = useGame();
+  const {
+    research,
+    resources,
+    queue,
+    updateResearch,
+    kardashevSystems,
+    technologyDivisionSystems,
+    upgradeTechnologyDivisionSystem,
+  } = useGame();
 
-  const researchQueue = queue.filter(q => q.type === "research");
+  const kardashevLevel = getCurrentKardashevUpgradeLevel(kardashevSystems);
+  const researchQueue = queue.filter((item) => item.type === "research");
+  const researchTotal = Object.values(research).reduce((sum, value) => sum + (value || 0), 0);
+  const technologyDivisionLevelTotal = Object.values(technologyDivisionSystems).reduce((sum, value) => sum + (value || 0), 0);
+  const activeDivisionSystems = Object.values(technologyDivisionSystems).filter((value) => (value || 0) > 0).length;
 
-  const physicsTech = TECHS.filter(r => r.area === "physics");
-  const societyTech = TECHS.filter(r => r.area === "society");
-  const engineeringTech = TECHS.filter(r => r.area === "engineering");
+  const areas: Array<{ id: TechArea; label: string; icon: typeof Atom }> = [
+    { id: "physics", label: "Physics", icon: Atom },
+    { id: "society", label: "Society", icon: Microscope },
+    { id: "engineering", label: "Engineering", icon: Cog },
+  ];
 
   return (
     <GameLayout>
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-orbitron font-bold text-slate-900">Technology Division</h2>
-          <p className="text-muted-foreground font-rajdhani text-lg">Direct our scientific efforts into Physics, Society, and Engineering.</p>
+          <h2 className="text-3xl font-bold text-slate-900">Technology Division</h2>
+          <p className="mt-2 text-slate-600">Core research remains in Physics, Society, and Engineering, with an 18-division upgrade matrix now feeding Spaceship Command-inspired hull doctrine, capital command, logistics, and constructor progression.</p>
         </div>
 
-        {/* Research Queue */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Research Levels</div>
+              <div className="mt-1 text-2xl font-bold text-blue-700">{researchTotal}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Division Systems</div>
+              <div className="mt-1 text-2xl font-bold text-violet-700">{TECHNOLOGY_DIVISION_COUNTS.totalSystems}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Active Division Tracks</div>
+              <div className="mt-1 text-2xl font-bold text-emerald-700">{activeDivisionSystems}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase tracking-widest text-slate-500">Kardashev Gate</div>
+              <div className="mt-1 text-2xl font-bold text-amber-700">Level {kardashevLevel}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         {researchQueue.length > 0 && (
-          <Card className="bg-white border-primary/20 shadow-sm mb-6">
-             <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                   <FlaskConical className="w-4 h-4" /> Active Research
-                </CardTitle>
-             </CardHeader>
-             <CardContent>
-                <div className="space-y-2">
-                   {researchQueue.map((item, i) => {
-                      const timeLeft = Math.max(0, Math.floor((item.endTime - Date.now()) / 1000));
-                      // Find item to get color
-                      const techItem = TECHS.find(t => t.id === item.id);
-                      const colorClass = techItem?.area === "physics" ? "text-blue-600" : techItem?.area === "society" ? "text-green-600" : "text-orange-600";
-                      
-                      return (
-                         <div key={i} className="flex items-center gap-4 bg-slate-50 p-2 rounded border border-slate-100">
-                            <div className="w-8 h-8 flex items-center justify-center bg-white rounded border border-slate-200">
-                               <FlaskConical className={cn("w-4 h-4", colorClass)} />
-                            </div>
-                            <div className="flex-1">
-                               <div className="flex justify-between text-sm font-medium text-slate-900">
-                                  <span>{item.name}</span>
-                                  <span className="font-mono text-slate-500">{timeLeft}s</span>
-                               </div>
-                               <Progress value={Math.max(0, 100 - (timeLeft / 5) * 100)} className="h-1 mt-1" />
-                            </div>
-                         </div>
-                      )
-                   })}
-                </div>
-             </CardContent>
+          <Card className="border-primary/20 bg-white shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm uppercase tracking-widest text-primary">Active Research</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {researchQueue.map((item) => {
+                const timeLeft = Math.max(0, Math.floor((item.endTime - Date.now()) / 1000));
+                return (
+                  <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between text-sm font-medium text-slate-900">
+                      <span>{item.name}</span>
+                      <span className="font-mono text-slate-500">{timeLeft}s</span>
+                    </div>
+                    <Progress value={Math.max(0, 100 - (timeLeft / 5) * 100)} className="mt-2 h-1.5" />
+                  </div>
+                );
+              })}
+            </CardContent>
           </Card>
         )}
 
-        <Tabs defaultValue="physics" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white border border-slate-200 h-14 p-1">
-            <TabsTrigger value="physics" className="font-orbitron data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 border border-transparent h-full flex gap-2">
-               <Atom className="w-5 h-5" /> Physics
-            </TabsTrigger>
-            <TabsTrigger value="society" className="font-orbitron data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 border border-transparent h-full flex gap-2">
-               <Microscope className="w-5 h-5" /> Society
-            </TabsTrigger>
-            <TabsTrigger value="engineering" className="font-orbitron data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700 data-[state=active]:border-orange-200 border border-transparent h-full flex gap-2">
-               <Cog className="w-5 h-5" /> Engineering
+        <Tabs defaultValue="core-research" className="w-full">
+          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 border border-slate-200 bg-slate-50 p-2">
+            <TabsTrigger value="core-research" className="font-orbitron data-[state=active]:bg-white">Core Research</TabsTrigger>
+            <TabsTrigger value="division-matrix" className="font-orbitron data-[state=active]:bg-white">
+              Division Matrix {TECHNOLOGY_DIVISION_COUNTS.divisions} x {TECHNOLOGY_DIVISION_COUNTS.systemsPerDivision}
             </TabsTrigger>
           </TabsList>
-          
-          <div className="mt-6">
-             <TabsContent value="physics" className="mt-0 animate-in fade-in duration-300">
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {physicsTech.map(item => (
-                    <ResearchCard 
-                       key={item.id} 
-                       item={item} 
-                       level={research[item.id] || 0} 
-                       onUpgrade={updateResearch} 
-                       resources={resources} 
-                    />
-                 ))}
-               </div>
-             </TabsContent>
 
-             <TabsContent value="society" className="mt-0 animate-in fade-in duration-300">
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {societyTech.map(item => (
-                    <ResearchCard 
-                       key={item.id} 
-                       item={item} 
-                       level={research[item.id] || 0} 
-                       onUpgrade={updateResearch} 
-                       resources={resources} 
-                    />
-                 ))}
-               </div>
-             </TabsContent>
+          <TabsContent value="core-research" className="mt-6 space-y-6">
+            <Tabs defaultValue="physics" className="w-full">
+              <TabsList className="grid h-14 w-full grid-cols-3 border border-slate-200 bg-white p-1">
+                {areas.map((area) => {
+                  const Icon = area.icon;
+                  return (
+                    <TabsTrigger key={area.id} value={area.id} className="flex h-full gap-2 font-orbitron data-[state=active]:bg-slate-50">
+                      <Icon className="h-5 w-5" /> {area.label}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
 
-             <TabsContent value="engineering" className="mt-0 animate-in fade-in duration-300">
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {engineeringTech.map(item => (
-                    <ResearchCard 
-                       key={item.id} 
-                       item={item} 
-                       level={research[item.id] || 0} 
-                       onUpgrade={updateResearch} 
-                       resources={resources} 
-                    />
-                 ))}
-               </div>
-             </TabsContent>
-          </div>
+              {areas.map((area) => (
+                <TabsContent key={area.id} value={area.id} className="mt-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {TECHS.filter((item) => item.area === area.id).map((item) => (
+                      <ResearchCard
+                        key={item.id}
+                        item={item}
+                        level={research[item.id] || 0}
+                        resources={resources}
+                        onUpgrade={updateResearch}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="division-matrix" className="mt-6 space-y-6">
+            <Card className="border-slate-200 bg-slate-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Technology Division Matrix</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4 text-sm">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="text-xs uppercase tracking-widest text-slate-500">Divisions</div>
+                  <div className="mt-1 text-2xl font-bold text-slate-900">{TECHNOLOGY_DIVISION_COUNTS.divisions}</div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="text-xs uppercase tracking-widest text-slate-500">Systems Per Division</div>
+                  <div className="mt-1 text-2xl font-bold text-slate-900">{TECHNOLOGY_DIVISION_COUNTS.systemsPerDivision}</div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="text-xs uppercase tracking-widest text-slate-500">Total Division Levels</div>
+                  <div className="mt-1 text-2xl font-bold text-violet-700">{technologyDivisionLevelTotal}</div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="text-xs uppercase tracking-widest text-slate-500">Tree Link</div>
+                  <div className="mt-1 text-sm font-medium text-slate-700">Each division uses a core tech as its anchor unlock.</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Tabs defaultValue={TECHNOLOGY_DIVISIONS[0]?.id || "energy-systems"} className="w-full">
+              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 border border-slate-200 bg-white p-2">
+                {TECHNOLOGY_DIVISIONS.map((division) => {
+                  const Icon = DIVISION_ICON_MAP[division.icon as keyof typeof DIVISION_ICON_MAP] || Cpu;
+                  return (
+                    <TabsTrigger key={division.id} value={division.id} className="data-[state=active]:bg-slate-50">
+                      <Icon className="mr-2 h-4 w-4" /> {division.name}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+
+              {TECHNOLOGY_DIVISIONS.map((division) => {
+                const Icon = DIVISION_ICON_MAP[division.icon as keyof typeof DIVISION_ICON_MAP] || Cpu;
+                const anchorLevel = research[division.anchorTechId] || 0;
+                const divisionSystems = getTechnologyDivisionSystemsByDivision(division.id).map((system) => {
+                  const level = technologyDivisionSystems[system.id] || 0;
+                  const snapshot = getTechnologyDivisionUpgradeSnapshot(system, division.order, level);
+                  const completedInDivision = getTechnologyDivisionSystemsByDivision(division.id).filter((entry) => (technologyDivisionSystems[entry.id] || 0) > 0).length;
+                  const unlocked =
+                    anchorLevel >= system.requirements.anchorResearchLevel &&
+                    kardashevLevel >= system.requirements.kardashevLevel &&
+                    completedInDivision >= system.requirements.priorSystems;
+                  const canAfford =
+                    resources.metal >= snapshot.cost.metal &&
+                    resources.crystal >= snapshot.cost.crystal &&
+                    resources.deuterium >= snapshot.cost.deuterium;
+
+                  return {
+                    ...system,
+                    level,
+                    snapshot,
+                    unlocked,
+                    canAfford,
+                    maxed: level >= snapshot.maxLevel,
+                  };
+                });
+
+                const divisionCompleted = divisionSystems.filter((system) => system.level > 0).length;
+
+                return (
+                  <TabsContent key={division.id} value={division.id} className="mt-6 space-y-4">
+                    <Card className="border-slate-200 bg-slate-50">
+                      <CardContent className="p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={cn("flex h-14 w-14 items-center justify-center rounded-full border", areaTone(division.area))}>
+                              <Icon className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Division {division.order}</div>
+                              <div className="mt-1 text-2xl font-bold text-slate-900">{division.name}</div>
+                              <div className="mt-1 text-sm text-slate-600">{division.summary}</div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <div className="text-xs uppercase tracking-widest text-slate-500">Anchor Tech</div>
+                              <div className="mt-1 font-semibold text-slate-900">{division.anchorTechLabel} L{anchorLevel}</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <div className="text-xs uppercase tracking-widest text-slate-500">Completed Systems</div>
+                              <div className="mt-1 font-semibold text-slate-900">{divisionCompleted} / {TECHNOLOGY_DIVISION_COUNTS.systemsPerDivision}</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <div className="text-xs uppercase tracking-widest text-slate-500">Specialty</div>
+                              <div className="mt-1 font-semibold text-slate-900">{division.specialty}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {divisionSystems.map((system) => (
+                        <Card key={system.id} className={cn("border-slate-200 bg-white shadow-sm", !system.unlocked && "opacity-80")} data-testid={`card-division-${system.id}`}>
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <CardTitle className="text-base text-slate-900">{system.name}</CardTitle>
+                                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
+                                  Node {system.sequence} • Level {system.level}
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={areaTone(division.area)}>
+                                {system.phase}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <p className="text-sm text-slate-600">{system.description}</p>
+
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                              <div className="text-xs uppercase tracking-widest text-slate-500">Specialty Effect</div>
+                              <div className="mt-1 text-sm font-medium text-slate-900">{system.effect}</div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <div className="text-xs uppercase tracking-widest text-slate-500">Current Bonus</div>
+                                <div className="mt-1 text-lg font-bold text-emerald-700">+{system.snapshot.currentBonus}%</div>
+                              </div>
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <div className="text-xs uppercase tracking-widest text-slate-500">Next Level</div>
+                                <div className="mt-1 text-lg font-bold text-blue-700">+{system.snapshot.nextBonus}%</div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-lg border border-dashed border-slate-200 bg-white p-3 text-sm">
+                              <div className="mb-2 text-xs uppercase tracking-widest text-slate-500">Unlock Requirements</div>
+                              <div className="space-y-1 text-slate-700">
+                                <div>{division.anchorTechLabel}: {anchorLevel} / {system.requirements.anchorResearchLevel}</div>
+                                <div>Kardashev Level: {kardashevLevel} / {system.requirements.kardashevLevel}</div>
+                                <div>Prior Systems: {divisionCompleted} / {system.requirements.priorSystems}</div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                              <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500">
+                                <TrendingUp className="h-3.5 w-3.5 text-primary" /> Upgrade Costs
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between"><span className="text-slate-600">Metal</span><span className={cn(resources.metal < system.snapshot.cost.metal && "font-bold text-red-600")}>{system.snapshot.cost.metal.toLocaleString()}</span></div>
+                                <div className="flex items-center justify-between"><span className="text-slate-600">Crystal</span><span className={cn(resources.crystal < system.snapshot.cost.crystal && "font-bold text-red-600")}>{system.snapshot.cost.crystal.toLocaleString()}</span></div>
+                                <div className="flex items-center justify-between"><span className="text-slate-600">Deuterium</span><span className={cn(resources.deuterium < system.snapshot.cost.deuterium && "font-bold text-red-600")}>{system.snapshot.cost.deuterium.toLocaleString()}</span></div>
+                                <div className="flex items-center justify-between pt-1 text-xs text-slate-500"><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Upgrade Time</span><span>{system.snapshot.buildTimeSeconds}s</span></div>
+                              </div>
+                            </div>
+
+                            <Button
+                              className="w-full font-orbitron tracking-wider"
+                              disabled={!system.unlocked || !system.canAfford || system.maxed}
+                              onClick={() =>
+                                upgradeTechnologyDivisionSystem(
+                                  system.id,
+                                  system.name,
+                                  system.snapshot.cost,
+                                  system.snapshot.buildTimeSeconds * 1000,
+                                )
+                              }
+                            >
+                              {system.maxed ? "MAX LEVEL" : !system.unlocked ? "REQUIREMENTS NOT MET" : system.canAfford ? `UPGRADE TO LEVEL ${system.level + 1}` : "INSUFFICIENT RESOURCES"}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
+                );
+              })}
+            </Tabs>
+          </TabsContent>
         </Tabs>
-
       </div>
     </GameLayout>
   );

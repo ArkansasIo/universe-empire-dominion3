@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { FRONTIER_EVENT_INTEL } from "@/lib/wormholeStrongholdCatalog";
 import { AlertTriangle, CalendarClock, Crown, ShieldAlert, Users, Zap } from "lucide-react";
 import GameLayout from "@/components/layout/GameLayout";
 
@@ -94,7 +95,23 @@ export default function UniverseEvents() {
     participationMode: event.participationMode,
   }));
 
-  const events = useMemo<EventRecord[]>(() => [...baseEvents, ...systemEvents], [baseEvents, systemEvents]);
+  const frontierEvents = FRONTIER_EVENT_INTEL.map((event) => ({
+    id: event.id,
+    name: event.name,
+    description: event.description,
+    eventClass: event.eventClass,
+    eventType: event.eventType,
+    difficulty: event.difficulty,
+    participantLimit: event.participantLimit,
+    duration: event.duration,
+    status: event.status,
+    rewards: event.rewards,
+    recommendedTier: event.recommendedTier,
+    recommendedLevel: event.recommendedLevel,
+    participationMode: event.participationMode,
+  }));
+
+  const events = useMemo<EventRecord[]>(() => [...baseEvents, ...systemEvents, ...frontierEvents], [baseEvents, systemEvents, frontierEvents]);
 
   const joinEventMutation = useMutation({
     mutationFn: async (eventId: string) => {
@@ -187,7 +204,7 @@ export default function UniverseEvents() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-orbitron text-indigo-900">Event Operations Brief</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3 text-sm text-indigo-900 md:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-3 text-sm text-indigo-900 md:grid-cols-4">
             <div className="rounded border border-indigo-200 bg-white/80 p-3">
               Prioritize active events first, then stage fleets for scheduled windows with strong reward multipliers.
             </div>
@@ -196,6 +213,9 @@ export default function UniverseEvents() {
             </div>
             <div className="rounded border border-indigo-200 bg-white/80 p-3">
               Legendary and boss-class events are the best place to concentrate high-tier commanders and escorts.
+            </div>
+            <div className="rounded border border-indigo-200 bg-white/80 p-3">
+              Wormhole surges and stronghold sieges now feed the same event feed, so frontier warfare shows up with the rest of your command alerts.
             </div>
           </CardContent>
         </Card>

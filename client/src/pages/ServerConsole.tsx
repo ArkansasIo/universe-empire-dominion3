@@ -49,19 +49,19 @@ export default function ServerConsole() {
         fetch('/api/status', { credentials: 'include' }),
         fetch('/api/status/health', { credentials: 'include' }),
       ]);
+      const statusPayload = await statusRes.json().catch(() => null);
+      const healthPayload = await healthRes.json().catch(() => null);
 
       if (statusRes.ok) {
-        const payload = await statusRes.json();
-        setMetrics(payload.data || null);
+        setMetrics(statusPayload?.data || null);
       }
 
-      if (healthRes.ok) {
-        const payload = await healthRes.json();
+      if (healthPayload && typeof healthPayload === 'object') {
         setHealth({
-          timestamp: payload.timestamp,
-          status: payload.status,
-          checks: payload.checks,
-          overallScore: payload.score,
+          timestamp: healthPayload.timestamp,
+          status: healthPayload.status,
+          checks: healthPayload.checks,
+          overallScore: healthPayload.score,
         });
       }
     } catch (err) {

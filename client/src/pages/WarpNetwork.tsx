@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { WARP_GATES, TRADE_ROUTES, WarpGate, TradeRoute, calculateWarpTime, calculateWarpCost } from "@/lib/warpNetwork";
+import { FRONTIER_FEATURES, WORMHOLE_ROUTES, type WormholeRoute } from "@/lib/wormholeStrongholdCatalog";
 import { Orbit, Zap, Clock, Link2, TrendingUp, AlertTriangle, Navigation, Truck, ArrowRight, MapPin } from "lucide-react";
 import { useState } from "react";
 
@@ -181,10 +182,77 @@ function TradeRouteCard({ route, onAction }: { route: TradeRoute; onAction: (rou
   );
 }
 
+function WormholeRouteCard({ route, onAction }: { route: WormholeRoute; onAction: (route: WormholeRoute) => void }) {
+  return (
+    <Card className={`border-2 ${route.status === "stabilized" ? "border-emerald-300 bg-emerald-50/40" : route.status === "stabilizing" ? "border-amber-300 bg-amber-50/40" : "border-slate-200"}`} data-testid={`card-wormhole-${route.id}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-lg">{route.name}</CardTitle>
+            <p className="text-xs text-slate-500">{route.className} · {route.locus}</p>
+          </div>
+          <Badge className={route.status === "stabilized" ? "bg-emerald-100 text-emerald-800" : route.status === "stabilizing" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}>
+            {route.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded border border-slate-200 bg-white p-2 text-center">
+            <div className="text-xs text-slate-500">Lifetime</div>
+            <div className="font-bold text-slate-900">{route.lifetimeHours}h</div>
+          </div>
+          <div className="rounded border border-slate-200 bg-white p-2 text-center">
+            <div className="text-xs text-slate-500">Mass Band</div>
+            <div className="font-bold text-slate-900">{route.massCapacity}</div>
+          </div>
+          <div className="rounded border border-slate-200 bg-white p-2 text-center">
+            <div className="text-xs text-slate-500">Risk</div>
+            <div className={`font-bold ${route.risk >= 8 ? "text-red-600" : route.risk >= 6 ? "text-amber-600" : "text-green-600"}`}>{route.risk}/10</div>
+          </div>
+        </div>
+
+        <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <div className="font-semibold text-slate-900">Destination Mask</div>
+          <div className="mt-1">{route.destinationMask}</div>
+          <div className="mt-2 text-xs text-slate-500">Transit Profile: {route.transitProfile}</div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-xs font-bold text-slate-600">System Links</div>
+          <div className="flex flex-wrap gap-2">
+            {route.connectedSystems.map((system) => (
+              <Badge key={system} variant="outline" className="text-xs">
+                {system}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-xs font-bold text-slate-600">Blueprint Hooks</div>
+          <div className="flex flex-wrap gap-2">
+            {route.blueprintHooks.map((hook) => (
+              <Badge key={hook} className="bg-indigo-100 text-indigo-800">
+                {hook}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <Button className="w-full" variant={route.status === "stabilized" ? "default" : "outline"} onClick={() => onAction(route)} data-testid={`button-wormhole-${route.id}`}>
+          {route.status === "stabilized" ? "Route Fleet Through Exit" : "Stabilize Wormhole"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function WarpNetwork() {
   const { toast } = useToast();
   const [gates, setGates] = useState<WarpGate[]>(WARP_GATES);
   const [routes, setRoutes] = useState<TradeRoute[]>(TRADE_ROUTES);
+  const [wormholes, setWormholes] = useState<WormholeRoute[]>(WORMHOLE_ROUTES);
 
   const ownedGates = gates.filter(g => g.owned).length;
   const activeRoutes = routes.filter(r => r.active).length;
@@ -193,6 +261,12 @@ export default function WarpNetwork() {
     ? Math.round(routes.reduce((sum, route) => sum + route.risk, 0) / routes.length)
     : 0;
   const connectedGateLinks = gates.reduce((sum, gate) => sum + gate.linkedGates.length, 0);
+  const stabilizedWormholes = wormholes.filter((wormhole) => wormhole.status === "stabilized").length;
+  const wormholeMassCapacity = wormholes.reduce((sum, wormhole) => sum + wormhole.massCapacity, 0);
+  const averageWormholeRisk = wormholes.length > 0
+    ? Math.round(wormholes.reduce((sum, wormhole) => sum + wormhole.risk, 0) / wormholes.length)
+    : 0;
+  const frontierLinks = FRONTIER_FEATURES.length;
 
   const handleGateAction = (gate: WarpGate) => {
     if (!gate.owned) {
@@ -249,6 +323,28 @@ export default function WarpNetwork() {
       description: `${optimizedRoute.from} to ${optimizedRoute.to} now yields +${optimizedRoute.profit}% at risk ${optimizedRoute.risk}/10.`,
     });
   };
+
+  const handleWormholeAction = (route: WormholeRoute) => {
+    if (route.status !== "stabilized") {
+      setWormholes((current) =>
+        current.map((entry) =>
+          entry.id === route.id
+            ? { ...entry, status: "stabilized", lifetimeHours: entry.lifetimeHours + 6, risk: Math.max(entry.risk - 1, 1) }
+            : entry,
+        ),
+      );
+      toast({
+        title: "Wormhole stabilized",
+        description: `${route.name} is now routable. Lifetime extended and transit safety improved for frontier fleets.`,
+      });
+      return;
+    }
+
+    toast({
+      title: "Frontier route engaged",
+      description: `${route.name} is routing ${route.transitProfile.toLowerCase()} toward ${route.destinationMask}.`,
+    });
+  };
   
   return (
     <GameLayout>
@@ -298,6 +394,33 @@ export default function WarpNetwork() {
           <Card className="bg-white border-slate-200"><CardContent className="pt-6"><div className="text-xs uppercase text-slate-500">Network Efficiency</div><div className="text-2xl font-bold text-emerald-700">{ownedGates > 0 ? Math.round((activeRoutes / Math.max(1, ownedGates)) * 100) : 0}%</div></CardContent></Card>
         </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Stable Wormholes</div>
+              <div className="text-2xl font-bold text-violet-700">{stabilizedWormholes}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Mass Capacity</div>
+              <div className="text-2xl font-bold text-slate-900">{wormholeMassCapacity}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Wormhole Risk</div>
+              <div className="text-2xl font-bold text-amber-700">{averageWormholeRisk}/10</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-slate-200">
+            <CardContent className="pt-6">
+              <div className="text-xs uppercase text-slate-500">Frontier Links</div>
+              <div className="text-2xl font-bold text-cyan-700">{frontierLinks}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <Tabs defaultValue="gates" className="w-full">
           <TabsList className="bg-white border border-slate-200">
             <TabsTrigger value="gates" data-testid="tab-warp-gates">
@@ -307,6 +430,10 @@ export default function WarpNetwork() {
             <TabsTrigger value="routes" data-testid="tab-trade-routes">
               <Truck className="w-4 h-4 mr-2" />
               Trade Routes
+            </TabsTrigger>
+            <TabsTrigger value="wormholes" data-testid="tab-wormhole-routes">
+              <Zap className="w-4 h-4 mr-2" />
+              Wormholes
             </TabsTrigger>
           </TabsList>
 
@@ -324,6 +451,40 @@ export default function WarpNetwork() {
                 <TradeRouteCard key={route.id} route={route} onAction={handleRouteAction} />
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="wormholes" className="mt-4 space-y-4">
+            <Card className="border-violet-200 bg-violet-50">
+              <CardHeader>
+                <CardTitle className="text-violet-900">Wormhole Transit Doctrine</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-violet-900">
+                <div className="rounded border border-violet-200 bg-white/80 p-3">Stabilize exits first when you need repeatable logistics, refinery gas chains, or blueprint transport.</div>
+                <div className="rounded border border-violet-200 bg-white/80 p-3">Use unstable exits for fast raids, relic dives, and one-way offensive pushes where collapse risk is acceptable.</div>
+                <div className="rounded border border-violet-200 bg-white/80 p-3">Tie observatories and strongholds to the network so scan quality, siege timing, and route prediction feed each other.</div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {wormholes.map((route) => (
+                <WormholeRouteCard key={route.id} route={route} onAction={handleWormholeAction} />
+              ))}
+            </div>
+
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle>Frontier Systems Integration</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-600">
+                {FRONTIER_FEATURES.map((feature) => (
+                  <div key={feature.id} className="rounded border border-slate-200 bg-slate-50 p-3">
+                    <div className="font-semibold text-slate-900">{feature.name}</div>
+                    <div className="mt-1">{feature.summary}</div>
+                    <div className="mt-2 text-xs text-slate-500">{feature.gameplay}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

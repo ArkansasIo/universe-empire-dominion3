@@ -50,13 +50,70 @@ function getDefaultState(): ConstructorYardState {
   };
 }
 
+function normalizeConstructorYardState(value: unknown): ConstructorYardState {
+  const defaultState = getDefaultState();
+  const raw = value && typeof value === 'object' ? (value as Partial<ConstructorYardState>) : {};
+  const rawLevels =
+    raw.levels && typeof raw.levels === 'object' && !Array.isArray(raw.levels)
+      ? (raw.levels as Record<string, unknown>)
+      : {};
+  const rawUpgrades = Array.isArray(raw.upgrades) ? raw.upgrades : [];
+
+  const levels = { ...defaultState.levels };
+  for (const entry of CONSTRUCTOR_YARD_CATALOG) {
+    const parsedLevel = Number(rawLevels[entry.id]);
+    if (Number.isFinite(parsedLevel) && parsedLevel >= 1) {
+      levels[entry.id] = Math.min(999, Math.floor(parsedLevel));
+    }
+  }
+
+  const upgrades: YardUpgradeQueueItem[] = rawUpgrades.flatMap((item) => {
+    if (!item || typeof item !== 'object') return [];
+    const rawItem = item as Partial<YardUpgradeQueueItem>;
+    if (
+      typeof rawItem.id !== 'string' ||
+      typeof rawItem.entryId !== 'string' ||
+      (rawItem.domain !== 'mothership' && rawItem.domain !== 'starship') ||
+      typeof rawItem.fromLevel !== 'number' ||
+      typeof rawItem.toLevel !== 'number' ||
+      typeof rawItem.startedAt !== 'number' ||
+      typeof rawItem.endsAt !== 'number' ||
+      (rawItem.status !== 'running' && rawItem.status !== 'completed')
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id: rawItem.id,
+        entryId: rawItem.entryId,
+        domain: rawItem.domain,
+        fromLevel: rawItem.fromLevel,
+        toLevel: rawItem.toLevel,
+        startedAt: rawItem.startedAt,
+        endsAt: rawItem.endsAt,
+        status: rawItem.status,
+      },
+    ];
+  });
+
+  const lastUpdated = typeof raw.lastUpdated === 'number' ? raw.lastUpdated : Date.now();
+
+  return {
+    levels,
+    upgrades,
+    lastUpdated,
+  };
+}
+
 export async function getConstructorYardState(userId: string): Promise<ConstructorYardState> {
   if (cache.has(userId)) return cache.get(userId)!;
 
   const setting = await storage.getSetting(getStateKey(userId));
   if (setting?.value) {
-    const state = setting.value as ConstructorYardState;
+    const state = normalizeConstructorYardState(setting.value);
     cache.set(userId, state);
+    await saveConstructorYardState(userId, state);
     return state;
   }
 

@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import GameLayout from "@/components/layout/GameLayout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGame } from "@/lib/gameContext";
+import { TECHS } from "@/lib/techData";
 import {
   ALL_KNOWLEDGE_JOBS,
   KNOWLEDGE_OPERATIONS_META,
@@ -26,16 +30,21 @@ import {
 } from "@shared/config";
 import {
   Atom,
+  Beaker,
   BookOpen,
   BriefcaseBusiness,
   Cpu,
   Filter,
+  FlaskConical,
+  GraduationCap,
   Microscope,
   Search,
   ShieldCheck,
   Sparkles,
   Users,
   Wrench,
+  Workflow,
+  ArrowRight,
 } from "lucide-react";
 
 const MAX_VISIBLE_ENTRIES = 24;
@@ -315,6 +324,7 @@ function UnitCard({ unit }: { unit: KnowledgeSupportUnit }) {
 }
 
 export default function KnowledgeLibrary() {
+  const { research, queue } = useGame();
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [jobDomainFilter, setJobDomainFilter] = useState<string>("all");
@@ -366,6 +376,15 @@ export default function KnowledgeLibrary() {
   const highlightTechnology = filteredTechnology[0] ?? TECHNOLOGY_SYSTEM_LIBRARY_240[0];
   const highlightJob = filteredJobs[0] ?? RESEARCH_JOB_SYSTEMS[0] ?? TECHNOLOGY_JOB_SYSTEMS[0];
   const highlightUnit = filteredUnits[0] ?? KNOWLEDGE_SUPPORT_UNITS[0];
+  const activeResearchCount = queue.filter((item) => item.type === "research").length;
+  const completedTechCount = TECHS.filter((tech) => (research[tech.id] || 0) > 0).length;
+  const availableTechCount = TECHS.filter((tech) =>
+    (tech.requirements || []).every((requirement) => (research[requirement] || 0) > 0),
+  ).length;
+  const masteryTracksCovered = categoryCoverage.filter((category) => category.jobCoverage > 0 && category.unitCoverage > 0).length;
+  const topSynergyCategories = [...categoryCoverage]
+    .sort((a, b) => (b.jobCoverage + b.unitCoverage + b.totalCoverage) - (a.jobCoverage + a.unitCoverage + a.totalCoverage))
+    .slice(0, 3);
 
   return (
     <GameLayout>
@@ -417,6 +436,115 @@ export default function KnowledgeLibrary() {
             </Card>
           </div>
         </div>
+
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-orbitron text-slate-900">
+              <Workflow className="h-5 w-5 text-primary" />
+              Knowledge Bridge
+            </CardTitle>
+            <CardDescription>
+              Use the library as the planning layer between doctrine, active research execution, and prerequisite routing through the full technology tree.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Active Research</div>
+                <div className="mt-2 text-3xl font-orbitron font-bold text-slate-900">{activeResearchCount}</div>
+                <div className="text-sm text-slate-500">Queue items feeding the hub right now</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Completed Tech</div>
+                <div className="mt-2 text-3xl font-orbitron font-bold text-slate-900">{completedTechCount}</div>
+                <div className="text-sm text-slate-500">Unlocked technologies tracked from the library</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Available Now</div>
+                <div className="mt-2 text-3xl font-orbitron font-bold text-slate-900">{availableTechCount}</div>
+                <div className="text-sm text-slate-500">Research options with prerequisites satisfied</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Mastery Tracks</div>
+                <div className="mt-2 text-3xl font-orbitron font-bold text-slate-900">{masteryTracksCovered}</div>
+                <div className="text-sm text-slate-500">Category bands with full staffing and unit support</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.2fr_1.2fr_1fr]">
+              <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  <FlaskConical className="h-4 w-4" />
+                  Research Hub Tie-In
+                </div>
+                <div className="mt-3 text-xl font-orbitron text-slate-900">Move from doctrine to active projects</div>
+                <p className="mt-2 text-sm text-slate-600">
+                  Use the Knowledge Library to identify category fit, then jump into the Research Hub to start or queue the most relevant program paths.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <Badge className="bg-emerald-100 text-emerald-900">Programs {filteredResearch.length}</Badge>
+                  <Badge className="bg-emerald-100 text-emerald-900">Queue {activeResearchCount}</Badge>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link href="/research">
+                    <Button className="gap-2">
+                      Open Research Hub
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/research-lab">
+                    <Button variant="outline" className="gap-2">
+                      Research Management
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
+                  <GraduationCap className="h-4 w-4" />
+                  Technology Tree Tie-In
+                </div>
+                <div className="mt-3 text-xl font-orbitron text-slate-900">Turn category study into prerequisite routing</div>
+                <p className="mt-2 text-sm text-slate-600">
+                  After using the library to compare class tiers and synergies, route into the Technology Tree to see live unlock states, missing requirements, and next research branches.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <Badge className="bg-blue-100 text-blue-900">Completed {completedTechCount}</Badge>
+                  <Badge className="bg-blue-100 text-blue-900">Available {availableTechCount}</Badge>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link href="/technology-tree">
+                    <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                      Open Technology Tree
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+                  <Sparkles className="h-4 w-4" />
+                  Cross-Discipline Synergy
+                </div>
+                <div className="mt-4 space-y-3">
+                  {topSynergyCategories.map((category) => (
+                    <div key={category.id} className="rounded-xl border border-white bg-white p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-semibold text-slate-900">{category.name}</div>
+                        <Badge variant="outline">{category.totalCoverage}</Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-slate-500">
+                        Jobs {category.jobCoverage} • Units {category.unitCoverage} • Research {category.researchCount} • Technology {category.technologyCount}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardContent className="grid gap-4 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr]">
@@ -505,6 +633,66 @@ export default function KnowledgeLibrary() {
           </TabsList>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="border-slate-200 bg-white shadow-sm lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="font-orbitron text-slate-900">Research to Technology Workflow</CardTitle>
+                  <CardDescription>
+                    Study mastery tracks here, launch active work from the Research Hub, and validate dependencies through the Technology Tree.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      Library
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">Compare mastery tracks, class tiers, staffing layers, and cross-discipline coverage.</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <Beaker className="h-4 w-4 text-emerald-600" />
+                      Research Hub
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">Convert those insights into queued projects, live research priorities, and lab execution.</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <GraduationCap className="h-4 w-4 text-blue-600" />
+                      Technology Tree
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">Check prerequisites, unlocked branches, and the next best chain for long-term progression.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-orbitron text-slate-900">Quick Routes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Link href="/research">
+                    <Button variant="outline" className="w-full justify-between">
+                      Research Hub
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/technology-tree">
+                    <Button variant="outline" className="w-full justify-between">
+                      Technology Tree
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/research-analytics">
+                    <Button variant="outline" className="w-full justify-between">
+                      Research Analytics
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid gap-4 xl:grid-cols-3">
               <Card className="border-slate-200 bg-white shadow-sm xl:col-span-2">
                 <CardHeader>

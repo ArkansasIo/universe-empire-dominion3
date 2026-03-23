@@ -23,6 +23,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Megastructure, createMegastructure } from '@shared/config/megastructuresConfig';
 import { blink } from './blink';
 import { calculateResourceProduction } from './resourceMath';
+import { ORBITAL_BUILDINGS } from './stationData';
 
 async function apiRequest(method: string, url: string, data?: any) {
   const headers: Record<string, string> = data ? { 'Content-Type': 'application/json' } : {};
@@ -141,6 +142,10 @@ interface OrbitalBuildings {
   [key: string]: number;
 }
 
+interface AuxiliarySystems {
+  [key: string]: number;
+}
+
 // Define Research interface locally if not exported, or match the structure
 export interface Research {
   energyTech: number;
@@ -244,6 +249,15 @@ interface GameState {
   resources: Resources;
   buildings: Buildings;
   orbitalBuildings: OrbitalBuildings;
+  refinerySystems: AuxiliarySystems;
+  infrastructureSystems: AuxiliarySystems;
+  technologySystems: AuxiliarySystems;
+  kardashevSystems: AuxiliarySystems;
+  megastructureSystems: AuxiliarySystems;
+  technologyDivisionSystems: AuxiliarySystems;
+  researchTreeSystems: AuxiliarySystems;
+  shipyardCategorySystems: AuxiliarySystems;
+  starshipLineSystems: AuxiliarySystems;
   activeBase: "planet" | "moon" | "station";
   setActiveBase: (base: "planet" | "moon" | "station") => void;
   research: {[key: string]: number};
@@ -279,7 +293,16 @@ interface GameState {
   logout: () => void;
   isLoading: boolean;
   toggleAdmin: () => void;
-  updateBuilding: (building: keyof Buildings, name: string, time?: number) => void;
+  updateBuilding: (building: keyof Buildings | string, name: string, time?: number) => Promise<void>;
+  upgradeRefinerySystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeInfrastructureSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeTechnologySystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeKardashevSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeMegastructureSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeTechnologyDivisionSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeResearchTreeSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeShipyardCategorySystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
+  upgradeStarshipLineSystem: (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time?: number) => Promise<boolean>;
   updateResearch: (tech: string, name: string, time: number) => void;
   buildUnit: (unitId: string, amount: number, name: string, time: number) => void;
   constructMegastructure: (templateId: string, name: string, time: number) => void;
@@ -343,6 +366,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     tradeDock: 0,
     defenseGrid: 0
   });
+  const [refinerySystems, setRefinerySystems] = useState<AuxiliarySystems>({});
+  const [infrastructureSystems, setInfrastructureSystems] = useState<AuxiliarySystems>({});
+  const [technologySystems, setTechnologySystems] = useState<AuxiliarySystems>({});
+  const [kardashevSystems, setKardashevSystems] = useState<AuxiliarySystems>({});
+  const [megastructureSystems, setMegastructureSystems] = useState<AuxiliarySystems>({});
+  const [technologyDivisionSystems, setTechnologyDivisionSystems] = useState<AuxiliarySystems>({});
+  const [researchTreeSystems, setResearchTreeSystems] = useState<AuxiliarySystems>({});
+  const [shipyardCategorySystems, setShipyardCategorySystems] = useState<AuxiliarySystems>({});
+  const [starshipLineSystems, setStarshipLineSystems] = useState<AuxiliarySystems>({});
 
   const [activeBase, setActiveBase] = useState<"planet" | "moon" | "station">("planet");
 
@@ -492,6 +524,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAutosaveKeyRef = useRef("");
   const channelRef = useRef<any>(null);
 
   const { data: authUser, isLoading: authLoading, error: authError, isSuccess: authSuccess } = useQuery({
@@ -814,9 +847,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
 
     const state = (serverGameState && typeof serverGameState === "object") ? serverGameState : {};
-
-    setResources(normalizeResources((state as any).resources, DEFAULT_RESOURCES));
-    setBuildings({
+    const normalizedResources = normalizeResources((state as any).resources, DEFAULT_RESOURCES);
+    const normalizedBuildings = {
       metalMine: (state as any).buildings?.metalMine || 1,
       crystalMine: (state as any).buildings?.crystalMine || 1,
       deuteriumSynthesizer: (state as any).buildings?.deuteriumSynthesizer || 0,
@@ -824,25 +856,79 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       roboticsFactory: (state as any).buildings?.roboticsFactory || 0,
       shipyard: (state as any).buildings?.shipyard || 0,
       researchLab: (state as any).buildings?.researchLab || 0,
+    };
+    const normalizedOrbitalBuildings = (state as any).orbitalBuildings || {};
+    const normalizedRefinerySystems = (state as any).refinerySystems || {};
+    const normalizedInfrastructureSystems = (state as any).infrastructureSystems || {};
+    const normalizedTechnologySystems = (state as any).technologySystems || {};
+    const normalizedKardashevSystems = (state as any).kardashevSystems || {};
+    const normalizedMegastructureSystems = (state as any).megastructureSystems || {};
+    const normalizedTechnologyDivisionSystems = (state as any).technologyDivisionSystems || {};
+    const normalizedResearchTreeSystems = (state as any).researchTreeSystems || {};
+    const normalizedShipyardCategorySystems = (state as any).shipyardCategorySystems || {};
+    const normalizedStarshipLineSystems = (state as any).starshipLineSystems || {};
+    const normalizedResearch = (state as any).research || {};
+    const normalizedUnits = (state as any).units || {};
+    const normalizedMegastructures = (state as any).megastructures || [];
+    const normalizedCommander = (state as any).commander
+      ? {
+          ...(state as any).commander,
+          empireName: (state as any).commander.empireName || (state as any).commander.name || "Stellar Dominion",
+          equipment: normalizeCommanderEquipment((state as any).commander.equipment),
+          inventory: Array.isArray((state as any).commander.inventory) ? (state as any).commander.inventory : [],
+        }
+      : null;
+    const normalizedGovernment = (state as any).government || null;
+    const normalizedArtifacts = (state as any).artifacts || artifacts;
+    const normalizedCronJobs = (state as any).cronJobs || cronJobs;
+    const normalizedPlanetName = (state as any).planetName || "Earth";
+    const normalizedCoordinates = (state as any).coordinates || "1:1:100:3";
+
+    lastAutosaveKeyRef.current = JSON.stringify({
+      resources: normalizedResources,
+      buildings: normalizedBuildings,
+      orbitalBuildings: normalizedOrbitalBuildings,
+      refinerySystems: normalizedRefinerySystems,
+      infrastructureSystems: normalizedInfrastructureSystems,
+      technologySystems: normalizedTechnologySystems,
+      kardashevSystems: normalizedKardashevSystems,
+      megastructureSystems: normalizedMegastructureSystems,
+      technologyDivisionSystems: normalizedTechnologyDivisionSystems,
+      researchTreeSystems: normalizedResearchTreeSystems,
+      shipyardCategorySystems: normalizedShipyardCategorySystems,
+      starshipLineSystems: normalizedStarshipLineSystems,
+      research: normalizedResearch,
+      units: normalizedUnits,
+      megastructures: normalizedMegastructures,
+      commander: normalizedCommander,
+      government: normalizedGovernment,
+      artifacts: normalizedArtifacts,
+      cronJobs: normalizedCronJobs,
+      planetName: normalizedPlanetName,
+      coordinates: normalizedCoordinates,
     });
-    setOrbitalBuildings((state as any).orbitalBuildings || {});
-    setResearch((state as any).research || {});
-    setUnits((state as any).units || {});
-    setMegastructures((state as any).megastructures || []);
-    if ((state as any).commander) {
-      const nextCommander = (state as any).commander;
-      setCommander({
-        ...nextCommander,
-        empireName: nextCommander.empireName || nextCommander.name || "Stellar Dominion",
-        equipment: normalizeCommanderEquipment(nextCommander.equipment),
-        inventory: Array.isArray(nextCommander.inventory) ? nextCommander.inventory : [],
-      });
-    }
-    if ((state as any).government) setGovernment((state as any).government);
-    if ((state as any).artifacts) setArtifacts((state as any).artifacts);
-    if ((state as any).cronJobs) setCronJobs((state as any).cronJobs);
-    setPlanetName((state as any).planetName || "Earth");
-    setCoordinates((state as any).coordinates || "1:1:100:3");
+
+    setResources(normalizedResources);
+    setBuildings(normalizedBuildings);
+    setOrbitalBuildings(normalizedOrbitalBuildings);
+    setRefinerySystems(normalizedRefinerySystems);
+    setInfrastructureSystems(normalizedInfrastructureSystems);
+    setTechnologySystems(normalizedTechnologySystems);
+    setKardashevSystems(normalizedKardashevSystems);
+    setMegastructureSystems(normalizedMegastructureSystems);
+    setTechnologyDivisionSystems(normalizedTechnologyDivisionSystems);
+    setResearchTreeSystems(normalizedResearchTreeSystems);
+    setShipyardCategorySystems(normalizedShipyardCategorySystems);
+    setStarshipLineSystems(normalizedStarshipLineSystems);
+    setResearch(normalizedResearch);
+    setUnits(normalizedUnits);
+    setMegastructures(normalizedMegastructures);
+    if (normalizedCommander) setCommander(normalizedCommander);
+    if (normalizedGovernment) setGovernment(normalizedGovernment);
+    if ((state as any).artifacts) setArtifacts(normalizedArtifacts);
+    if ((state as any).cronJobs) setCronJobs(normalizedCronJobs);
+    setPlanetName(normalizedPlanetName);
+    setCoordinates(normalizedCoordinates);
     
     // Sync turns from server
     if (turnData) {
@@ -944,10 +1030,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isInitialized && isLoggedIn) {
-      debouncedSave({
+      const autosavePayload = {
         resources,
         buildings,
         orbitalBuildings,
+        refinerySystems,
+        infrastructureSystems,
+        technologySystems,
+        kardashevSystems,
+        megastructureSystems,
+        technologyDivisionSystems,
+        researchTreeSystems,
+        shipyardCategorySystems,
+        starshipLineSystems,
         research,
         units,
         megastructures,
@@ -957,9 +1052,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         cronJobs,
         planetName,
         coordinates
-      });
+      };
+      const autosaveKey = JSON.stringify(autosavePayload);
+      if (lastAutosaveKeyRef.current === autosaveKey) {
+        return;
+      }
+      lastAutosaveKeyRef.current = autosaveKey;
+      debouncedSave(autosavePayload);
     }
-  }, [buildings, orbitalBuildings, research, units, megastructures, commander, government, artifacts, cronJobs, planetName, coordinates, isInitialized, isLoggedIn, debouncedSave]);
+  }, [buildings, orbitalBuildings, refinerySystems, infrastructureSystems, technologySystems, kardashevSystems, megastructureSystems, technologyDivisionSystems, researchTreeSystems, shipyardCategorySystems, starshipLineSystems, research, units, megastructures, commander, government, artifacts, cronJobs, planetName, coordinates, isInitialized, isLoggedIn, debouncedSave]);
 
   // Calculate production
   const getProduction = () => {
@@ -1032,16 +1133,86 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }, ...prev].slice(0, 10));
   };
 
-  const updateBuilding = async (building: keyof Buildings, name: string, time: number = 5000) => {
+  const updateBuilding = async (building: keyof Buildings | string, name: string, time: number = 5000) => {
     const turnCost = 2; // 2 turns per building
 
     if (!await spendTurns(turnCost)) return;
 
+    const orbitalDefinition = ORBITAL_BUILDINGS.find((entry) => entry.id === building);
+    if (orbitalDefinition) {
+      const currentLevel = orbitalBuildings[building] || 0;
+
+      if (orbitalDefinition.type === "moon" && building !== "lunarBase" && (orbitalBuildings.lunarBase || 0) < 1) {
+        setCurrentTurns((prev) => prev + turnCost);
+        addEvent("Build Blocked", `${name} requires Lunar Base level 1.`, "warning");
+        return;
+      }
+
+      if (orbitalDefinition.type === "station" && building !== "starbaseHub" && (orbitalBuildings.starbaseHub || 0) < 1) {
+        setCurrentTurns((prev) => prev + turnCost);
+        addEvent("Build Blocked", `${name} requires Starbase Command Hub level 1.`, "warning");
+        return;
+      }
+
+      const costMultiplier = Math.pow(orbitalDefinition.costFactor, currentLevel);
+      const upgradeCost = {
+        metal: Math.round(orbitalDefinition.baseCost.metal * costMultiplier),
+        crystal: Math.round(orbitalDefinition.baseCost.crystal * costMultiplier),
+        deuterium: Math.round(orbitalDefinition.baseCost.deuterium * costMultiplier),
+      };
+
+      if (
+        resources.metal < upgradeCost.metal ||
+        resources.crystal < upgradeCost.crystal ||
+        resources.deuterium < upgradeCost.deuterium
+      ) {
+        setCurrentTurns((prev) => prev + turnCost);
+        toast({
+          title: "Insufficient Resources",
+          description: `Not enough resources to upgrade ${name}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const adjustedTime = (time * Math.pow(1.12, currentLevel)) / (config?.gameSpeed || 1);
+      const now = Date.now();
+
+      setResources((prev) => ({
+        ...prev,
+        metal: prev.metal - upgradeCost.metal,
+        crystal: prev.crystal - upgradeCost.crystal,
+        deuterium: prev.deuterium - upgradeCost.deuterium,
+      }));
+      setOrbitalBuildings((prev) => ({
+        ...prev,
+        [building]: currentLevel + 1,
+      }));
+      setQueue((prev) => [
+        ...prev,
+        {
+          id: building,
+          name,
+          startTime: now,
+          endTime: now + adjustedTime,
+          type: "building",
+          itemId: building,
+        },
+      ]);
+      addEvent(
+        currentLevel === 0 ? "Orbital Construction Started" : "Orbital Upgrade Started",
+        `${name} is now queued for level ${currentLevel + 1}.`,
+        "success",
+      );
+      return;
+    }
+
     try {
+      const surfaceBuilding = building as keyof Buildings;
       // Call backend API to build
       const response = await apiRequest("POST", "/api/game/build", {
-        building: building,
-        level: (buildings[building] || 0) + 1
+        building: surfaceBuilding,
+        level: (buildings[surfaceBuilding] || 0) + 1
       });
       
       if (response.success) {
@@ -1049,7 +1220,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setResources(normalizeResources(response.resources, resources));
         setBuildings(response.buildings || buildings);
         
-        const adjustedTime = (time * Math.pow(1.15, buildings[building] || 0)) / (config?.gameSpeed || 1);
+        const adjustedTime = (time * Math.pow(1.15, buildings[surfaceBuilding] || 0)) / (config?.gameSpeed || 1);
         const now = Date.now();
         setQueue(prev => [...prev, {
           id: building,
@@ -1195,6 +1366,104 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       };
     });
   };
+
+  const upgradeAuxiliarySystem = async (
+    systemBucket: "refinerySystems" | "infrastructureSystems" | "technologySystems" | "kardashevSystems" | "megastructureSystems" | "technologyDivisionSystems" | "researchTreeSystems" | "shipyardCategorySystems" | "starshipLineSystems",
+    setLevels: React.Dispatch<React.SetStateAction<AuxiliarySystems>>,
+    systemId: string,
+    name: string,
+    cost: { metal: number; crystal: number; deuterium: number },
+    time: number = 12000,
+  ): Promise<boolean> => {
+    const turnCost = 1;
+    if (!await spendTurns(turnCost)) {
+      return false;
+    }
+
+    const canAfford =
+      resources.metal >= cost.metal &&
+      resources.crystal >= cost.crystal &&
+      resources.deuterium >= cost.deuterium;
+
+    if (!canAfford) {
+      setCurrentTurns((prev) => prev + turnCost);
+      addEvent("Upgrade Failed", `Insufficient resources for ${name}.`, "danger");
+      return false;
+    }
+
+    const nextResources = {
+      ...resources,
+      metal: resources.metal - cost.metal,
+      crystal: resources.crystal - cost.crystal,
+      deuterium: resources.deuterium - cost.deuterium,
+    };
+
+    setResources(nextResources);
+
+    let nextLevels: AuxiliarySystems = {};
+    setLevels((current) => {
+      nextLevels = {
+        ...current,
+        [systemId]: (current[systemId] || 0) + 1,
+      };
+      return nextLevels;
+    });
+
+    debouncedSave({
+      resources: nextResources,
+      [systemBucket]: nextLevels,
+    });
+
+    const now = Date.now();
+    const queueId = `${systemBucket}:${systemId}:${now}`;
+    setQueue((prev) => [
+      ...prev,
+      {
+        id: queueId,
+        name,
+        startTime: now,
+        endTime: now + time,
+        type: "building",
+        itemId: systemId,
+      },
+    ]);
+
+    addEvent("Upgrade Started", `${name} upgrade sequence initiated.`, "success");
+
+    setTimeout(() => {
+      setQueue((prev) => prev.filter((item) => item.id !== queueId));
+      addEvent("Upgrade Complete", `${name} is now online at the next level.`, "success");
+    }, time);
+
+    return true;
+  };
+
+  const upgradeRefinerySystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("refinerySystems", setRefinerySystems, systemId, name, cost, time);
+
+  const upgradeInfrastructureSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("infrastructureSystems", setInfrastructureSystems, systemId, name, cost, time);
+
+  const upgradeTechnologySystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("technologySystems", setTechnologySystems, systemId, name, cost, time);
+
+  const upgradeKardashevSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("kardashevSystems", setKardashevSystems, systemId, name, cost, time);
+
+  const upgradeMegastructureSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("megastructureSystems", setMegastructureSystems, systemId, name, cost, time);
+
+  const upgradeTechnologyDivisionSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("technologyDivisionSystems", setTechnologyDivisionSystems, systemId, name, cost, time);
+
+  const upgradeResearchTreeSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("researchTreeSystems", setResearchTreeSystems, systemId, name, cost, time);
+
+  const upgradeShipyardCategorySystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("shipyardCategorySystems", setShipyardCategorySystems, systemId, name, cost, time);
+
+  const upgradeStarshipLineSystem = (systemId: string, name: string, cost: { metal: number; crystal: number; deuterium: number }, time: number = 12000) =>
+    upgradeAuxiliarySystem("starshipLineSystems", setStarshipLineSystems, systemId, name, cost, time);
 
   const unequipItem = (slot: CommanderEquipmentSlotId) => {
     setCommander(prev => {
@@ -1566,6 +1835,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        resources, 
        buildings, 
        orbitalBuildings,
+       refinerySystems,
+       infrastructureSystems,
+       technologySystems,
+       kardashevSystems,
+       megastructureSystems,
+       technologyDivisionSystems,
+       researchTreeSystems,
+       shipyardCategorySystems,
+       starshipLineSystems,
        activeBase,
        setActiveBase,
        research,
@@ -1595,6 +1873,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        logout,
        toggleAdmin,
        updateBuilding,
+       upgradeRefinerySystem,
+       upgradeInfrastructureSystem,
+       upgradeTechnologySystem,
+       upgradeKardashevSystem,
+       upgradeMegastructureSystem,
+       upgradeTechnologyDivisionSystem,
+       upgradeResearchTreeSystem,
+       upgradeShipyardCategorySystem,
+       upgradeStarshipLineSystem,
        updateResearch,
        buildUnit,
        constructMegastructure,
