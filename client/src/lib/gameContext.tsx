@@ -48,6 +48,7 @@ async function apiRequest(method: string, url: string, data?: any) {
   return res.json();
 }
 
+
 interface Resources {
   metal: number;
   crystal: number;
@@ -56,6 +57,7 @@ interface Resources {
   credits: number;
   food: number;
   water: number;
+  darkmatter: number; // Paid resource
 }
 
 const DEFAULT_RESOURCES: Resources = {
@@ -66,6 +68,7 @@ const DEFAULT_RESOURCES: Resources = {
   credits: 10000,
   food: 5000,
   water: 5000,
+  darkmatter: 0,
 };
 
 const MAX_RESOURCE_VALUE = 1_000_000_000_000_000;
@@ -103,6 +106,7 @@ function normalizeResources(raw: any, fallback: Resources = DEFAULT_RESOURCES): 
     credits: normalizeResourceValue(raw?.credits, fallback.credits),
     food: normalizeResourceValue(raw?.food, fallback.food),
     water: normalizeResourceValue(raw?.water, fallback.water),
+    darkmatter: normalizeResourceValue(raw?.darkmatter, fallback.darkmatter),
   };
 }
 
@@ -457,7 +461,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [currentTurns, setCurrentTurns] = useState(0);
   const lastTurnUpdateRef = useRef(Date.now());
 
-  const [commander, setCommander] = useState<CommanderState>({
+  const [commander, setCommander] = useState<CommanderState & { empireSlot?: number }>({
     name: "Commander",
     empireName: "Stellar Dominion",
     race: "terran",
@@ -468,7 +472,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     inventory: [
       { id: "bp_plasmaRifle", name: "Plasma Rifle Blueprint", description: "Blueprint for a standard plasma rifle.", type: "blueprint", rarity: "common", level: 1 },
       { id: "raw_metal", name: "Refined Metal", description: "High quality crafting material.", type: "material", rarity: "common", level: 1 }
-    ]
+    ],
+    empireSlot: 1,
   });
 
   const [government, setGovernment] = useState<GovernmentState>({
@@ -1599,13 +1604,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      addEvent("Revolution", `Government reformed into ${GOVERNMENTS[type].name}.`, "warning");
   };
 
-  const completeSetup = async (newCommander: CommanderState, newGovernment: GovernmentState, options?: { homeWorldName?: string }) => {
+  const completeSetup = async (newCommander: CommanderState & { empireSlot?: number }, newGovernment: GovernmentState, options?: { homeWorldName?: string }) => {
     try {
       const nextHomeWorldName = (options?.homeWorldName || planetName || "Earth").trim().slice(0, 64) || "Earth";
       await saveGameStateMutation.mutateAsync({ 
         commander: newCommander, 
         government: newGovernment,
         planetName: nextHomeWorldName,
+        empireSlot: newCommander.empireSlot || 1,
         setupComplete: true 
       });
       setCommander(newCommander);

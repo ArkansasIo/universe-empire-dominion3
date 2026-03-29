@@ -12,6 +12,16 @@ import { MENU_ASSETS } from "@shared/config";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
+// Mock: In a real app, this would come from the backend per user/realm
+const getEmpireSlotsForRealm = (realmId: string) => {
+  // For demo, just return 5 slots with mock data
+  return Array.from({ length: 5 }, (_, i) => ({
+    slot: i + 1,
+    name: `Empire Slot ${i + 1}`,
+    exists: false, // Set to true if a save exists for this slot
+  }));
+};
+
 export default function AccountSetup() {
   const {
     completeSetup,
@@ -30,6 +40,7 @@ export default function AccountSetup() {
   const [selectedRealm, setSelectedRealm] = useState("");
   const [empireName, setEmpireName] = useState("Stellar Dominion");
   const [homeWorldName, setHomeWorldName] = useState("New Colony");
+  const [selectedEmpireSlot, setSelectedEmpireSlot] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -76,6 +87,11 @@ export default function AccountSetup() {
       setIsSubmitting(false);
       return;
     }
+    if (!selectedEmpireSlot) {
+      setError("Please select an empire save slot.");
+      setIsSubmitting(false);
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -84,6 +100,7 @@ export default function AccountSetup() {
       ...commander,
       race: selectedRace,
       empireName: empireName.trim().slice(0, 64) || "Stellar Dominion",
+      empireSlot: selectedEmpireSlot, // Save slot info
     };
 
     const govBase = GOVERNMENTS[selectedGovernment].baseStats;
@@ -105,6 +122,7 @@ export default function AccountSetup() {
         await switchRealm(selectedRealm);
       }
 
+      // TODO: Pass empireSlot to backend as part of setup
       await completeSetup(updatedCommander, updatedGovernment, {
         homeWorldName: homeWorldName.trim().slice(0, 64) || "New Colony",
       });
@@ -152,6 +170,23 @@ export default function AccountSetup() {
 
         <CardContent className="space-y-6 pt-6">
           <div className="space-y-3">
+            <Label className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <Globe2 className="w-4 h-4 text-slate-700" />
+              Select Empire Save Slot
+            </Label>
+            <div className="flex gap-2 mb-2">
+              {getEmpireSlotsForRealm(selectedRealm).map((slot) => (
+                <button
+                  key={slot.slot}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${selectedEmpireSlot === slot.slot ? "border-cyan-600 bg-cyan-50 text-cyan-900" : "border-slate-300 bg-white text-slate-700 hover:border-cyan-400"}`}
+                  onClick={() => setSelectedEmpireSlot(slot.slot)}
+                  type="button"
+                >
+                  {slot.name}
+                  {slot.exists ? " (Used)" : " (Empty)"}
+                </button>
+              ))}
+            </div>
             <Label className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               <Rocket className="w-4 h-4 text-slate-700" />
               Empire Identity

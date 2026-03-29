@@ -117,6 +117,56 @@ const TEN_REALMS = [
 
 const REALM_COLUMNS = [TEN_REALMS.slice(0, 5), TEN_REALMS.slice(5)] as const;
 
+type RealmDetailModalProps = {
+  realm: typeof TEN_REALMS[number] | null & { universes?: string[] };
+  open: boolean;
+  onClose: () => void;
+  onSelect?: (realmId: string) => void;
+};
+
+function RealmDetailModal({ realm, open, onClose, onSelect }: RealmDetailModalProps) {
+  if (!realm || !open) return null;
+  // Support both 'universe' (string) and 'universes' (array) for compatibility
+  const universeList = Array.isArray(realm.universes)
+    ? realm.universes
+    : realm.universe
+      ? [realm.universe]
+      : [];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-500 hover:text-slate-900" aria-label="Close">✕</button>
+        <div className="mb-2 text-xs uppercase tracking-widest text-cyan-700 font-bold">{realm.rank}</div>
+        <div className="font-orbitron text-2xl font-bold text-slate-900 mb-1">{realm.name}</div>
+        <div className="text-xs text-slate-500 mb-2">
+          Universes:
+          {universeList.length > 0 ? (
+            <ul className="ml-2 list-disc text-xs text-slate-700">
+              {universeList.map((u) => (
+                <li key={u}>{u}</li>
+              ))}
+            </ul>
+          ) : (
+            <span className="ml-1 font-semibold">None</span>
+          )}
+        </div>
+        <div className="mb-3 text-slate-700 text-sm">{realm.detail}</div>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="bg-slate-100 rounded px-2 py-1 text-xs text-slate-700">{realm.population}</div>
+        </div>
+        {onSelect && (
+          <button
+            className="w-full bg-cyan-700 hover:bg-cyan-800 text-white py-2 rounded font-semibold transition-colors mt-2"
+            onClick={() => onSelect(realm.id)}
+          >
+            Enter {realm.name}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type PublicHealthCheck = {
   status: "ok" | "warning" | "critical";
   value: number;
@@ -182,7 +232,21 @@ function formatTimeAgo(timestamp?: number) {
 }
 
 export default function Auth() {
-  const { isLoading, login } = useGame();
+  const { isLoading, login, switchRealm } = useGame();
+  const [realmDetail, setRealmDetail] = useState<typeof TEN_REALMS[number] | null>(null);
+  const [realmModalOpen, setRealmModalOpen] = useState(false);
+
+  // Handler for selecting/entering a realm from the modal
+  const handleSelectRealm = async (realmId: string) => {
+    setRealmModalOpen(false);
+    if (switchRealm) {
+      try {
+        await switchRealm(realmId);
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
+  };
   const queryClient = useQueryClient();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgot, setIsForgot] = useState(false);
@@ -356,7 +420,6 @@ export default function Auth() {
                 <div key={`realm-column-${columnIndex + 1}`} className="space-y-2">
                   {column.map((realm, realmIndex) => {
                     const displayIndex = columnIndex * 5 + realmIndex + 1;
-
                     return (
                       <div key={realm.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
                         <div className="flex items-start justify-between gap-3">
@@ -374,12 +437,25 @@ export default function Auth() {
                           <span>{realm.population}</span>
                           <span className="font-mono">Gate {displayIndex}/10</span>
                         </div>
+                        <button
+                          className="mt-2 w-full bg-cyan-100 hover:bg-cyan-200 text-cyan-900 rounded px-2 py-1 text-xs font-semibold transition-colors"
+                          onClick={() => { setRealmDetail(realm); setRealmModalOpen(true); }}
+                        >
+                          View Details
+                        </button>
                       </div>
                     );
                   })}
                 </div>
               ))}
             </div>
+
+            <RealmDetailModal
+              realm={realmDetail}
+              open={realmModalOpen}
+              onClose={() => setRealmModalOpen(false)}
+              onSelect={handleSelectRealm}
+            />
           </aside>
 
           <Card className="flex min-h-0 w-full flex-col border border-slate-300 bg-white text-slate-900 shadow-lg transition-shadow duration-300 hover:shadow-xl xl:max-h-[calc(100vh-8rem)]">
