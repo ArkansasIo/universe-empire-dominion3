@@ -245,7 +245,7 @@ import { seedOgameCatalogIfNeeded } from "./services/ogameCatalogService";
   registerGuildRoutes(app);
   registerForumRoutes(app);
   registerEmpireCombatUniverseRoutes(app);
-  const viewerRoot = path.resolve(import.meta.dirname, "..", "threejs_galaxy_viewer_project");
+  const viewerRoot = path.resolve(process.cwd(), "threejs_galaxy_viewer_project");
   app.get("/api/viewer/status", (_req, res) => {
     res.json({
       ok: true,
