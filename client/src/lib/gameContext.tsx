@@ -1596,7 +1596,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       amount: safeAmount,
       resources,
       inventory: craftingInventory,
-      buildings,
+      buildings: { ...buildings },
       research,
       shipyardCategorySystems,
       starshipLineSystems,

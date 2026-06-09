@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { triggerDataRefresh } from './GameLoop';
+
+interface ResourceEntry {
+  player: string;
+  planet: string | number;
+  amount: unknown;
+}
 
 const ResourceManager: React.FC = () => {
-  const [resources, setResources] = useState<any[]>([]);
+  const [resources, setResources] = useState<ResourceEntry[]>([]);
   const fetchResources = () => {
     fetch('/api/players')
       .then(res => res.json())
       .then(players => {
         // Aggregate resources from all players' planets
-        const allResources = [];
+        const allResources: ResourceEntry[] = [];
         players.forEach((player: any) => {
           (player.sectorsOwned || []).forEach((sector: any) => {
             (sector.planets || []).forEach((planet: any) => {
@@ -34,7 +39,7 @@ const ResourceManager: React.FC = () => {
       <h2>Resource Manager</h2>
       <ul>
         {resources.map((r, i) => (
-          <li key={i}>{r.player} - {r.planet}: {r.amount}</li>
+          <li key={i}>{r.player} - {r.planet}: {JSON.stringify(r.amount)}</li>
         ))}
       </ul>
     </div>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { triggerDataRefresh } from './GameLoop';
-import { Player } from './xenoberage-types';
-import { getPlayers } from './xenoberage-api';
+import type { Player } from '../xenoberage-types';
+import { getPlayers } from '../xenoberage-api';
 
 const PlayerList: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -13,7 +12,7 @@ const PlayerList: React.FC = () => {
     setLoading(true);
     getPlayers()
       .then(setPlayers)
-      .catch((err) => setError(err.message || 'Failed to load players'))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load players'))
       .finally(() => setLoading(false));
   };
   useEffect(() => {
