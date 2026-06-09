@@ -4,23 +4,37 @@ import { gameEngine } from "./gameEngine";
 import {
   calculateLegacyBankTick,
   calculateLegacyBounty,
+  calculateLegacyDefenseDegradation,
+  calculateLegacyEmergencyWarpDegrade,
   calculateLegacyMarketPrice,
+  calculateLegacyMineHitChance,
   calculateLegacyPlanetProduction,
   calculateLegacyPlanetProductionDetail,
   calculateLegacyPortManifest,
   calculateLegacyPortProduction,
   calculateLegacyRealspaceTurnCost,
+  calculateLegacyScan,
+  calculateLegacySpacePlague,
   calculateLegacyTechEffect,
   calculateLegacyTransferFee,
   calculateLegacyUpgradeCost,
+  canBuildLegacyBase,
+  canCaptureLegacyPlanet,
+  canUseLegacyShipTransfer,
+  clampLegacyPlanetCredits,
+  formatLegacyNumber,
+  getLegacyAdminPublicInfo,
+  getLegacyIntegrationInfo,
   getLegacyPublicGameConfig,
   getLegacyRace,
   getLegacyRaceOperationsProfile,
   getLegacyRaceSystemBonus,
   getLegacySchedulerPlan,
+  getLegacyServerAccess,
   getLegacySystemsDashboard,
   purchaseLegacyDevice,
   shouldRegenerateNewbieShip,
+  shouldTowFromFederation,
   type LegacyResourceKey,
 } from "@shared/config";
 
@@ -31,6 +45,18 @@ export function registerGameRoutes(app: Express) {
 
   app.get("/api/game/config/systems", (_req: Request, res: Response) => {
     res.json(getLegacySystemsDashboard());
+  });
+
+  app.get("/api/game/config/server-access", (_req: Request, res: Response) => {
+    res.json(getLegacyServerAccess());
+  });
+
+  app.get("/api/game/config/admin-public", (_req: Request, res: Response) => {
+    res.json(getLegacyAdminPublicInfo());
+  });
+
+  app.get("/api/game/config/integrations", (_req: Request, res: Response) => {
+    res.json(getLegacyIntegrationInfo());
   });
 
   app.get("/api/game/config/scheduler", (req: Request, res: Response) => {
@@ -86,6 +112,11 @@ export function registerGameRoutes(app: Express) {
     res.json({ fee: calculateLegacyTransferFee(Number(req.query.amount || 0)) });
   });
 
+  app.post("/api/game/config/banking/ship-transfer", (req: Request, res: Response) => {
+    const { senderValue, transferValue, turnsPlayed, minutesSinceSimilarTransfer } = req.body || {};
+    res.json(canUseLegacyShipTransfer(Number(senderValue || 0), Number(transferValue || 0), Number(turnsPlayed || 0), Number(minutesSinceSimilarTransfer || 0)));
+  });
+
   app.get("/api/game/config/upgrades/cost", (req: Request, res: Response) => {
     const currentLevel = Number(req.query.currentLevel || 0);
     const targetLevel = Number(req.query.targetLevel || 0);
@@ -100,7 +131,7 @@ export function registerGameRoutes(app: Express) {
 
   app.post("/api/game/config/devices/purchase", (req: Request, res: Response) => {
     const { device, credits, inventory, quantity } = req.body || {};
-    if (!["genesis", "emergencyWarp", "beacons", "warpEditors"].includes(String(device))) {
+    if (!["genesis", "emergencyWarp", "beacons", "warpEditors", "mineDeflectors", "escapePods", "fuelScoops", "lastSeenShipDevices"].includes(String(device))) {
       return res.status(400).json({ message: "Invalid legacy device" });
     }
     res.json(purchaseLegacyDevice(device, Number(credits || 0), inventory || {}, Number(quantity || 1)));
@@ -113,6 +144,46 @@ export function registerGameRoutes(app: Express) {
 
   app.post("/api/game/config/bounty", (req: Request, res: Response) => {
     res.json(calculateLegacyBounty(req.body || {}));
+  });
+
+  app.post("/api/game/config/scanning", (req: Request, res: Response) => {
+    res.json(calculateLegacyScan(req.body || {}));
+  });
+
+  app.get("/api/game/config/federation/tow-check", (req: Request, res: Response) => {
+    res.json({ tow: shouldTowFromFederation(Number(req.query.hullLevel || 0), Number(req.query.score || 0)) });
+  });
+
+  app.post("/api/game/config/planets/capture", (req: Request, res: Response) => {
+    res.json(canCaptureLegacyPlanet(req.body || {}));
+  });
+
+  app.get("/api/game/config/planets/credit-cap", (req: Request, res: Response) => {
+    res.json({ credits: clampLegacyPlanetCredits(Number(req.query.credits || 0), String(req.query.hasBase || "false") === "true") });
+  });
+
+  app.post("/api/game/config/planets/base-check", (req: Request, res: Response) => {
+    res.json(canBuildLegacyBase(req.body || {}));
+  });
+
+  app.get("/api/game/config/combat/defense-degrade", (req: Request, res: Response) => {
+    res.json({ defenses: calculateLegacyDefenseDegradation(Number(req.query.defenses || 0), Number(req.query.supportingEnergy || 0)) });
+  });
+
+  app.get("/api/game/config/combat/mine-hit", (req: Request, res: Response) => {
+    res.json({ hitChance: calculateLegacyMineHitChance(Number(req.query.hullSize || 0), Number(req.query.mineCount || 0), Number(req.query.mineDeflectors || 0)) });
+  });
+
+  app.get("/api/game/config/devices/emergency-warp-degrade", (req: Request, res: Response) => {
+    res.json({ remaining: calculateLegacyEmergencyWarpDegrade(Number(req.query.hullSize || 0), Number(req.query.devices || 0)) });
+  });
+
+  app.get("/api/game/config/events/space-plague", (req: Request, res: Response) => {
+    res.json({ colonists: calculateLegacySpacePlague(Number(req.query.colonists || 0)) });
+  });
+
+  app.get("/api/game/config/localization/number", (req: Request, res: Response) => {
+    res.json({ formatted: formatLegacyNumber(Number(req.query.value || 0)) });
   });
 
   app.get("/api/game/config/travel/realspace-cost", (req: Request, res: Response) => {

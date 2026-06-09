@@ -8,6 +8,44 @@ export const LEGACY_PHP_GAME_CONFIG = {
     genre: 'turn-based space trading, empire building, exploration, and combat',
     tone: 'frontier sci-fi with ancient-gate infrastructure, xenobe threats, and faction warfare',
     coreLoops: ['trade', 'upgrade', 'explore', 'colonize', 'research', 'defend', 'conquer'],
+    defaultLanguage: 'english',
+  },
+
+  presentation: {
+    colors: {
+      header: '#500050',
+      line1: '#300030',
+      line2: '#400040',
+    },
+    footerStyle: 'old',
+    displayPasswordOnSignup: false,
+  },
+
+  localization: {
+    language: 'english',
+    numberDecimalPoint: '.',
+    numberThousandsSeparator: ',',
+  },
+
+  admin: {
+    password: 'admin',
+    email: 'admin@example.local',
+    name: 'Local Admin',
+    emailServer: 'mail.example.com',
+    forumUrl: 'http://forums.blacknova.net',
+  },
+
+  debugLogin: {
+    enabled: false,
+    secret: 'change-this-local-secret',
+    expires: '+15 minutes',
+  },
+
+  integrations: {
+    sourcePath: '/universe_empire_dominion3_src',
+    fullGamePath: '/integrations/universe_empire_dominion3_full',
+    remoteUrl: 'https://github.com/ArkansasIo/universe-empire-dominion3.git',
+    listServerEnabled: false,
   },
 
   schedule: {
@@ -52,9 +90,14 @@ export const LEGACY_PHP_GAME_CONFIG = {
     allowGenesisDestroy: true,
     sofaAttackAllowed: true,
     knownSpaceMapAllowed: true,
+    fullScanCost: 1,
+    scanErrorFactor: 20,
     maxTraderoutesPerPlayer: 40,
     minBasesToOwnSector: 4,
     maxCreditsWithoutBase: 10000000,
+    corpPlanetTransfers: false,
+    minValueCapture: 0,
+    validateCapturedPlanetCredits: false,
   },
 
   newbieRegen: {
@@ -242,7 +285,7 @@ export const LEGACY_PHP_GAME_CONFIG = {
     frigate: { role: 'balanced combat patrol', subclasses: ['missile frigate', 'escort', 'interdictor'] },
     cruiser: { role: 'front-line fleet combat', subclasses: ['beam cruiser', 'carrier cruiser', 'siege cruiser'] },
     dreadnought: { role: 'late-game capital warfare', subclasses: ['planet breaker', 'gate bastion', 'command ark'] },
-    motherShip: { role: 'mobile empire hub', subclasses: ['ark mother', 'forge mother', 'hive mother'] },
+    motherShip: { role: 'mobile empire hub', sourceKey: 'monther_ship', subclasses: ['ark mother', 'forge mother', 'hive mother'] },
   },
 
   technologyTree: {
@@ -359,6 +402,19 @@ export function getLegacyRaceSystemBonus(code: string) {
 export function getLegacyPublicGameConfig() {
   return {
     identity: LEGACY_PHP_GAME_CONFIG.identity,
+    presentation: LEGACY_PHP_GAME_CONFIG.presentation,
+    localization: LEGACY_PHP_GAME_CONFIG.localization,
+    admin: {
+      email: LEGACY_PHP_GAME_CONFIG.admin.email,
+      name: LEGACY_PHP_GAME_CONFIG.admin.name,
+      emailServer: LEGACY_PHP_GAME_CONFIG.admin.emailServer,
+      forumUrl: LEGACY_PHP_GAME_CONFIG.admin.forumUrl,
+    },
+    debugLogin: {
+      enabled: LEGACY_PHP_GAME_CONFIG.debugLogin.enabled,
+      expires: LEGACY_PHP_GAME_CONFIG.debugLogin.expires,
+    },
+    integrations: LEGACY_PHP_GAME_CONFIG.integrations,
     schedule: LEGACY_PHP_GAME_CONFIG.schedule,
     universe: LEGACY_PHP_GAME_CONFIG.universe,
     rules: LEGACY_PHP_GAME_CONFIG.rules,

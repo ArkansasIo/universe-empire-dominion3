@@ -31,6 +31,7 @@ The live project is organized around a consistent shell:
 - legacy PHP game tuning and race metadata in [config/config.php](config/config.php)
 - TypeScript runtime mirror and helper logic in [shared/config/legacyPhpGameConfig.ts](shared/config/legacyPhpGameConfig.ts), exposed through `/api/game/config`
 - expanded legacy game-system calculations in [shared/config/legacyPhpGameLogic.ts](shared/config/legacyPhpGameLogic.ts), including scheduler, banking, planet production, devices, bounty, travel, and newbie regeneration helpers
+- complete legacy config coverage now also includes presentation colors, localization, admin/public contact metadata, integration paths, scan rules, federation tow rules, capture checks, planet credit caps, defense degradation, mine hits, emergency-warp degradation, base construction, ship transfer limits, and plague events
 
 Major active page groups include:
 

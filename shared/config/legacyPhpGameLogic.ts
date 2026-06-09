@@ -71,6 +71,10 @@ export interface LegacyDeviceInventory {
   emergencyWarp?: number;
   beacons?: number;
   warpEditors?: number;
+  mineDeflectors?: number;
+  escapePods?: number;
+  fuelScoops?: number;
+  lastSeenShipDevices?: number;
 }
 
 export interface LegacyDevicePurchaseResult {
@@ -108,6 +112,24 @@ export interface LegacyBountyResult {
   reason: string;
 }
 
+export interface LegacyScanInput {
+  scannerSensors: number;
+  targetCloak: number;
+  fullScan?: boolean;
+}
+
+export interface LegacyCaptureInput {
+  shipValue: number;
+  planetValue: number;
+  hasRequiredBases?: boolean;
+}
+
+export interface LegacyServerAccessResult {
+  canLogin: boolean;
+  canCreateAccount: boolean;
+  reason: string;
+}
+
 const schedulerIntervals: Record<LegacySchedulerEvent, number> = {
   turns: LEGACY_PHP_GAME_CONFIG.schedule.turns,
   ports: LEGACY_PHP_GAME_CONFIG.schedule.ports,
@@ -140,6 +162,26 @@ const deviceConfig = {
   warpEditors: {
     price: LEGACY_PHP_GAME_CONFIG.devices.warpEditorPrice,
     max: LEGACY_PHP_GAME_CONFIG.devices.maxWarpEditors,
+    enabled: true,
+  },
+  mineDeflectors: {
+    price: LEGACY_PHP_GAME_CONFIG.devices.mineDeflectorPrice,
+    max: LEGACY_PHP_GAME_CONFIG.devices.maxUpgradeDevices,
+    enabled: true,
+  },
+  escapePods: {
+    price: LEGACY_PHP_GAME_CONFIG.devices.escapePodPrice,
+    max: 1,
+    enabled: true,
+  },
+  fuelScoops: {
+    price: LEGACY_PHP_GAME_CONFIG.devices.fuelScoopPrice,
+    max: 1,
+    enabled: true,
+  },
+  lastSeenShipDevices: {
+    price: LEGACY_PHP_GAME_CONFIG.devices.lastSeenShipDevicePrice,
+    max: 1,
     enabled: true,
   },
 } as const;
@@ -254,6 +296,10 @@ export function purchaseLegacyDevice(device: keyof typeof deviceConfig, credits:
     emergencyWarp: inventory.emergencyWarp ?? 0,
     beacons: inventory.beacons ?? 0,
     warpEditors: inventory.warpEditors ?? 0,
+    mineDeflectors: inventory.mineDeflectors ?? 0,
+    escapePods: inventory.escapePods ?? 0,
+    fuelScoops: inventory.fuelScoops ?? 0,
+    lastSeenShipDevices: inventory.lastSeenShipDevices ?? 0,
   };
   const reasons: string[] = [];
   const totalCost = config.price * safeQuantity;
@@ -320,6 +366,131 @@ export function calculateLegacyRealspaceTurnCost(distance: number, engineLevel: 
   return Math.max(1, Math.ceil(scaledDistance / engineFactor));
 }
 
+export function getLegacyServerAccess(): LegacyServerAccessResult {
+  if (LEGACY_PHP_GAME_CONFIG.rules.serverClosed) {
+    return {
+      canLogin: false,
+      canCreateAccount: !LEGACY_PHP_GAME_CONFIG.rules.accountCreationClosed,
+      reason: 'server_closed',
+    };
+  }
+
+  return {
+    canLogin: true,
+    canCreateAccount: !LEGACY_PHP_GAME_CONFIG.rules.accountCreationClosed,
+    reason: LEGACY_PHP_GAME_CONFIG.rules.accountCreationClosed ? 'account_creation_closed' : 'open',
+  };
+}
+
+export function calculateLegacyScan(input: LegacyScanInput) {
+  const fullScanAllowed = LEGACY_PHP_GAME_CONFIG.rules.allowFullScan;
+  const usingFullScan = Boolean(input.fullScan && fullScanAllowed);
+  const sensorScore = clamp(input.scannerSensors);
+  const cloakScore = clamp(input.targetCloak);
+  const errorAdjustedCloak = cloakScore * (1 + LEGACY_PHP_GAME_CONFIG.rules.scanErrorFactor / 100);
+  const baseAccuracy = sensorScore + errorAdjustedCloak === 0
+    ? 100
+    : (sensorScore / (sensorScore + errorAdjustedCloak)) * 100;
+  const accuracy = clamp(usingFullScan ? baseAccuracy + 20 : baseAccuracy, 5, 100);
+
+  return {
+    allowed: !input.fullScan || fullScanAllowed,
+    fullScan: usingFullScan,
+    turnCost: usingFullScan ? LEGACY_PHP_GAME_CONFIG.rules.fullScanCost : 0,
+    accuracy: Math.round(accuracy * 100) / 100,
+    errorChance: Math.round((100 - accuracy) * 100) / 100,
+  };
+}
+
+export function shouldTowFromFederation(hullLevel: number, score: number): boolean {
+  return hullLevel > LEGACY_PHP_GAME_CONFIG.rules.fedMaxHull || score > LEGACY_PHP_GAME_CONFIG.rules.fedMaxScore;
+}
+
+export function canCaptureLegacyPlanet(input: LegacyCaptureInput) {
+  if (!input.hasRequiredBases) {
+    return { ok: false, reason: 'sector_base_requirement_not_met' };
+  }
+
+  if (LEGACY_PHP_GAME_CONFIG.rules.minValueCapture <= 0) {
+    return { ok: true, reason: 'capture_value_rule_disabled' };
+  }
+
+  const requiredShipValue = clamp(input.planetValue) * LEGACY_PHP_GAME_CONFIG.rules.minValueCapture;
+  return {
+    ok: clamp(input.shipValue) >= requiredShipValue,
+    reason: clamp(input.shipValue) >= requiredShipValue ? 'capture_allowed' : 'ship_value_too_low',
+    requiredShipValue,
+  };
+}
+
+export function clampLegacyPlanetCredits(credits: number, hasBase: boolean): number {
+  if (hasBase) return Math.min(clamp(credits), LEGACY_PHP_GAME_CONFIG.economy.banking.planetMaxCredits);
+  return Math.min(clamp(credits), LEGACY_PHP_GAME_CONFIG.rules.maxCreditsWithoutBase);
+}
+
+export function calculateLegacyDefenseDegradation(defenses: number, supportingEnergy: number): number {
+  const energyRequired = defenses * LEGACY_PHP_GAME_CONFIG.production.energyPerFighter;
+  if (supportingEnergy >= energyRequired) return defenses;
+  return Math.floor(clamp(defenses) * (1 - LEGACY_PHP_GAME_CONFIG.production.defenseDegradeRate));
+}
+
+export function calculateLegacySpacePlague(colonists: number): number {
+  return Math.max(0, Math.floor(clamp(colonists) * (1 - LEGACY_PHP_GAME_CONFIG.production.spacePlagueKills)));
+}
+
+export function canBuildLegacyBase(resources: { ore?: number; goods?: number; organics?: number; credits?: number }) {
+  const requirements = LEGACY_PHP_GAME_CONFIG.production.baseRequirements;
+  const reasons: string[] = [];
+  if ((resources.ore ?? 0) < requirements.ore) reasons.push(`Needs ${requirements.ore.toLocaleString()} ore.`);
+  if ((resources.goods ?? 0) < requirements.goods) reasons.push(`Needs ${requirements.goods.toLocaleString()} goods.`);
+  if ((resources.organics ?? 0) < requirements.organics) reasons.push(`Needs ${requirements.organics.toLocaleString()} organics.`);
+  if ((resources.credits ?? 0) < requirements.credits) reasons.push(`Needs ${requirements.credits.toLocaleString()} credits.`);
+  return { ok: reasons.length === 0, reasons, requirements };
+}
+
+export function calculateLegacyMineHitChance(hullSize: number, mineCount: number, mineDeflectors = 0): number {
+  if (hullSize < LEGACY_PHP_GAME_CONFIG.rules.mineHullSize || mineCount <= 0) return 0;
+  const adjustedMines = Math.max(0, mineCount - mineDeflectors);
+  return clamp((adjustedMines / Math.max(1, adjustedMines + 100)) * 100, 0, 95);
+}
+
+export function calculateLegacyEmergencyWarpDegrade(hullSize: number, emergencyWarpDevices: number): number {
+  if (hullSize <= LEGACY_PHP_GAME_CONFIG.rules.ewdMaxHullSize) return emergencyWarpDevices;
+  const overage = hullSize - LEGACY_PHP_GAME_CONFIG.rules.ewdMaxHullSize;
+  return Math.max(0, Math.floor(emergencyWarpDevices - overage));
+}
+
+export function canUseLegacyShipTransfer(senderValue: number, transferValue: number, turnsPlayed: number, minutesSinceSimilarTransfer: number) {
+  const banking = LEGACY_PHP_GAME_CONFIG.economy.banking;
+  const reasons: string[] = [];
+  if (banking.shipTransferMinTurns > 0 && turnsPlayed < banking.shipTransferMinTurns) {
+    reasons.push(`Requires ${banking.shipTransferMinTurns} turns played.`);
+  }
+  if (banking.shipTransferSenderValueLimit > 0 && transferValue > senderValue * banking.shipTransferSenderValueLimit) {
+    reasons.push(`Transfer exceeds ${banking.shipTransferSenderValueLimit * 100}% of sender value.`);
+  }
+  if (banking.shipTransferCooldownMinutes > 0 && minutesSinceSimilarTransfer < banking.shipTransferCooldownMinutes) {
+    reasons.push(`Requires ${banking.shipTransferCooldownMinutes} minutes between similar transfers.`);
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+
+export function formatLegacyNumber(value: number): string {
+  const { numberDecimalPoint, numberThousandsSeparator } = LEGACY_PHP_GAME_CONFIG.localization;
+  const [whole, decimal] = String(value).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, numberThousandsSeparator);
+  return decimal ? `${grouped}${numberDecimalPoint}${decimal}` : grouped;
+}
+
+export function getLegacyAdminPublicInfo() {
+  const { email, name, emailServer, forumUrl } = LEGACY_PHP_GAME_CONFIG.admin;
+  return { email, name, emailServer, forumUrl };
+}
+
+export function getLegacyIntegrationInfo() {
+  return LEGACY_PHP_GAME_CONFIG.integrations;
+}
+
 export function getLegacyRaceOperationsProfile(raceCode: string) {
   const bonuses = getLegacyRaceSystemBonus(raceCode);
   return {
@@ -341,5 +512,10 @@ export function getLegacySystemsDashboard(now = Date.now()) {
     rules: LEGACY_PHP_GAME_CONFIG.rules,
     production: LEGACY_PHP_GAME_CONFIG.production,
     facilities: LEGACY_PHP_GAME_CONFIG.facilities,
+    presentation: LEGACY_PHP_GAME_CONFIG.presentation,
+    localization: LEGACY_PHP_GAME_CONFIG.localization,
+    serverAccess: getLegacyServerAccess(),
+    admin: getLegacyAdminPublicInfo(),
+    integrations: getLegacyIntegrationInfo(),
   };
 }
