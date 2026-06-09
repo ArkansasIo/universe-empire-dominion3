@@ -30,6 +30,7 @@ The live project is organized around a consistent shell:
 - backend routes and storage under [server](/d:/New%20folder/StellarDominion-2/server)
 - legacy PHP game tuning and race metadata in [config/config.php](config/config.php)
 - TypeScript runtime mirror and helper logic in [shared/config/legacyPhpGameConfig.ts](shared/config/legacyPhpGameConfig.ts), exposed through `/api/game/config`
+- expanded legacy game-system calculations in [shared/config/legacyPhpGameLogic.ts](shared/config/legacyPhpGameLogic.ts), including scheduler, banking, planet production, devices, bounty, travel, and newbie regeneration helpers
 
 Major active page groups include:
 

@@ -18,6 +18,32 @@ export {
   type LegacyResourceKey,
   type LegacyRaceCode,
 } from './legacyPhpGameConfig';
+export {
+  calculateLegacyBankTick,
+  calculateLegacyBounty,
+  calculateLegacyPortManifest,
+  calculateLegacyRealspaceTurnCost,
+  calculateLegacyTechEffect,
+  calculateLegacyTransferFee,
+  calculateLegacyUpgradeCost,
+  calculateLegacyPlanetProductionDetail,
+  getLegacyRaceOperationsProfile,
+  getLegacySchedulerPlan,
+  getLegacySystemsDashboard,
+  purchaseLegacyDevice,
+  shouldRegenerateNewbieShip,
+  type LegacyBankAccountInput,
+  type LegacyBankAccountResult,
+  type LegacyBountyInput,
+  type LegacyBountyResult,
+  type LegacyDeviceInventory,
+  type LegacyDevicePurchaseResult,
+  type LegacyPlanetProductionInput,
+  type LegacyPlanetProductionResult,
+  type LegacySchedulerEvent,
+  type LegacySchedulerEventState,
+  type LegacyShipTechProfile,
+} from './legacyPhpGameLogic';
 
 // Progression System Exports
 export {
