@@ -110,6 +110,7 @@ interface PageAction {
   icon: LucideIcon;
   helper: string;
   onClick?: () => void;
+  assetPath?: string;
 }
 
 interface DetailCard {
@@ -118,6 +119,15 @@ interface DetailCard {
   helper: string;
   icon: LucideIcon;
   toneClass: string;
+  assetPath?: string;
+}
+
+interface ShellVisualSet {
+  hero: string;
+  secondary: string;
+  accent: string;
+  base: string;
+  chrome: string;
 }
 
 interface LayoutPlayerOptions {
@@ -507,8 +517,8 @@ const getCommandTiles = (context: ActivePageContext | null): CommandTile[] => {
     case "Empire":
       return [
         { href: "/empire-planets", icon: Globe, label: "Planet Grid", description: "Jump across core worlds, colonies, and moons from one empire map.", kicker: "Worlds", assetPath: PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path },
-        { href: "/resources", icon: Pickaxe, label: "Resource Control", description: "Tune raw extraction, storage balance, and supply throughput.", kicker: "Economy", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
-        { href: "/facilities", icon: Factory, label: "Facility Queue", description: "Push building upgrades, production chains, and support structures.", kicker: "Build", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
+        { href: "/resources", icon: Pickaxe, label: "Resource Control", description: "Tune raw extraction, storage balance, and supply throughput.", kicker: "Economy", assetPath: OGAMEX_FEATURED_ASSETS.RESOURCE_HEADER.path },
+        { href: "/facilities", icon: Factory, label: "Facility Queue", description: "Push building upgrades, production chains, and support structures.", kicker: "Build", assetPath: OGAMEX_FEATURED_ASSETS.FACILITY_HEADER.path },
         { href: "/stations", icon: Satellite, label: "Orbital Layer", description: "Coordinate stations, support rings, and orbital logistics.", kicker: "Orbit", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
       ];
     case "Research":
@@ -520,7 +530,7 @@ const getCommandTiles = (context: ActivePageContext | null): CommandTile[] => {
       ];
     case "Military":
       return [
-        { href: "/fleet", icon: Send, label: "Fleet Orders", description: "Dispatch missions, monitor arrivals, and keep combat groups active.", kicker: "Command", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
+        { href: "/fleet", icon: Send, label: "Fleet Orders", description: "Dispatch missions, monitor arrivals, and keep combat groups active.", kicker: "Command", assetPath: OGAMEX_FEATURED_ASSETS.SHIPYARD_HEADER.path },
         { href: "/combat", icon: ShieldAlert, label: "Combat Center", description: "Launch raids, attacks, and tactical battle actions.", kicker: "Battle", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
         { href: "/battle-logs", icon: ScrollText, label: "Action Reports", description: "Inspect logs, after-action reports, and battle summaries.", kicker: "Reports", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
         { href: "/planet-occupation", icon: TowerControl, label: "Occupation Ops", description: "Control captured planets, garrisons, and extraction pressure.", kicker: "Control", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
@@ -543,7 +553,7 @@ const getCommandTiles = (context: ActivePageContext | null): CommandTile[] => {
       return [
         { href: "/market", icon: ShoppingBag, label: "Market Grid", description: "Trade resources, parts, and strategic commodities.", kicker: "Trade", assetPath: OGAMEX_FEATURED_ASSETS.BACKGROUND.path },
         { href: "/storefront", icon: Store, label: "Storefront", description: "Browse premium goods, packs, and featured offers.", kicker: "Store", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
-        { href: "/season-pass", icon: Award, label: "Season Track", description: "Push time-limited objectives, rewards, and progression goals.", kicker: "Pass", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
+        { href: "/season-pass", icon: Award, label: "Season Track", description: "Push time-limited objectives, rewards, and progression goals.", kicker: "Pass", assetPath: OGAMEX_FEATURED_ASSETS.REWARDS_HEADER.path },
         { href: "/achievements", icon: Trophy, label: "Milestones", description: "Track long-term progression achievements and reward claims.", kicker: "Goals", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
       ];
     default:
@@ -553,6 +563,67 @@ const getCommandTiles = (context: ActivePageContext | null): CommandTile[] => {
         { href: "/diagnostics", icon: AlertTriangle, label: "Diagnostics", description: "Check client and gameplay systems for current issues.", kicker: "Status", assetPath: OGAMEX_FEATURED_ASSETS.DEFENSE.path },
         { href: "/about", icon: BookOpen, label: "Game Docs", description: "Read the current project overview, systems, and support pages.", kicker: "Docs", assetPath: OGAMEX_FEATURED_ASSETS.RESEARCH.path },
       ];
+  }
+};
+
+const getShellVisuals = (context: ActivePageContext | null): ShellVisualSet => {
+  switch (context?.section) {
+    case "Empire":
+      return {
+        hero: PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path,
+        secondary: OGAMEX_FEATURED_ASSETS.RESOURCE_HEADER.path,
+        accent: OGAMEX_FEATURED_ASSETS.MOON.path,
+        base: OGAMEX_FEATURED_ASSETS.FACILITY_HEADER.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    case "Research":
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+        secondary: OGAMEX_FEATURED_ASSETS.BACKGROUND.path,
+        accent: OGAMEX_FEATURED_ASSETS.SHIPS.path,
+        base: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    case "Military":
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.SHIPYARD_HEADER.path,
+        secondary: OGAMEX_FEATURED_ASSETS.DEFENSE.path,
+        accent: OGAMEX_FEATURED_ASSETS.BATTLECRUISER.path,
+        base: OGAMEX_FEATURED_ASSETS.SHIPS_COMPACT.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    case "Exploration":
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.BACKGROUND.path,
+        secondary: OGAMEX_FEATURED_ASSETS.MOON.path,
+        accent: OGAMEX_FEATURED_ASSETS.SHIPS.path,
+        base: OGAMEX_FEATURED_ASSETS.BACKGROUND.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    case "Diplomacy":
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.DEFENSE.path,
+        secondary: PLANET_ASSETS.TERRESTRIAL.JUNGLE.path,
+        accent: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+        base: OGAMEX_FEATURED_ASSETS.BACKGROUND.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    case "Economy":
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.REWARDS_HEADER.path,
+        secondary: OGAMEX_FEATURED_ASSETS.SHIPS.path,
+        accent: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+        base: OGAMEX_FEATURED_ASSETS.RESOURCE_HEADER.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
+    default:
+      return {
+        hero: OGAMEX_FEATURED_ASSETS.BACKGROUND.path,
+        secondary: OGAMEX_FEATURED_ASSETS.SHIPS.path,
+        accent: OGAMEX_FEATURED_ASSETS.DEFENSE.path,
+        base: OGAMEX_FEATURED_ASSETS.MOON.path,
+        chrome: OGAMEX_FEATURED_ASSETS.UI_SHEET.path,
+      };
   }
 };
 
@@ -665,15 +736,22 @@ function GameSidebar({
 }) {
   const sidebarPlanetImage = PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path;
   const sidebarBackdropImage = OGAMEX_FEATURED_ASSETS.BACKGROUND.path;
+  const sidebarFleetImage = OGAMEX_FEATURED_ASSETS.SHIPS.path;
+  const sidebarDefenseImage = OGAMEX_FEATURED_ASSETS.DEFENSE.path;
   const fallbackPlanetImage = "/theme-temp.png";
 
   return (
     <>
       <div className="sd-sidebar-console p-4">
-        <div className="relative overflow-hidden rounded border border-slate-200 text-center">
+        <div className="relative overflow-hidden rounded-xl border border-slate-200 text-center shadow-sm">
           <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{ backgroundImage: `url(${sidebarBackdropImage})` }} />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 via-white/80 to-white/95" />
-          <div className="relative p-3">
+          <div className="relative">
+            <div
+              className="h-24 bg-cover bg-center"
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.04), rgba(2, 6, 23, 0.62)), url(${sidebarBackdropImage})` }}
+            />
+            <div className="p-3 -mt-8">
             <div className="mx-auto mb-2 h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-white shadow-sm">
               <img
                 src={sidebarPlanetImage}
@@ -693,6 +771,19 @@ function GameSidebar({
             <div className="sd-sidebar-status-pill mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
               <span>OGameX Assets</span>
               <span className="text-primary">Linked</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div
+                className="h-14 rounded-lg border border-slate-200 bg-cover bg-center"
+                style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.74)), url(${sidebarFleetImage})` }}
+                title="Fleet visual"
+              />
+              <div
+                className="h-14 rounded-lg border border-slate-200 bg-cover bg-center"
+                style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.74)), url(${sidebarDefenseImage})` }}
+                title="Defense visual"
+              />
+            </div>
             </div>
           </div>
         </div>
@@ -786,18 +877,19 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
-  const [showPageCommandDeck, setShowPageCommandDeck] = useState(false);
+  const [showPageCommandDeck, setShowPageCommandDeck] = useState(true);
   const appVersion = import.meta.env.VITE_APP_VERSION || "Alpha 1.5.0";
   const buildId = import.meta.env.VITE_BUILD_ID || "dev";
   const buildTime = import.meta.env.VITE_BUILD_TIME || "local";
   const activePageContext = getActivePageContext(location, isAdmin);
+  const shellVisuals = getShellVisuals(activePageContext);
   const contextBackdropImage = activePageContext?.section === "Research"
     ? OGAMEX_FEATURED_ASSETS.RESEARCH.path
     : activePageContext?.section === "Military"
       ? OGAMEX_FEATURED_ASSETS.SHIPS.path
       : activePageContext?.section === "System"
         ? OGAMEX_FEATURED_ASSETS.DEFENSE.path
-        : OGAMEX_FEATURED_ASSETS.BACKGROUND.path;
+        : shellVisuals.hero;
   const scenePreset = resolveShellScenePreset(activePageContext?.section);
 
   const { data: turnData, isLoading: turnsLoading } = useQuery({
@@ -833,7 +925,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   useEffect(() => {
-    setShowPageCommandDeck(false);
+    setShowPageCommandDeck(true);
   }, [location]);
 
   useEffect(() => {
@@ -959,6 +1051,15 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                   { label: "Mission Ops", value: activeMissions.length.toString(), helper: "Fleets and actions currently in progress.", icon: Send, toneClass: "text-red-700" },
                   { label: "Unread Reports", value: unreadMessages.toString(), helper: "Unread system logs and command messages.", icon: Mail, toneClass: "text-violet-700" },
                 ];
+  const shellImageCycle = [shellVisuals.hero, shellVisuals.secondary, shellVisuals.accent, shellVisuals.base, shellVisuals.chrome];
+  const visualizedSharedActions = sharedActions.map((action, index) => ({
+    ...action,
+    assetPath: action.assetPath || shellImageCycle[index % shellImageCycle.length],
+  }));
+  const visualizedDetailCards = detailCards.map((detail, index) => ({
+    ...detail,
+    assetPath: detail.assetPath || shellImageCycle[index % shellImageCycle.length],
+  }));
 
   useEffect(() => {
     const root = document.documentElement;
@@ -1006,9 +1107,14 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       
       {/* Top Bar - Resources */}
       <header className={cn(
-        "sd-topbar relative z-20 border-b border-slate-200 bg-white/88 shadow-sm backdrop-blur-md",
+        "sd-topbar relative z-20 overflow-hidden border-b border-slate-200 bg-white/88 bg-cover bg-center shadow-sm backdrop-blur-md",
         isMobile && displayPreferences.stickyMobileBars && "sticky top-0",
-      )}>
+      )}
+        style={{
+          backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.84), rgba(255,255,255,0.95)), url(${shellVisuals.chrome})`,
+        }}
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-cyan-300/40" />
         <div className={cn(
           "flex flex-col gap-2 px-3 py-3 sm:px-5",
           !isMobile && "flex-row items-start justify-between xl:items-center",
@@ -1188,6 +1294,22 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                        </div>
                      </div>
                      <div className={cn("flex items-start gap-3", isMobile && "w-full justify-between")}>
+                       <div className="hidden overflow-hidden rounded-2xl border border-cyan-200/15 bg-black/20 p-1 shadow-lg lg:grid lg:w-[260px] lg:grid-cols-[1.3fr_0.8fr] lg:gap-1">
+                         <div
+                           className="min-h-[112px] rounded-xl bg-cover bg-center"
+                           style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.04), rgba(2, 6, 23, 0.64)), url(${shellVisuals.hero})` }}
+                         />
+                         <div className="grid gap-1">
+                           <div
+                             className="rounded-xl bg-cover bg-center"
+                             style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.72)), url(${shellVisuals.accent})` }}
+                           />
+                           <div
+                             className="rounded-xl bg-cover bg-center"
+                             style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.72)), url(${shellVisuals.base})` }}
+                           />
+                         </div>
+                       </div>
                        <div className={cn("sd-submenu-indicator rounded-xl border border-cyan-200/15 bg-white/5 px-3 py-2.5 text-right", isMobile && "flex-1 text-left")}>
                          <div className="sd-eyebrow text-[10px] uppercase tracking-[0.24em] text-slate-400">Current Submenu</div>
                          <div className="mt-1 font-rajdhani text-lg font-semibold uppercase tracking-wider text-cyan-100">
@@ -1225,31 +1347,38 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                    </div>
 
                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                     {activePageContext.siblings.map((item) => {
+                     {activePageContext.siblings.map((item, index) => {
                        const itemActive = isNavItemActive(item, location);
+                       const itemVisual = shellImageCycle[index % shellImageCycle.length];
 
                        return (
                          <Link key={item.href} href={item.href}>
                            <div
                              className={cn(
-                               "sd-subpage-card h-full min-w-0 cursor-pointer rounded-xl border px-3 py-3 transition-all duration-200",
+                               "sd-subpage-card h-full min-w-0 cursor-pointer overflow-hidden rounded-xl border transition-all duration-200",
                                itemActive
                                  ? "border-primary bg-primary/10 shadow-sm"
                                  : "border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-white"
                              )}
                            >
-                             <div className="mb-2 flex items-center gap-2">
-                               <item.icon className={cn("h-4 w-4", itemActive ? "text-primary" : "text-slate-500")} />
-                               <div className={cn(
-                                 "font-rajdhani text-sm font-bold uppercase tracking-wider",
-                                 itemActive ? "text-primary" : "text-slate-800"
-                               )}>
-                                 {item.label}
+                             <div
+                               className="h-16 bg-cover bg-center"
+                               style={{ backgroundImage: `linear-gradient(90deg, rgba(2, 6, 23, 0.12), rgba(2, 6, 23, 0.76)), url(${itemVisual})` }}
+                             />
+                             <div className="px-3 py-3">
+                               <div className="mb-2 flex items-center gap-2">
+                                 <item.icon className={cn("h-4 w-4", itemActive ? "text-primary" : "text-slate-500")} />
+                                 <div className={cn(
+                                   "font-rajdhani text-sm font-bold uppercase tracking-wider",
+                                   itemActive ? "text-primary" : "text-slate-800"
+                                 )}>
+                                   {item.label}
+                                 </div>
                                </div>
+                               <p className="text-xs leading-5 text-slate-500">
+                                 {item.description || "Open this related page."}
+                               </p>
                              </div>
-                             <p className="text-xs leading-5 text-slate-500">
-                               {item.description || "Open this related page."}
-                             </p>
                            </div>
                          </Link>
                        );
@@ -1330,24 +1459,32 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
 
                          <div className="grid gap-2 sm:grid-cols-3">
                            {[
-                             { id: "planet", label: "Planet Command", icon: Globe, helper: "Surface production, resources, and city management." },
-                             { id: "moon", label: "Moon Operations", icon: CircleDot, helper: "Moon base logistics, jump gate, and relay controls." },
-                             { id: "station", label: "Station Control", icon: Satellite, helper: "Orbital support, stations, and deep-space operations." },
+                             { id: "planet", label: "Planet Command", icon: Globe, helper: "Surface production, resources, and city management.", assetPath: PLANET_ASSETS.TERRESTRIAL.EARTH_LIKE.path },
+                             { id: "moon", label: "Moon Operations", icon: CircleDot, helper: "Moon base logistics, jump gate, and relay controls.", assetPath: OGAMEX_FEATURED_ASSETS.MOON.path },
+                             { id: "station", label: "Station Control", icon: Satellite, helper: "Orbital support, stations, and deep-space operations.", assetPath: OGAMEX_FEATURED_ASSETS.SHIPS.path },
                            ].map((base) => {
                              const isActiveBase = activeBase === base.id;
                              return (
                                <Button
                                  key={base.id}
                                  variant={isActiveBase ? "default" : "outline"}
-                                 className={cn("h-auto min-h-[68px] flex-col items-start justify-start gap-1 p-3 text-left", isActiveBase && "shadow-sm")}
+                                 className={cn(
+                                   "relative h-auto min-h-[112px] overflow-hidden bg-cover bg-center p-0 text-left text-white",
+                                   isActiveBase && "ring-2 ring-cyan-300 shadow-sm"
+                                 )}
                                  onClick={() => setActiveBase(base.id as "planet" | "moon" | "station")}
+                                 style={{
+                                   backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.86)), url(${base.assetPath})`,
+                                 }}
                                >
-                                 <div className="flex items-center gap-2">
-                                   <base.icon className="h-4 w-4" />
-                                   <span className="font-semibold">{base.label}</span>
-                                 </div>
-                                 <div className={cn("text-xs leading-5 whitespace-normal", isActiveBase ? "text-primary-foreground/80" : "text-slate-500")}>
-                                   {base.helper}
+                                 <div className="flex h-full w-full flex-col justify-end gap-1 p-3">
+                                   <div className="flex items-center gap-2">
+                                     <base.icon className="h-4 w-4 text-cyan-100" />
+                                     <span className="font-semibold">{base.label}</span>
+                                   </div>
+                                   <div className="text-xs leading-5 whitespace-normal text-slate-200">
+                                     {base.helper}
+                                   </div>
                                  </div>
                                </Button>
                              );
@@ -1367,19 +1504,26 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                          </div>
 
                          <div className="grid gap-3 sm:grid-cols-2">
-                           {sharedActions.map((action) => {
+                           {visualizedSharedActions.map((action) => {
                              const actionContent = (
                                <Button
                                  variant={action.onClick ? "default" : "outline"}
-                                 className="h-auto min-h-[72px] w-full flex-col items-start justify-start gap-1 p-3 text-left"
+                                 className="group relative h-auto min-h-[104px] w-full overflow-hidden border-slate-300 bg-cover bg-center p-0 text-left text-white shadow-sm"
                                  onClick={action.onClick}
+                                 style={{
+                                   backgroundImage: `linear-gradient(90deg, rgba(2, 6, 23, 0.86), rgba(15, 23, 42, 0.56)), url(${action.assetPath})`,
+                                 }}
                                >
-                                 <div className="flex items-center gap-2">
-                                   <action.icon className="h-4 w-4" />
-                                   <span className="font-semibold">{action.label}</span>
-                                 </div>
-                                 <div className={cn("text-xs leading-5 whitespace-normal", action.onClick ? "text-primary-foreground/80" : "text-slate-500")}>
-                                   {action.helper}
+                                 <div className="flex h-full w-full flex-col items-start justify-between gap-2 p-3">
+                                   <div className="flex items-center gap-2">
+                                     <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-black/25">
+                                       <action.icon className="h-4 w-4 text-cyan-100" />
+                                     </span>
+                                     <span className="font-orbitron text-sm font-bold tracking-wide text-white">{action.label}</span>
+                                   </div>
+                                   <div className="text-xs leading-5 whitespace-normal text-slate-200">
+                                     {action.helper}
+                                   </div>
                                  </div>
                                </Button>
                              );
@@ -1408,14 +1552,20 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                        </div>
 
                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                         {detailCards.map((detail) => (
-                           <div key={detail.label} className="sd-detail-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                             <div className="flex items-center justify-between gap-3">
-                               <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{detail.label}</div>
-                               <detail.icon className={cn("h-4 w-4", detail.toneClass)} />
+                         {visualizedDetailCards.map((detail) => (
+                           <div key={detail.label} className="sd-detail-card overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                             <div
+                               className="h-16 bg-cover bg-center"
+                               style={{ backgroundImage: `linear-gradient(90deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.78)), url(${detail.assetPath})` }}
+                             />
+                             <div className="p-3">
+                               <div className="flex items-center justify-between gap-3">
+                                 <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{detail.label}</div>
+                                 <detail.icon className={cn("h-4 w-4", detail.toneClass)} />
+                               </div>
+                               <div className={cn("mt-2 font-orbitron text-lg font-bold", detail.toneClass)}>{detail.value}</div>
+                               <div className="mt-1 text-xs leading-5 text-slate-500">{detail.helper}</div>
                              </div>
-                             <div className={cn("mt-2 font-orbitron text-lg font-bold", detail.toneClass)}>{detail.value}</div>
-                             <div className="mt-1 text-xs leading-5 text-slate-500">{detail.helper}</div>
                            </div>
                          ))}
                        </div>
@@ -1458,10 +1608,3 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
-
-
-
-
-
-
-

@@ -25,17 +25,17 @@ import {
   type FacilityOperationsDomain,
   type FacilitySelection,
 } from "@/lib/facilityOperationsCatalog";
-import { MENU_ASSETS } from "@shared/config";
+import { MENU_ASSETS, OGAMEX_FEATURED_ASSETS } from "@shared/config";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
 const FACILITY_IMAGE_MAP: Record<string, string> = {
-  roboticsFactory: MENU_ASSETS.BUILDINGS.ROBOTICS_FACTORY.path,
-  shipyard:         MENU_ASSETS.BUILDINGS.SHIPYARD.path,
-  researchLab:      MENU_ASSETS.BUILDINGS.RESEARCH_LAB.path,
-  naniteFactory:    MENU_ASSETS.BUILDINGS.ROBOTICS_FACTORY.path,
+  roboticsFactory: OGAMEX_FEATURED_ASSETS.ROBOT_FACTORY.path,
+  shipyard:         OGAMEX_FEATURED_ASSETS.SHIPYARD.path,
+  researchLab:      OGAMEX_FEATURED_ASSETS.RESEARCH_LAB.path,
+  naniteFactory:    OGAMEX_FEATURED_ASSETS.NANITE_FACTORY.path,
   terraformer:      MENU_ASSETS.BUILDINGS.SPACEPORT.path,
   spaceStation:     MENU_ASSETS.BUILDINGS.SPACEPORT.path,
   allianceDepot:    MENU_ASSETS.BUILDINGS.TRADE_STATION.path,
@@ -670,9 +670,40 @@ export default function Facilities() {
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-cover bg-center shadow-sm"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.95)), url(${OGAMEX_FEATURED_ASSETS.FACILITY_HEADER.path})`,
+          }}
+        >
+          <div className="grid gap-4 p-5 text-white lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200">OGameX Facility Deck</div>
+              <h2 className="mt-2 font-orbitron text-3xl font-bold">Infrastructure</h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-200">
+                Surface construction, lunar bases, and ship production now use imported factory, lab, shipyard, and nanite facility art.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[OGAMEX_FEATURED_ASSETS.ROBOT_FACTORY, OGAMEX_FEATURED_ASSETS.SHIPYARD, OGAMEX_FEATURED_ASSETS.RESEARCH_LAB, OGAMEX_FEATURED_ASSETS.NANITE_FACTORY].map((asset) => (
+                <div key={asset.id} className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/10 p-2">
+                  <img
+                    src={asset.path}
+                    alt={asset.name}
+                    className="h-full w-full rounded object-contain"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = TEMP_THEME_IMAGE;
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
         <div className="flex items-center justify-between">
            <div>
-             <h2 className="text-3xl font-orbitron font-bold text-slate-900">Infrastructure</h2>
+             <h2 className="text-3xl font-orbitron font-bold text-slate-900">Infrastructure Snapshot</h2>
              <p className="text-muted-foreground font-rajdhani text-lg">Manage surface facilities, lunar bases, and orbital stations.</p>
            </div>
         </div>
@@ -682,7 +713,7 @@ export default function Facilities() {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={MENU_ASSETS.BUILDINGS.ROBOTICS_FACTORY.path} alt="surface" className="w-7 h-7 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
+                  <img src={OGAMEX_FEATURED_ASSETS.ROBOT_FACTORY.path} alt="surface" className="w-7 h-7 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
                 </div>
                 <div>
                   <div className="text-xs text-blue-600 uppercase">Surface Level</div>
@@ -696,7 +727,7 @@ export default function Facilities() {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={MENU_ASSETS.BUILDINGS.SPACEPORT.path} alt="moon" className="w-7 h-7 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
+                  <img src={OGAMEX_FEATURED_ASSETS.MOON.path} alt="moon" className="w-7 h-7 object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
                 </div>
                 <div>
                   <div className="text-xs text-slate-600 uppercase">Lunar Level</div>
@@ -712,7 +743,7 @@ export default function Facilities() {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center overflow-hidden">
-                  <img src={MENU_ASSETS.BUILDINGS.SHIPYARD.path} alt="orbital" className="w-7 h-7 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
+                  <img src={OGAMEX_FEATURED_ASSETS.SHIPYARD.path} alt="orbital" className="w-7 h-7 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} />
                 </div>
                 <div>
                   <div className="text-xs text-purple-600 uppercase">Orbital Level</div>

@@ -26,11 +26,33 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MENU_ASSETS } from "@shared/config";
+import { MENU_ASSETS, OGAMEX_FEATURED_ASSETS } from "@shared/config";
 
 const GAME_VERSION = "Alpha 1.5.0";
 const UNIVERSE_ID = "Nexus-Alpha";
 const TEMP_THEME_IMAGE = "/theme-temp.png";
+const LANDING_BACKDROP_IMAGE = OGAMEX_FEATURED_ASSETS.BACKGROUND.path;
+
+const LANDING_SHOWCASE_IMAGES = [
+  {
+    name: "Fleet Armada",
+    label: "Fleet",
+    path: OGAMEX_FEATURED_ASSETS.SHIPS.path,
+    description: "Warship staging, patrol pressure, and launch-window command.",
+  },
+  {
+    name: "Research Nexus",
+    label: "Research",
+    path: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+    description: "Laboratory upgrades, tech vectors, and breakthrough planning.",
+  },
+  {
+    name: "Defense Grid",
+    label: "Defense",
+    path: OGAMEX_FEATURED_ASSETS.DEFENSE.path,
+    description: "Planetary shields, station guns, and hardpoint readiness.",
+  },
+] as const;
 
 const TEN_REALMS = [
   {
@@ -117,8 +139,10 @@ const TEN_REALMS = [
 
 const REALM_COLUMNS = [TEN_REALMS.slice(0, 5), TEN_REALMS.slice(5)] as const;
 
+type RealmDetail = typeof TEN_REALMS[number] & { universes?: string[] };
+
 type RealmDetailModalProps = {
-  realm: typeof TEN_REALMS[number] | null & { universes?: string[] };
+  realm: RealmDetail | null;
   open: boolean;
   onClose: () => void;
   onSelect?: (realmId: string) => void;
@@ -364,23 +388,34 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-3 pt-20 pb-14 relative overflow-hidden">
-      <header className="fixed top-0 inset-x-0 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-sm z-30">
+    <div
+      className="min-h-screen flex items-center justify-center p-3 pt-20 pb-14 relative overflow-hidden bg-slate-950"
+      style={{
+        backgroundImage: `radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.18), transparent 30%), linear-gradient(180deg, rgba(2, 6, 23, 0.22), rgba(2, 6, 23, 0.9)), url(${LANDING_BACKDROP_IMAGE})`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.05)_1px,transparent_1px)] bg-[size:42px_42px]" />
+      <div className="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-28 bottom-16 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl" />
+
+      <header className="fixed top-0 inset-x-0 h-16 border-b border-cyan-200/10 bg-slate-950/80 backdrop-blur-md z-30">
         <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm" className="text-xs text-slate-700 border-slate-300 hover:bg-slate-100">
+            <Button asChild variant="outline" size="sm" className="text-xs text-cyan-100 border-cyan-200/20 bg-white/5 hover:bg-cyan-100/10">
               <a href="https://github.com/ArkansasIo/universe-empire-domions" target="_blank" rel="noopener noreferrer" data-testid="button-github-top-left">
                 <Github className="w-4 h-4 mr-1" /> GitHub
               </a>
             </Button>
-            <Rocket className="w-5 h-5 text-primary" />
-            <span className="font-orbitron font-bold text-sm text-slate-900 tracking-wide">universe-empire-domions</span>
+            <Rocket className="w-5 h-5 text-cyan-200" />
+            <span className="font-orbitron font-bold text-sm text-white tracking-wide">universe-empire-domions</span>
           </div>
           <div className="flex items-center gap-1">
-            <Link href="/forums"><Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Forums</Button></Link>
-            <Link href="/about"><Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">About</Button></Link>
-            <Link href="/terms"><Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Terms</Button></Link>
-            <Link href="/privacy"><Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900">Privacy</Button></Link>
+            <Link href="/forums"><Button variant="ghost" size="sm" className="text-xs text-slate-300 hover:text-white hover:bg-white/10">Forums</Button></Link>
+            <Link href="/about"><Button variant="ghost" size="sm" className="text-xs text-slate-300 hover:text-white hover:bg-white/10">About</Button></Link>
+            <Link href="/terms"><Button variant="ghost" size="sm" className="text-xs text-slate-300 hover:text-white hover:bg-white/10">Terms</Button></Link>
+            <Link href="/privacy"><Button variant="ghost" size="sm" className="text-xs text-slate-300 hover:text-white hover:bg-white/10">Privacy</Button></Link>
           </div>
         </div>
       </header>
@@ -400,8 +435,11 @@ export default function Auth() {
 
       <div className="relative z-10 w-full max-w-[1600px]">
         <div className="grid gap-4 xl:grid-cols-3 items-stretch">
-          <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden xl:max-h-[calc(100vh-8rem)]">
-            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-4 text-white">
+          <aside className="flex min-h-0 flex-col rounded-2xl border border-cyan-200/15 bg-slate-950/78 text-white shadow-2xl shadow-cyan-950/30 backdrop-blur-md overflow-hidden xl:max-h-[calc(100vh-8rem)]">
+            <div
+              className="border-b border-cyan-200/10 bg-cover bg-center px-4 py-4 text-white"
+              style={{ backgroundImage: `linear-gradient(135deg, rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.78)), url(${OGAMEX_FEATURED_ASSETS.MOON.path})` }}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/10 ring-1 ring-cyan-200/20">
                   <Globe2 className="h-5 w-5 text-cyan-200" />
@@ -420,29 +458,36 @@ export default function Auth() {
                 <div key={`realm-column-${columnIndex + 1}`} className="space-y-2">
                   {column.map((realm, realmIndex) => {
                     const displayIndex = columnIndex * 5 + realmIndex + 1;
+                    const realmVisual = LANDING_SHOWCASE_IMAGES[(displayIndex - 1) % LANDING_SHOWCASE_IMAGES.length];
                     return (
-                      <div key={realm.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                      <div key={realm.id} className="overflow-hidden rounded-xl border border-cyan-200/10 bg-slate-900/72 shadow-sm">
+                        <div
+                          className="h-16 bg-cover bg-center"
+                          style={{ backgroundImage: `linear-gradient(90deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.86)), url(${realmVisual.path})` }}
+                        />
+                        <div className="p-2.5">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Realm {displayIndex}</div>
-                            <div className="font-orbitron text-xs font-bold text-slate-900 sm:text-sm">{realm.name}</div>
+                            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/70">Realm {displayIndex}</div>
+                            <div className="font-orbitron text-xs font-bold text-white sm:text-sm">{realm.name}</div>
                           </div>
-                          <div className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-700">
+                          <div className="rounded-full border border-cyan-200/20 bg-cyan-300/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-100">
                             {realm.rank}
                           </div>
                         </div>
-                        <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{realm.universe}</div>
-                        <p className="mt-1.5 text-xs leading-4 text-slate-600">{realm.detail}</p>
-                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                        <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/55">{realm.universe}</div>
+                        <p className="mt-1.5 text-xs leading-4 text-slate-300">{realm.detail}</p>
+                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                           <span>{realm.population}</span>
                           <span className="font-mono">Gate {displayIndex}/10</span>
                         </div>
                         <button
-                          className="mt-2 w-full bg-cyan-100 hover:bg-cyan-200 text-cyan-900 rounded px-2 py-1 text-xs font-semibold transition-colors"
+                          className="mt-2 w-full rounded border border-cyan-200/15 bg-cyan-300/10 px-2 py-1 text-xs font-semibold text-cyan-100 transition-colors hover:bg-cyan-300/20"
                           onClick={() => { setRealmDetail(realm); setRealmModalOpen(true); }}
                         >
                           View Details
                         </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -458,9 +503,13 @@ export default function Auth() {
             />
           </aside>
 
-          <Card className="flex min-h-0 w-full flex-col border border-slate-300 bg-white text-slate-900 shadow-lg transition-shadow duration-300 hover:shadow-xl xl:max-h-[calc(100vh-8rem)]">
-            <CardHeader className="pb-2 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
+          <Card className="flex min-h-0 w-full flex-col overflow-hidden border border-cyan-200/20 bg-slate-950/84 text-white shadow-2xl shadow-cyan-950/40 backdrop-blur-md transition-shadow duration-300 hover:shadow-cyan-950/60 xl:max-h-[calc(100vh-8rem)]">
+            <div
+              className="min-h-[150px] bg-cover bg-center"
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.12), rgba(2, 6, 23, 0.94)), url(${OGAMEX_FEATURED_ASSETS.SHIPS.path})` }}
+            />
+            <CardHeader className="-mt-20 pb-2 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-950 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden ring-2 ring-cyan-200/25">
                 <img
                   src={MENU_ASSETS.NAVIGATION.EXPLORATION.path}
                   alt="universe-empire-domions"
@@ -468,11 +517,26 @@ export default function Auth() {
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }}
                 />
               </div>
-              <CardTitle className="text-3xl font-orbitron font-bold tracking-wider text-slate-900 xl:text-[2rem]">universe-empire-domions</CardTitle>
-              <CardDescription className="mt-2 font-rajdhani text-base font-medium text-slate-700">Command your fleet. Conquer the stars.</CardDescription>
+              <CardTitle className="text-3xl font-orbitron font-bold tracking-wider text-white drop-shadow xl:text-[2rem]">universe-empire-domions</CardTitle>
+              <CardDescription className="mt-2 font-rajdhani text-base font-medium text-cyan-100/85">Command your fleet. Conquer the stars.</CardDescription>
             </CardHeader>
 
             <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto">
+              <div className="grid gap-2 sm:grid-cols-3">
+                {LANDING_SHOWCASE_IMAGES.map((visual) => (
+                  <div key={visual.name} className="group overflow-hidden rounded-xl border border-cyan-200/10 bg-slate-900/80">
+                    <div
+                      className="h-20 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                      style={{ backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.82)), url(${visual.path})` }}
+                    />
+                    <div className="p-2.5">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/70">{visual.label}</div>
+                      <div className="font-orbitron text-xs font-bold text-white">{visual.name}</div>
+                      <p className="mt-1 text-[11px] leading-4 text-slate-400">{visual.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
               {tempPassword ? (
                 <div className="bg-green-50 border border-green-300 p-4 rounded-lg space-y-3">
                   <div className="flex gap-2 items-start">
@@ -505,27 +569,27 @@ export default function Auth() {
                 </div>
               ) : (
                 <>
-                  <div className="bg-slate-50 border border-slate-300 p-3 rounded-lg text-xs text-slate-700 flex gap-2 items-start">
-                    <Shield className="w-4 h-4 shrink-0 mt-0.5 text-slate-600" />
+                  <div className="border border-cyan-200/10 bg-slate-900/80 p-3 rounded-lg text-xs text-slate-300 flex gap-2 items-start">
+                    <Shield className="w-4 h-4 shrink-0 mt-0.5 text-cyan-200" />
                     <p>{isForgot ? "Enter your account details to reset your password." : (isLogin ? "Enter your credentials to command your fleet." : "Create an account to start your conquest.")}</p>
                   </div>
 
                   <form onSubmit={isForgot ? handleForgotPassword : handleSubmit} className="space-y-4">
                     {isLogin && !isForgot && (
                       <div className="space-y-3">
-                        <Button type="button" onClick={useDemoAccount} variant="outline" className="w-full border-slate-300 text-slate-700 hover:bg-slate-100" data-testid="button-demo-login" disabled={submitting}>
+                        <Button type="button" onClick={useDemoAccount} variant="outline" className="w-full border-cyan-200/20 bg-cyan-300/10 text-cyan-50 hover:bg-cyan-300/20" data-testid="button-demo-login" disabled={submitting}>
                           Use Demo Account (player1)
                         </Button>
-                        <div className="rounded-lg border border-red-200 bg-red-50/80 p-3">
-                          <div className="flex items-start gap-2 text-red-900">
+                        <div className="rounded-lg border border-red-300/20 bg-red-950/45 p-3">
+                          <div className="flex items-start gap-2 text-red-100">
                             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
                             <div className="space-y-2">
                               <p className="text-xs font-semibold uppercase tracking-[0.2em]">Administrator Access</p>
-                              <p className="text-xs text-red-800">
+                              <p className="text-xs text-red-200/80">
                                 Founder, owner, and dev-admin accounts use the dedicated control login.
                               </p>
                               <Link href="/admin-login">
-                                <Button type="button" variant="outline" size="sm" className="border-red-300 bg-white text-red-900 hover:bg-red-100" data-testid="button-admin-login-link">
+                                <Button type="button" variant="outline" size="sm" className="border-red-300/30 bg-red-100/10 text-red-50 hover:bg-red-100/20" data-testid="button-admin-login-link">
                                   Open Admin Login
                                 </Button>
                               </Link>
@@ -536,13 +600,13 @@ export default function Auth() {
                     )}
 
                     <div>
-                      <Label htmlFor="username" className="text-slate-900 text-sm font-semibold">Username</Label>
+                      <Label htmlFor="username" className="text-slate-100 text-sm font-semibold">Username</Label>
                       <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter username (min 3 characters)" className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600" data-testid="input-username" disabled={submitting} required minLength={3} autoComplete="username" />
                     </div>
 
                     {isForgot && (
                       <div>
-                        <Label htmlFor="email" className="text-slate-900 text-sm font-semibold">Email</Label>
+                        <Label htmlFor="email" className="text-slate-100 text-sm font-semibold">Email</Label>
                         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email address" className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600" data-testid="input-email" disabled={submitting} required />
                       </div>
                     )}
@@ -550,11 +614,11 @@ export default function Auth() {
                     {!isLogin && !isForgot && (
                       <>
                         <div>
-                          <Label htmlFor="email" className="text-slate-900 text-sm font-semibold">Email Address</Label>
+                          <Label htmlFor="email" className="text-slate-100 text-sm font-semibold">Email Address</Label>
                           <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email address" className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600" data-testid="input-email" disabled={submitting} required />
                         </div>
                         <div>
-                          <Label htmlFor="firstName" className="text-slate-900 text-sm font-semibold">First Name (Optional)</Label>
+                          <Label htmlFor="firstName" className="text-slate-100 text-sm font-semibold">First Name (Optional)</Label>
                           <Input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Your first name" className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 mt-1 focus:border-slate-600 focus:ring-slate-600" data-testid="input-firstName" disabled={submitting} />
                         </div>
                       </>
@@ -562,7 +626,7 @@ export default function Auth() {
 
                     {!isForgot && (
                       <div>
-                        <Label htmlFor="password" className="text-slate-900 text-sm font-semibold">Password</Label>
+                        <Label htmlFor="password" className="text-slate-100 text-sm font-semibold">Password</Label>
                         <div className="relative mt-1">
                           <Input
                             id="password"
@@ -593,7 +657,7 @@ export default function Auth() {
 
                     {error && <div className="text-red-700 text-sm bg-red-50 border border-red-300 p-2 rounded">{error}</div>}
 
-                    <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-orbitron tracking-widest h-12 shadow-lg transition-all hover:shadow-xl" disabled={submitting || isLoading} data-testid="button-submit-auth">
+                    <Button type="submit" className="w-full bg-cyan-300 text-slate-950 hover:bg-cyan-200 font-orbitron tracking-widest h-12 shadow-lg shadow-cyan-950/30 transition-all hover:shadow-cyan-900/40" disabled={submitting || isLoading} data-testid="button-submit-auth">
                       {submitting || isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -612,7 +676,7 @@ export default function Auth() {
                           setEmail("");
                           setError("");
                         }}
-                        className="w-full text-sm text-slate-700 hover:text-slate-900 underline transition-colors"
+                        className="w-full text-sm text-cyan-100/80 hover:text-white underline transition-colors"
                         disabled={submitting}
                         data-testid="button-back-forgot"
                       >
@@ -626,7 +690,7 @@ export default function Auth() {
                             setIsLogin(!isLogin);
                             setError("");
                           }}
-                          className="w-full text-sm text-slate-700 hover:text-slate-900 underline transition-colors"
+                          className="w-full text-sm text-cyan-100/80 hover:text-white underline transition-colors"
                           disabled={submitting}
                           data-testid="button-toggle-auth"
                         >
@@ -640,7 +704,7 @@ export default function Auth() {
                             setPassword("");
                             setError("");
                           }}
-                          className="w-full text-xs text-slate-500 hover:text-slate-700 underline transition-colors"
+                          className="w-full text-xs text-slate-400 hover:text-slate-200 underline transition-colors"
                           disabled={submitting}
                           data-testid="button-clear-credentials"
                         >
@@ -654,7 +718,7 @@ export default function Auth() {
                               setError("");
                               setTempPassword("");
                             }}
-                            className="w-full text-xs text-slate-500 hover:text-slate-700 underline transition-colors"
+                            className="w-full text-xs text-slate-400 hover:text-slate-200 underline transition-colors"
                             disabled={submitting}
                             data-testid="button-forgot-password"
                           >
@@ -668,26 +732,29 @@ export default function Auth() {
               )}
             </CardContent>
 
-            <CardFooter className="flex flex-col items-center gap-3 border-t border-slate-300 pb-5 pt-5">
+            <CardFooter className="flex flex-col items-center gap-3 border-t border-cyan-200/10 pb-5 pt-5">
               <Link href="/about">
-                <Button variant="ghost" className="text-slate-700 hover:text-slate-900 transition-colors" data-testid="button-about">
+                <Button variant="ghost" className="text-cyan-100/80 hover:bg-white/10 hover:text-white transition-colors" data-testid="button-about">
                   <Info className="w-4 h-4 mr-2" /> About universe-empire-domions
                 </Button>
               </Link>
-              <div className="flex items-center gap-4 text-xs text-slate-600">
-                <Link href="/terms" className="hover:text-slate-900 hover:underline transition-colors" data-testid="link-terms">
+              <div className="flex items-center gap-4 text-xs text-slate-400">
+                <Link href="/terms" className="hover:text-white hover:underline transition-colors" data-testid="link-terms">
                   Terms of Service
                 </Link>
                 <span>&bull;</span>
-                <Link href="/privacy" className="hover:text-slate-900 hover:underline transition-colors" data-testid="link-privacy">
+                <Link href="/privacy" className="hover:text-white hover:underline transition-colors" data-testid="link-privacy">
                   Privacy Policy
                 </Link>
               </div>
             </CardFooter>
           </Card>
 
-          <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden xl:max-h-[calc(100vh-8rem)]">
-            <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-4 text-white">
+          <aside className="flex min-h-0 flex-col rounded-2xl border border-cyan-200/15 bg-slate-950/78 text-white shadow-2xl shadow-cyan-950/30 backdrop-blur-md overflow-hidden xl:max-h-[calc(100vh-8rem)]">
+            <div
+              className="border-b border-cyan-200/10 bg-cover bg-center px-4 py-4 text-white"
+              style={{ backgroundImage: `linear-gradient(135deg, rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.78)), url(${OGAMEX_FEATURED_ASSETS.RESEARCH.path})` }}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/10 ring-1 ring-emerald-200/20">
                   <Server className="h-5 w-5 text-emerald-200" />
@@ -702,13 +769,16 @@ export default function Auth() {
               </p>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div
+                className="overflow-hidden rounded-xl border border-cyan-200/10 bg-slate-900/80 bg-cover bg-center p-4"
+                style={{ backgroundImage: `linear-gradient(135deg, rgba(2, 6, 23, 0.88), rgba(15, 23, 42, 0.88)), url(${OGAMEX_FEATURED_ASSETS.DEFENSE.path})` }}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Cluster Status</div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/70">Cluster Status</div>
                     <div className="mt-1 flex items-center gap-2">
-                      <HealthIcon className="h-5 w-5 text-slate-700" />
-                      <div className="font-orbitron text-lg font-bold text-slate-900">{formatHealthStatus(healthData?.status || "unhealthy")}</div>
+                      <HealthIcon className="h-5 w-5 text-cyan-100" />
+                      <div className="font-orbitron text-lg font-bold text-white">{formatHealthStatus(healthData?.status || "unhealthy")}</div>
                     </div>
                   </div>
                   <div className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getHealthBadgeClass(healthData?.status || "unhealthy")}`}>
@@ -716,46 +786,46 @@ export default function Auth() {
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg border border-slate-200 bg-white p-3">
-                    <div className="mb-1 flex items-center gap-2 text-slate-500 uppercase text-[10px] tracking-[0.2em]">
+                  <div className="rounded-lg border border-cyan-200/10 bg-slate-950/72 p-3">
+                    <div className="mb-1 flex items-center gap-2 text-cyan-200/70 uppercase text-[10px] tracking-[0.2em]">
                       <Activity className="h-3.5 w-3.5" /> Status Poll
                     </div>
-                    <div className="font-semibold text-slate-900">{formatTimeAgo(healthData?.timestamp)}</div>
+                    <div className="font-semibold text-slate-100">{formatTimeAgo(healthData?.timestamp)}</div>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-3">
-                    <div className="mb-1 flex items-center gap-2 text-slate-500 uppercase text-[10px] tracking-[0.2em]">
+                  <div className="rounded-lg border border-cyan-200/10 bg-slate-950/72 p-3">
+                    <div className="mb-1 flex items-center gap-2 text-cyan-200/70 uppercase text-[10px] tracking-[0.2em]">
                       <Gauge className="h-3.5 w-3.5" /> Universe Node
                     </div>
-                    <div className="font-semibold text-slate-900">{UNIVERSE_ID}</div>
+                    <div className="font-semibold text-slate-100">{UNIVERSE_ID}</div>
                   </div>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-slate-600">
+                <p className="mt-3 text-xs leading-5 text-slate-300">
                   {healthData?.message || "Telemetry synced from the public /api/status/health endpoint and summarized for title-screen visibility."}
                 </p>
               </div>
 
               <div className="space-y-2">
                 {healthChecks.map(([key, check]) => (
-                  <div key={key} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div key={key} className="rounded-xl border border-cyan-200/10 bg-slate-900/80 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">{key.replace(/([A-Z])/g, " $1").trim()}</div>
-                        <div className="font-semibold text-slate-900">{check.message}</div>
+                        <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/65">{key.replace(/([A-Z])/g, " $1").trim()}</div>
+                        <div className="font-semibold text-slate-100">{check.message}</div>
                       </div>
                       <div className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${check.status === "ok" ? "border-emerald-300 bg-emerald-50 text-emerald-700" : check.status === "warning" ? "border-amber-300 bg-amber-50 text-amber-700" : "border-red-300 bg-red-50 text-red-700"}`}>
                         {check.status}
                       </div>
                     </div>
-                    <div className="mt-2 text-xs text-slate-500">Value {Math.round(check.value)} / Threshold {Math.round(check.threshold)}</div>
+                    <div className="mt-2 text-xs text-slate-400">Value {Math.round(check.value)} / Threshold {Math.round(check.threshold)}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-slate-500">
+              <div className="rounded-xl border border-cyan-200/10 bg-slate-900/80 p-4">
+                <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-cyan-200/70">
                   <Crown className="h-4 w-4" /> Title-Screen Overview
                 </div>
-                <ul className="space-y-2 text-xs leading-5 text-slate-600">
+                <ul className="space-y-2 text-xs leading-5 text-slate-300">
                   <li>Login access sits between universe realm intelligence and live operations telemetry.</li>
                   <li>Healthy clusters report 200 status, while degraded or unhealthy states surface immediately here.</li>
                   <li>Both side panels stay attached to the home title page instead of the in-game menu layout.</li>
@@ -766,9 +836,9 @@ export default function Auth() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 border-t border-slate-300 bg-white/95 backdrop-blur-sm z-20">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-600">
-          <span className="font-semibold text-slate-700">universe-empire-domions</span>
+      <div className="fixed bottom-0 inset-x-0 border-t border-cyan-200/10 bg-slate-950/82 backdrop-blur-md z-20">
+        <div className="max-w-4xl mx-auto px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-300">
+          <span className="font-semibold text-cyan-100">universe-empire-domions</span>
           <span>&bull;</span>
           <span>Version {GAME_VERSION}</span>
           <span>&bull;</span>
@@ -780,7 +850,7 @@ export default function Auth() {
         </div>
       </div>
 
-      <Button asChild variant="outline" size="sm" className="fixed bottom-20 right-4 z-30 border-slate-300 text-slate-700 hover:bg-slate-100">
+      <Button asChild variant="outline" size="sm" className="fixed bottom-20 right-4 z-30 border-cyan-200/20 bg-slate-950/70 text-cyan-100 backdrop-blur-md hover:bg-cyan-300/10">
         <a href="https://github.com/ArkansasIo/universe-empire-domions/blob/master/LICENSE" target="_blank" rel="noopener noreferrer" data-testid="button-license-bottom-right">
           <FileText className="w-4 h-4 mr-1" /> License
         </a>

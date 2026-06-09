@@ -9,9 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   BACKGROUND_ASSETS,
+  CRAFTING_RECIPES,
   MENU_ASSETS,
   OGAMEX_FEATURED_ASSETS,
   SHIP_ASSETS,
+  calculateCraftingCost,
+  calculateCraftingIngredients,
+  canCraftRecipe,
+  type CraftingInventory,
+  type CraftingQueueItem,
+  type CraftingRecipe,
   type YardEntry,
 } from "@shared/config";
 import {
@@ -258,9 +265,263 @@ function ConstructorYardPanel({ title, description, domain, entries, status, onS
   );
 }
 
+function formatCraftingCost(cost: { metal?: number; crystal?: number; deuterium?: number; energy?: number; credits?: number }) {
+  return [
+    cost.metal ? `${cost.metal.toLocaleString()} M` : null,
+    cost.crystal ? `${cost.crystal.toLocaleString()} C` : null,
+    cost.deuterium ? `${cost.deuterium.toLocaleString()} D` : null,
+    cost.energy ? `${cost.energy.toLocaleString()} E` : null,
+    cost.credits ? `${cost.credits.toLocaleString()} CR` : null,
+  ].filter(Boolean).join(" / ");
+}
+
+function CraftingRecipeCard({
+  recipe,
+  resources,
+  inventory,
+  buildings,
+  research,
+  shipyardCategorySystems,
+  starshipLineSystems,
+  commanderLevel,
+  onStart,
+}: {
+  recipe: CraftingRecipe;
+  resources: any;
+  inventory: CraftingInventory;
+  buildings: any;
+  research: any;
+  shipyardCategorySystems: any;
+  starshipLineSystems: any;
+  commanderLevel: number;
+  onStart: (recipeId: string, amount: number) => void;
+}) {
+  const [amount, setAmount] = useState(1);
+  const cost = calculateCraftingCost(recipe, amount);
+  const ingredients = calculateCraftingIngredients(recipe, amount);
+  const check = canCraftRecipe({
+    recipe,
+    amount,
+    resources,
+    inventory,
+    buildings,
+    research,
+    shipyardCategorySystems,
+    starshipLineSystems,
+    commanderLevel,
+  });
+
+  return (
+    <Card className={cn("flex h-full flex-col overflow-hidden border-slate-200 bg-white shadow-sm", !check.ok && "opacity-80")}>
+      <div
+        className="border-b border-slate-200 bg-cover bg-center px-4 py-4 text-white"
+        style={{ backgroundImage: `linear-gradient(90deg, rgba(15,23,42,0.92), rgba(15,23,42,0.68)), url(${recipe.category === "constructor" ? OGAMEX_FEATURED_ASSETS.SHIPYARD_HEADER.path : OGAMEX_FEATURED_ASSETS.UI_SHEET.path})` }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Badge className="mb-2 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/20">{recipe.category}</Badge>
+            <CardTitle className="font-orbitron text-base">{recipe.name}</CardTitle>
+          </div>
+          <Badge variant="outline" className="border-white/20 bg-black/20 text-white">{recipe.outputKind}</Badge>
+        </div>
+      </div>
+      <CardContent className="flex flex-1 flex-col gap-4 p-4">
+        <p className="text-sm text-slate-600">{recipe.description}</p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Output</div>
+          <div className="mt-1 text-sm font-semibold text-slate-900">{recipe.outputAmount * amount}x {recipe.outputName}</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500">Cost</div>
+          <div className="font-mono text-slate-800">{formatCraftingCost(cost)}</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500">Ingredients</div>
+          {ingredients.length === 0 ? (
+            <div className="text-slate-500">No component input required.</div>
+          ) : (
+            <div className="space-y-1">
+              {ingredients.map((ingredient) => (
+                <div key={ingredient.itemId} className="flex justify-between">
+                  <span className="text-slate-600">{ingredient.itemId}</span>
+                  <span className={cn("font-mono", (inventory[ingredient.itemId] || 0) < ingredient.amount && "font-bold text-red-600")}>
+                    {inventory[ingredient.itemId] || 0} / {ingredient.amount}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {!check.ok ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            {check.reasons.slice(0, 3).join(" ")}
+          </div>
+        ) : null}
+        <div className="mt-auto flex gap-2">
+          <Input
+            type="number"
+            min="1"
+            max="25"
+            value={amount}
+            onChange={(event) => setAmount(Math.max(1, Math.min(25, Number(event.target.value) || 1)))}
+            className="h-9 w-20"
+          />
+          <Button className="flex-1 font-orbitron text-xs tracking-wider" disabled={!check.ok} onClick={() => onStart(recipe.id, amount)}>
+            <Hammer className="mr-2 h-4 w-4" /> Queue Craft
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CraftingYardPanel({
+  resources,
+  inventory,
+  craftingQueue,
+  buildings,
+  research,
+  shipyardCategorySystems,
+  starshipLineSystems,
+  commanderLevel,
+  onStartRecipe,
+  onStartConstructorWorkOrder,
+  onCompleteOrder,
+}: {
+  resources: any;
+  inventory: CraftingInventory;
+  craftingQueue: CraftingQueueItem[];
+  buildings: any;
+  research: any;
+  shipyardCategorySystems: any;
+  starshipLineSystems: any;
+  commanderLevel: number;
+  onStartRecipe: (recipeId: string, amount: number) => void;
+  onStartConstructorWorkOrder: (recipeId: string, amount: number) => void;
+  onCompleteOrder: (orderId: string) => void;
+}) {
+  const categories = ["materials", "components", "equipment", "shipyard", "constructor"] as const;
+  const materialRows = Object.entries(inventory).filter(([, amount]) => amount > 0);
+
+  return (
+    <div className="space-y-6">
+      <Card className="overflow-hidden border-slate-200 shadow-sm">
+        <div
+          className="border-b border-slate-200 bg-cover bg-center px-5 py-5 text-white"
+          style={{ backgroundImage: `linear-gradient(90deg, rgba(15,23,42,0.94), rgba(15,23,42,0.76)), url(${OGAMEX_FEATURED_ASSETS.SHIPYARD_HEADER.path})` }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200">Crafting System</div>
+              <h3 className="mt-2 font-orbitron text-2xl font-bold">Constructor Yard Fabrication</h3>
+              <p className="mt-2 max-w-3xl text-sm text-slate-200">
+                Craft materials, components, commander gear, shipyard assemblies, and constructor-yard kits using resources plus stored materials.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><div className="text-slate-300">Recipes</div><div className="font-orbitron text-xl font-bold">{CRAFTING_RECIPES.length}</div></div>
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><div className="text-slate-300">Orders</div><div className="font-orbitron text-xl font-bold">{craftingQueue.length}</div></div>
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><div className="text-slate-300">Materials</div><div className="font-orbitron text-xl font-bold">{materialRows.length}</div></div>
+            </div>
+          </div>
+        </div>
+        <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_1.2fr]">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Material Inventory</div>
+            {materialRows.length === 0 ? (
+              <div className="text-sm text-slate-500">No crafting materials stored.</div>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {materialRows.map(([itemId, amount]) => (
+                  <div key={itemId} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <span className="text-slate-700">{itemId.replace(/_/g, " ")}</span>
+                    <span className="font-mono font-bold text-slate-900">{amount}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Active Work Orders</div>
+            {craftingQueue.length === 0 ? (
+              <div className="text-sm text-slate-500">No active crafting orders.</div>
+            ) : (
+              <div className="space-y-3">
+                {craftingQueue.map((order) => {
+                  const remaining = Math.max(0, order.endsAt - Date.now());
+                  const progress = Math.max(4, Math.min(100, ((Date.now() - order.startedAt) / (order.endsAt - order.startedAt)) * 100));
+                  return (
+                    <div key={order.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-slate-900">{order.amount}x {order.outputName}</div>
+                          <div className="text-xs text-slate-500">{order.recipeName} / {order.outputKind}</div>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={remaining > 0} onClick={() => onCompleteOrder(order.id)}>
+                          {remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : "Complete"}
+                        </Button>
+                      </div>
+                      <Progress value={progress} className="mt-3 h-2" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="materials" className="w-full">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 border border-slate-200 bg-white p-2">
+          {categories.map((category) => (
+            <TabsTrigger key={category} value={category} className="data-[state=active]:bg-slate-50">
+              {category}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {categories.map((category) => (
+          <TabsContent key={category} value={category} className="mt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {CRAFTING_RECIPES.filter((recipe) => recipe.category === category).map((recipe) => (
+                <CraftingRecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  resources={resources}
+                  inventory={inventory}
+                  buildings={buildings}
+                  research={research}
+                  shipyardCategorySystems={shipyardCategorySystems}
+                  starshipLineSystems={starshipLineSystems}
+                  commanderLevel={commanderLevel}
+                  onStart={category === "constructor" || category === "shipyard" ? onStartConstructorWorkOrder : onStartRecipe}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
 export default function Shipyard() {
   const { toast } = useToast();
-  const { units, resources, buildUnit, queue, buildings } = useGame();
+  const {
+    units,
+    resources,
+    buildUnit,
+    queue,
+    buildings,
+    research,
+    commander,
+    craftingInventory,
+    craftingQueue,
+    shipyardCategorySystems,
+    starshipLineSystems,
+    startCraftingRecipe,
+    startConstructorWorkOrder,
+    completeCraftingOrder,
+  } = useGame();
   const combatShips = unitData.filter((u) => u.class === "fighter" || u.class === "capital");
   const civilShips = unitData.filter((u) => u.class === "civilian");
   const troops = unitData.filter((u) => u.class === "troop");
@@ -331,6 +592,7 @@ export default function Shipyard() {
             <TabsTrigger value="civil" className="font-orbitron" data-testid="tab-civil"><Box className="w-4 h-4 mr-2" /> Civil Ships</TabsTrigger>
             <TabsTrigger value="troops" className="font-orbitron" data-testid="tab-troops"><User className="w-4 h-4 mr-2" /> Personnel</TabsTrigger>
             <TabsTrigger value="vehicles" className="font-orbitron" data-testid="tab-vehicles"><Truck className="w-4 h-4 mr-2" /> Vehicles</TabsTrigger>
+            <TabsTrigger value="crafting" className="font-orbitron" data-testid="tab-crafting"><Hammer className="w-4 h-4 mr-2" /> Crafting Yard</TabsTrigger>
             <TabsTrigger value="constructor" className="font-orbitron" data-testid="tab-constructor"><Wrench className="w-4 h-4 mr-2" /> Constructor Yard</TabsTrigger>
             <TabsTrigger value="motherships" className="font-orbitron text-purple-700" data-testid="tab-motherships"><Orbit className="w-4 h-4 mr-2" /> Motherships</TabsTrigger>
             <TabsTrigger value="titan" className="font-orbitron text-red-600 font-bold" data-testid="tab-titan"><Hexagon className="w-4 h-4 mr-2" /> Titans</TabsTrigger>
@@ -340,6 +602,21 @@ export default function Shipyard() {
             <TabsContent value="civil" className="mt-0"><Card className="mb-6 bg-blue-50 border-blue-200" data-testid="card-civil-info"><CardContent className="p-4"><div className="flex items-center gap-4"><img src={SHIP_ASSETS.SPECIAL.TRANSPORT.path} alt="Civil fleet" className="w-10 h-10 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} /><div><div className="font-bold text-slate-900">Civilian Fleet</div><div className="text-sm text-blue-700">Transport, colonization, and resource gathering vessels. Essential for empire expansion and logistics.</div></div></div></CardContent></Card><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">{civilShips.map((item) => <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} buildings={buildings} />)}</div></TabsContent>
             <TabsContent value="troops" className="mt-0"><Card className="mb-6 bg-green-50 border-green-200" data-testid="card-troops-info"><CardContent className="p-4"><div className="flex items-center gap-4"><img src={MENU_ASSETS.BUILDINGS.SPACEPORT.path} alt="Personnel" className="w-10 h-10 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} /><div><div className="font-bold text-slate-900">Military Personnel</div><div className="text-sm text-green-700">Ground forces for planetary invasion and defense. Infantry, medics, engineers, and special operations units.</div></div></div></CardContent></Card><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">{troops.map((item) => <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} buildings={buildings} />)}</div></TabsContent>
             <TabsContent value="vehicles" className="mt-0"><Card className="mb-6 bg-orange-50 border-orange-200" data-testid="card-vehicles-info"><CardContent className="p-4"><div className="flex items-center gap-4"><img src={SHIP_ASSETS.CAPITALS.CORVETTE.path} alt="Vehicles" className="w-10 h-10 object-contain" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = TEMP_THEME_IMAGE; }} /><div><div className="font-bold text-slate-900">Ground Vehicles</div><div className="text-sm text-orange-700">Armored vehicles, artillery, and mobile platforms for ground combat superiority.</div></div></div></CardContent></Card><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">{vehicles.map((item) => <UnitCard key={item.id} item={item} count={units[item.id] || 0} onBuild={buildUnit} resources={resources} buildings={buildings} />)}</div></TabsContent>
+            <TabsContent value="crafting" className="mt-0">
+              <CraftingYardPanel
+                resources={resources}
+                inventory={craftingInventory}
+                craftingQueue={craftingQueue}
+                buildings={buildings}
+                research={research}
+                shipyardCategorySystems={shipyardCategorySystems}
+                starshipLineSystems={starshipLineSystems}
+                commanderLevel={commander?.stats?.level || 1}
+                onStartRecipe={(recipeId, amount) => void startCraftingRecipe(recipeId, amount)}
+                onStartConstructorWorkOrder={(recipeId, amount) => void startConstructorWorkOrder(recipeId, amount)}
+                onCompleteOrder={(orderId) => completeCraftingOrder(orderId)}
+              />
+            </TabsContent>
             <TabsContent value="constructor" className="mt-0">
               <div className="space-y-6">
                 <AdvancedConstructorDock />

@@ -21,6 +21,16 @@ import { CronJob, DEFAULT_CRON_JOBS } from './cronData';
 import { calculateConstructionCost, getMegaStructureTemplateById } from './megaStructures';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Megastructure, createMegastructure } from '@shared/config/megastructuresConfig';
+import {
+  CRAFTING_MATERIALS,
+  calculateCraftingTimeMs,
+  canCraftRecipe,
+  completeCraftingRecipe,
+  consumeCraftingInputs,
+  getCraftingRecipeById,
+  type CraftingInventory,
+  type CraftingQueueItem,
+} from '@shared/config/craftingSystemConfig';
 import { blink } from './blink';
 import { calculateResourceProduction } from './resourceMath';
 import { ORBITAL_BUILDINGS } from './stationData';
@@ -337,6 +347,12 @@ interface GameState {
   runCronJob: (id: string) => void;
   travelTo: (destinationName: string, coords: string, cost: { deuterium: number }) => void;
   inventory: {[key: string]: number};
+  craftingInventory: CraftingInventory;
+  craftingQueue: CraftingQueueItem[];
+  startCraftingRecipe: (recipeId: string, amount?: number) => Promise<boolean>;
+  completeCraftingOrder: (orderId: string) => boolean;
+  processCraftingQueue: () => void;
+  startConstructorWorkOrder: (recipeId: string, amount?: number) => Promise<boolean>;
   buyItem: (itemId: string, cost: {metal: number, crystal: number, deuterium: number}) => void;
   sellItem: (itemId: string, value: {metal: number, crystal: number, deuterium: number}) => void;
   processMissions: () => void;
@@ -418,6 +434,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     plasteel: 10,
     circuit_board: 5
   });
+  const [craftingInventory, setCraftingInventory] = useState<CraftingInventory>({
+    [CRAFTING_MATERIALS.PLASTEEL]: 10,
+    [CRAFTING_MATERIALS.CIRCUIT_BOARD]: 5,
+    [CRAFTING_MATERIALS.REFINED_ALLOY]: 3,
+  });
+  const [craftingQueue, setCraftingQueue] = useState<CraftingQueueItem[]>([]);
 
   const buyItem = (itemId: string, cost: {metal: number, crystal: number, deuterium: number}) => {
     if (
@@ -874,6 +896,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const normalizedStarshipLineSystems = (state as any).starshipLineSystems || {};
     const normalizedResearch = (state as any).research || {};
     const normalizedUnits = (state as any).units || {};
+    const normalizedCraftingInventory = (state as any).craftingInventory || craftingInventory;
+    const normalizedCraftingQueue = Array.isArray((state as any).craftingQueue) ? (state as any).craftingQueue : [];
     const normalizedMegastructures = (state as any).megastructures || [];
     const normalizedCommander = (state as any).commander
       ? {
@@ -904,6 +928,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       starshipLineSystems: normalizedStarshipLineSystems,
       research: normalizedResearch,
       units: normalizedUnits,
+      craftingInventory: normalizedCraftingInventory,
+      craftingQueue: normalizedCraftingQueue,
       megastructures: normalizedMegastructures,
       commander: normalizedCommander,
       government: normalizedGovernment,
@@ -927,6 +953,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setStarshipLineSystems(normalizedStarshipLineSystems);
     setResearch(normalizedResearch);
     setUnits(normalizedUnits);
+    setCraftingInventory(normalizedCraftingInventory);
+    setCraftingQueue(normalizedCraftingQueue);
     setMegastructures(normalizedMegastructures);
     if (normalizedCommander) setCommander(normalizedCommander);
     if (normalizedGovernment) setGovernment(normalizedGovernment);
@@ -1050,6 +1078,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         starshipLineSystems,
         research,
         units,
+        craftingInventory,
+        craftingQueue,
         megastructures,
         commander,
         government,
@@ -1065,7 +1095,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       lastAutosaveKeyRef.current = autosaveKey;
       debouncedSave(autosavePayload);
     }
-  }, [buildings, orbitalBuildings, refinerySystems, infrastructureSystems, technologySystems, kardashevSystems, megastructureSystems, technologyDivisionSystems, researchTreeSystems, shipyardCategorySystems, starshipLineSystems, research, units, megastructures, commander, government, artifacts, cronJobs, planetName, coordinates, isInitialized, isLoggedIn, debouncedSave]);
+  }, [buildings, orbitalBuildings, refinerySystems, infrastructureSystems, technologySystems, kardashevSystems, megastructureSystems, technologyDivisionSystems, researchTreeSystems, shipyardCategorySystems, starshipLineSystems, research, units, craftingInventory, craftingQueue, megastructures, commander, government, artifacts, cronJobs, planetName, coordinates, isInitialized, isLoggedIn, debouncedSave]);
 
   // Calculate production
   const getProduction = () => {
@@ -1500,6 +1530,140 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
      }
   };
 
+  const completeCraftingOrder = (orderId: string): boolean => {
+    const order = craftingQueue.find((item) => item.id === orderId);
+    if (!order) {
+      addEvent("Crafting Error", "Crafting order not found.", "danger");
+      return false;
+    }
+
+    const now = Date.now();
+    if (order.endsAt > now) {
+      addEvent("Crafting In Progress", `${order.recipeName} is not ready yet.`, "warning");
+      return false;
+    }
+
+    const recipe = getCraftingRecipeById(order.recipeId);
+    if (!recipe) {
+      addEvent("Crafting Error", `Recipe ${order.recipeId} is missing from the catalog.`, "danger");
+      setCraftingQueue((prev) => prev.filter((item) => item.id !== orderId));
+      return false;
+    }
+
+    const result = completeCraftingRecipe(recipe, craftingInventory, order.amount);
+    setCraftingInventory(result.inventory);
+
+    if (result.item) {
+      setCommander((prev) => ({
+        ...prev,
+        inventory: [...prev.inventory, result.item as Item],
+      }));
+    }
+
+    if (result.unitId && result.unitAmount) {
+      setUnits((prev) => ({
+        ...prev,
+        [result.unitId as string]: (prev[result.unitId as string] || 0) + (result.unitAmount || 0),
+      }));
+    }
+
+    setCraftingQueue((prev) => prev.filter((item) => item.id !== orderId));
+    addEvent("Crafting Complete", `${order.amount}x ${order.outputName} completed.`, "success");
+    debouncedSave({
+      craftingInventory: result.inventory,
+      craftingQueue: craftingQueue.filter((item) => item.id !== orderId),
+    });
+    return true;
+  };
+
+  const processCraftingQueue = () => {
+    const readyOrders = craftingQueue.filter((item) => item.endsAt <= Date.now());
+    for (const order of readyOrders) {
+      completeCraftingOrder(order.id);
+    }
+  };
+
+  const startCraftingRecipe = async (recipeId: string, amount: number = 1): Promise<boolean> => {
+    const recipe = getCraftingRecipeById(recipeId);
+    if (!recipe) {
+      addEvent("Crafting Failed", `Unknown recipe: ${recipeId}`, "danger");
+      return false;
+    }
+
+    const safeAmount = Math.max(1, Math.floor(amount || 1));
+    const check = canCraftRecipe({
+      recipe,
+      amount: safeAmount,
+      resources,
+      inventory: craftingInventory,
+      buildings,
+      research,
+      shipyardCategorySystems,
+      starshipLineSystems,
+      commanderLevel: commander?.stats?.level || 1,
+    });
+
+    if (!check.ok) {
+      addEvent("Crafting Blocked", check.reasons[0] || `Cannot craft ${recipe.name}.`, "warning");
+      toast({
+        title: "Crafting blocked",
+        description: check.reasons.slice(0, 2).join(" "),
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const turnCost = Math.max(1, Math.ceil(safeAmount / 2));
+    if (!await spendTurns(turnCost)) {
+      return false;
+    }
+
+    const consumed = consumeCraftingInputs({
+      recipe,
+      amount: safeAmount,
+      resources,
+      inventory: craftingInventory,
+    });
+
+    const engineeringSpeed = 1 + ((commander?.stats?.engineering || 1) * 0.04);
+    const yardSpeed = 1 + ((buildings.shipyard || 0) * 0.03) + ((buildings.roboticsFactory || 0) * 0.04);
+    const adjustedTime = calculateCraftingTimeMs(recipe, safeAmount, (config?.gameSpeed || 1) * engineeringSpeed * yardSpeed);
+    const now = Date.now();
+    const order: CraftingQueueItem = {
+      id: `craft:${recipe.id}:${now}:${Math.random().toString(36).slice(2, 7)}`,
+      recipeId: recipe.id,
+      recipeName: recipe.name,
+      outputId: recipe.outputId,
+      outputName: recipe.outputName,
+      outputKind: recipe.outputKind,
+      amount: safeAmount,
+      startedAt: now,
+      endsAt: now + adjustedTime,
+      status: "running",
+    };
+
+    setResources(normalizeResources(consumed.resources, resources));
+    setCraftingInventory(consumed.inventory);
+    setCraftingQueue((prev) => [...prev, order]);
+    addEvent("Crafting Started", `${safeAmount}x ${recipe.name} queued in the constructor yard.`, "success");
+    debouncedSave({
+      resources: normalizeResources(consumed.resources, resources),
+      craftingInventory: consumed.inventory,
+      craftingQueue: [...craftingQueue, order],
+    });
+    return true;
+  };
+
+  const startConstructorWorkOrder = async (recipeId: string, amount: number = 1): Promise<boolean> => {
+    const recipe = getCraftingRecipeById(recipeId);
+    if (!recipe || !["constructor", "shipyard"].includes(recipe.category)) {
+      addEvent("Constructor Work Order Failed", "Selected recipe is not a constructor-yard recipe.", "danger");
+      return false;
+    }
+
+    return startCraftingRecipe(recipeId, amount);
+  };
+
   const temperItem = (itemId: string) => {
      if (resources.metal >= 1000) {
         setResources(prev => ({ ...prev, metal: prev.metal - 1000 }));
@@ -1701,6 +1865,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     });
   };
+
+  useEffect(() => {
+    if (craftingQueue.length === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      processCraftingQueue();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [craftingQueue, craftingInventory, resources, commander, units]);
 
   const updateConfig = (newConfig: Partial<GameConfig>) => {
      setConfig(prev => ({ ...prev, ...newConfig }));
@@ -1918,6 +2094,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
        runCronJob,
        travelTo,
        inventory,
+       craftingInventory,
+       craftingQueue,
+       startCraftingRecipe,
+       completeCraftingOrder,
+       processCraftingQueue,
+       startConstructorWorkOrder,
        buyItem,
        sellItem,
        totalTurns,

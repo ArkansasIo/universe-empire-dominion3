@@ -7,17 +7,17 @@ import { Separator } from "@/components/ui/separator";
 import { Box, Gem, Database, Zap, ArrowUpCircle, Hammer, Clock, TrendingUp, Warehouse, Factory, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { MENU_ASSETS } from "@shared/config";
+import { MENU_ASSETS, OGAMEX_FEATURED_ASSETS } from "@shared/config";
 import { calculateResourceProduction, calculateStorageCapacity } from "@/lib/resourceMath";
 import { getRefineryStage, getRefineryUpgradeSnapshot, type RefinerySystemDefinition } from "@/lib/refinerySystemsCatalog";
 
 const TEMP_THEME_IMAGE = "/theme-temp.png";
 
 const RESOURCE_IMAGE_MAP: Record<string, string> = {
-  metalMine:             MENU_ASSETS.RESOURCES.METAL.path,
-  crystalMine:           MENU_ASSETS.RESOURCES.CRYSTAL.path,
-  deuteriumSynthesizer:  MENU_ASSETS.RESOURCES.DEUTERIUM.path,
-  solarPlant:            MENU_ASSETS.BUILDINGS.POWER_PLANT.path,
+  metalMine:             OGAMEX_FEATURED_ASSETS.METAL_MINE.path,
+  crystalMine:           OGAMEX_FEATURED_ASSETS.CRYSTAL_MINE.path,
+  deuteriumSynthesizer:  OGAMEX_FEATURED_ASSETS.DEUTERIUM_SYNTHESIZER.path,
+  solarPlant:            OGAMEX_FEATURED_ASSETS.SOLAR_PLANT.path,
 };
 
 const BuildingCard = ({ 
@@ -276,9 +276,40 @@ export default function Resources() {
   return (
     <GameLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-cover bg-center shadow-sm"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.94)), url(${OGAMEX_FEATURED_ASSETS.RESOURCE_HEADER.path})`,
+          }}
+        >
+          <div className="grid gap-4 p-5 text-white md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200">OGameX Resource Deck</div>
+              <h2 className="mt-2 font-orbitron text-3xl font-bold">Resource Management</h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-200">
+                Production cards now use classic mine and power-plant object art while the header uses imported resource-world scenery.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[OGAMEX_FEATURED_ASSETS.METAL_MINE, OGAMEX_FEATURED_ASSETS.CRYSTAL_MINE, OGAMEX_FEATURED_ASSETS.DEUTERIUM_SYNTHESIZER, OGAMEX_FEATURED_ASSETS.SOLAR_PLANT].map((asset) => (
+                <div key={asset.id} className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/10 p-2">
+                  <img
+                    src={asset.path}
+                    alt={asset.name}
+                    className="h-full w-full rounded object-contain"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = TEMP_THEME_IMAGE;
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
         <div className="flex justify-between items-end">
           <div>
-            <h2 className="text-3xl font-orbitron font-bold text-slate-900">Resource Management</h2>
+            <h2 className="text-3xl font-orbitron font-bold text-slate-900">Production Snapshot</h2>
             <p className="text-muted-foreground font-rajdhani text-lg">Manage your resource production infrastructure and storage facilities.</p>
           </div>
         </div>

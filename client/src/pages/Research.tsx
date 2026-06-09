@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGame } from "@/lib/gameContext";
 import { TECHS, type TechArea, type TechItem } from "@/lib/techData";
+import { OGAMEX_FEATURED_ASSETS } from "@shared/config";
 import {
   TECHNOLOGY_DIVISIONS,
   TECHNOLOGY_DIVISION_COUNTS,
@@ -43,6 +44,8 @@ import {
   Zap,
 } from "lucide-react";
 
+const TEMP_THEME_IMAGE = "/theme-temp.png";
+
 const DIVISION_ICON_MAP = {
   zap: Zap,
   crosshair: Crosshair,
@@ -70,6 +73,18 @@ function areaTone(area: TechArea) {
   return "border-orange-200 bg-orange-50 text-orange-700";
 }
 
+const RESEARCH_IMAGE_MAP: Partial<Record<string, string>> = {
+  energyTech: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+  laserTech: OGAMEX_FEATURED_ASSETS.LASER_TECH.path,
+  shieldingTech: OGAMEX_FEATURED_ASSETS.SHIELDING_TECH.path,
+  hyperspaceTech: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+  plasmaTech: OGAMEX_FEATURED_ASSETS.PLASMA_TECH.path,
+  computerTech: OGAMEX_FEATURED_ASSETS.COMPUTER_TECH.path,
+  astrophysics: OGAMEX_FEATURED_ASSETS.ASTROPHYSICS.path,
+  hyperspaceDrive: OGAMEX_FEATURED_ASSETS.RESEARCH.path,
+  armourTech: OGAMEX_FEATURED_ASSETS.ARMOR_TECH.path,
+};
+
 function ResearchCard({
   item,
   level,
@@ -82,6 +97,7 @@ function ResearchCard({
   onUpgrade: (id: string, name: string, time: number) => void;
 }) {
   const Icon = item.icon;
+  const imagePath = RESEARCH_IMAGE_MAP[item.id];
   const metalCost = Math.floor(item.baseCost.metal * Math.pow(item.costFactor, level));
   const crystalCost = Math.floor(item.baseCost.crystal * Math.pow(item.costFactor, level));
   const deuteriumCost = Math.floor(item.baseCost.deuterium * Math.pow(item.costFactor, level));
@@ -99,8 +115,20 @@ function ResearchCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={cn("flex h-11 w-11 items-center justify-center rounded-full border", areaTone(item.area))}>
-              <Icon className="h-5 w-5" />
+            <div className={cn("flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border", areaTone(item.area))}>
+              {imagePath ? (
+                <img
+                  src={imagePath}
+                  alt={item.name}
+                  className="h-full w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = TEMP_THEME_IMAGE;
+                  }}
+                />
+              ) : (
+                <Icon className="h-5 w-5" />
+              )}
             </div>
             <div>
               <CardTitle className="text-base text-slate-900">{item.name}</CardTitle>
@@ -183,10 +211,37 @@ export default function Research() {
   return (
     <GameLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Technology Division</h2>
-          <p className="mt-2 text-slate-600">Core research remains in Physics, Society, and Engineering, with an 18-division upgrade matrix now feeding Spaceship Command-inspired hull doctrine, capital command, logistics, and constructor progression.</p>
-        </div>
+        <section
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-cover bg-center shadow-sm"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.74), rgba(15, 23, 42, 0.95)), url(${OGAMEX_FEATURED_ASSETS.RESEARCH.path})`,
+          }}
+        >
+          <div className="grid gap-4 p-5 text-white lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-200">OGameX Research Deck</div>
+              <h2 className="mt-2 font-orbitron text-3xl font-bold">Technology Division</h2>
+              <p className="mt-2 max-w-4xl text-sm text-slate-200">
+                Core research remains in Physics, Society, and Engineering, with imported technology thumbnails now attached to major research cards.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[OGAMEX_FEATURED_ASSETS.LASER_TECH, OGAMEX_FEATURED_ASSETS.PLASMA_TECH, OGAMEX_FEATURED_ASSETS.SHIELDING_TECH, OGAMEX_FEATURED_ASSETS.ASTROPHYSICS].map((asset) => (
+                <div key={asset.id} className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/10 p-2">
+                  <img
+                    src={asset.path}
+                    alt={asset.name}
+                    className="h-full w-full rounded object-contain"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = TEMP_THEME_IMAGE;
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card className="border-slate-200 bg-white">
