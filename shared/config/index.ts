@@ -1,6 +1,23 @@
 // Central configuration export point
 export { GAME_CONFIG, GOVERNMENT_MULTIPLIERS, RACE_BONUSES } from './gameConfig';
 export { SYSTEM_CONFIG, getEnvConfig } from './systemConfig';
+export {
+  LEGACY_PHP_GAME_CONFIG,
+  getLegacyTurnsPerMinute,
+  getLegacyTurnIntervalMs,
+  getLegacyMaxOfflineTurns,
+  createLegacyStartingResources,
+  createLegacyStartingTurnsData,
+  createLegacyStartingInventory,
+  calculateLegacyMarketPrice,
+  calculateLegacyPortProduction,
+  calculateLegacyPlanetProduction,
+  getLegacyRace,
+  getLegacyRaceSystemBonus,
+  getLegacyPublicGameConfig,
+  type LegacyResourceKey,
+  type LegacyRaceCode,
+} from './legacyPhpGameConfig';
 
 // Progression System Exports
 export {
@@ -576,6 +593,7 @@ export {
   OGAMEX_ASSET_CATEGORIES,
   OGAMEX_ASSET_COLLECTIONS,
   OGAMEX_FEATURED_ASSETS,
+  getOgamexAssetById,
   getOgamexAssetsByCategory,
   type OgamexAssetCategory,
   type OgamexAssetReference,
@@ -643,6 +661,27 @@ export * as GovernmentLeadersConfig from './governmentLeadersConfig';
 export * as GovernmentProgressionTreeConfig from './governmentProgressionTreeConfig';
 export * as StarshipSystemsAndStructuresTaxonomyConfig from './starshipSystemsAndStructuresTaxonomyConfig';
 export * as ConstructorYardSystemsConfig from './constructorYardSystemsConfig';
+export {
+  CRAFTING_MATERIALS,
+  CRAFTING_RECIPES,
+  calculateCraftingCost,
+  calculateCraftingIngredients,
+  calculateCraftingTimeMs,
+  canCraftRecipe,
+  completeCraftingRecipe,
+  consumeCraftingInputs,
+  getCraftingRecipeById,
+  getCraftingRecipesByCategory,
+  type CraftingCheckResult,
+  type CraftingIngredient,
+  type CraftingInventory,
+  type CraftingQueueItem,
+  type CraftingRecipe,
+  type CraftingRecipeCategory,
+  type CraftingRecipeOutputKind,
+  type CraftingResourceCost,
+} from './craftingSystemConfig';
+export * as CraftingSystemConfig from './craftingSystemConfig';
 
 // Resource Elements Exports
 export {
@@ -939,4 +978,3 @@ export {
   type FramingCategoryMeta,
 } from './framingBuildingStructuresConfig';
 export * as FramingBuildingStructuresConfig from './framingBuildingStructuresConfig';
-

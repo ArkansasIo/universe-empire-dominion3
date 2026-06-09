@@ -14,6 +14,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import {
+  LEGACY_PHP_GAME_CONFIG,
+  createLegacyStartingResources,
+  createLegacyStartingTurnsData,
+} from "./config/legacyPhpGameConfig";
 
 // Session storage table for Replit Auth
 export const sessions = pgTable(
@@ -58,7 +63,7 @@ export const playerStates = pgTable("player_states", {
   travelLog: jsonb("travel_log").notNull().default([]),
   
   // Resources (stored as JSON for flexibility)
-  resources: jsonb("resources").notNull().default({ metal: 1000, crystal: 500, deuterium: 0, energy: 0 }),
+  resources: jsonb("resources").notNull().default(createLegacyStartingResources()),
   
   // Buildings (JSON object with building levels)
   buildings: jsonb("buildings").notNull().default({ roboticsFactory: 0, shipyard: 0, researchLab: 0 }),
@@ -82,14 +87,7 @@ export const playerStates = pgTable("player_states", {
   availableLabs: jsonb("available_labs").notNull().default([]),  // Accessible labs
   
   // Turn System - Track turn generation and progression
-  turnsData: jsonb("turns_data").notNull().default({
-    totalTurnsGenerated: 0,
-    currentTurn: 0,
-    lastTurnTimestamp: 0,
-    turnsAvailable: 0,
-    currentResearchTurns: 0,
-    researchTurnHistory: []
-  }),  // Turn tracking and generation
+  turnsData: jsonb("turns_data").notNull().default(createLegacyStartingTurnsData(0)),  // Turn tracking and generation
   
   // Research XP & Discovery System
   researchXP: jsonb("research_xp").notNull().default({
@@ -137,8 +135,8 @@ export const playerStates = pgTable("player_states", {
   kardashevProgress: jsonb("kardashev_progress").notNull().default({ metal: 0, crystal: 0, deuterium: 0, research: 0 }),
   
   // Turn system (3-5 turns per minute)
-  totalTurns: integer("total_turns").notNull().default(0),
-  currentTurns: integer("current_turns").notNull().default(0),
+  totalTurns: integer("total_turns").notNull().default(LEGACY_PHP_GAME_CONFIG.playerStart.turns),
+  currentTurns: integer("current_turns").notNull().default(LEGACY_PHP_GAME_CONFIG.playerStart.turns),
   lastTurnUpdate: timestamp("last_turn_update").defaultNow(),
   
   // Last resource update timestamp

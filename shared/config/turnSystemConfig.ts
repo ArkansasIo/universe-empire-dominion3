@@ -1,3 +1,10 @@
+import {
+  LEGACY_PHP_GAME_CONFIG,
+  getLegacyMaxOfflineTurns,
+  getLegacyTurnIntervalMs,
+  getLegacyTurnsPerMinute,
+} from './legacyPhpGameConfig';
+
 /**
  * Turn System Configuration
  * Manages game turn mechanics for all systems including research
@@ -6,11 +13,13 @@
 
 export const TURN_CONFIG = {
   // Turn generation
-  TURNS_PER_MINUTE: 4,           // 3-5 game turns per minute
-  TURN_INTERVAL_MS: 15000,       // Ms between turns (60000 / 4)
+  TURNS_PER_MINUTE: getLegacyTurnsPerMinute(),
+  TURN_INTERVAL_MS: getLegacyTurnIntervalMs(),
   
   // Offline turn cap
-  MAX_OFFLINE_TURNS: 8640,       // 24 hours worth of turns @ 4/min
+  MAX_OFFLINE_TURNS: getLegacyMaxOfflineTurns(24),
+  MAX_CURRENT_TURNS: LEGACY_PHP_GAME_CONFIG.playerStart.maxTurns,
+  STARTING_TURNS: LEGACY_PHP_GAME_CONFIG.playerStart.turns,
   
   // Turn affinity
   TURNS_BEFORE_DECAY: 3,         // Turns before turn bonus decay

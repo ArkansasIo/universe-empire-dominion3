@@ -1,5 +1,14 @@
+import {
+  LEGACY_PHP_GAME_CONFIG,
+  createLegacyStartingResources,
+  getLegacyMaxOfflineTurns,
+  getLegacyTurnsPerMinute,
+} from './legacyPhpGameConfig';
+
 // Game Configuration - Balance, economy, and rules
 export const GAME_CONFIG = {
+  legacyPhpConfig: LEGACY_PHP_GAME_CONFIG,
+
   // Resource production rates (per second base rate)
   resources: {
     metalPerSecond: 0.1,
@@ -83,8 +92,9 @@ export const GAME_CONFIG = {
   market: {
     minPrice: 0.001,
     maxPrice: 1000,
-    transactionFee: 0.02, // 2% fee
+    transactionFee: LEGACY_PHP_GAME_CONFIG.economy.banking.paymentFee,
     orderExpirationTime: 86400000, // 24 hours in ms
+    legacyResourcePrices: LEGACY_PHP_GAME_CONFIG.economy.resources,
   },
 
   // Alliance settings
@@ -120,21 +130,22 @@ export const GAME_CONFIG = {
     sessionTimeout: 604800000, // 7 days in ms
     inactivityThreshold: 2592000000, // 30 days in ms
     maxPlayers: 10000,
-    newPlayerStartingResources: {
-      metal: 1000,
-      crystal: 500,
-      deuterium: 0,
-      energy: 0,
+    newPlayerStartingResources: createLegacyStartingResources(),
+    legacyStartingInventory: {
+      fighters: LEGACY_PHP_GAME_CONFIG.playerStart.fighters,
+      armor: LEGACY_PHP_GAME_CONFIG.playerStart.armor,
+      genesisDevices: LEGACY_PHP_GAME_CONFIG.playerStart.genesisDevices,
     },
   },
 
   // Turn system - Players gain turns over time
   turns: {
-    turnsPerMinute: 6,           // 6 turns gained per minute (1 every 10 seconds)
-    maxCurrentTurns: 1000,       // Maximum turns that can be stored
-    startingTurns: 50,           // New players start with 50 turns
+    turnsPerMinute: getLegacyTurnsPerMinute(),
+    maxCurrentTurns: LEGACY_PHP_GAME_CONFIG.playerStart.maxTurns,
+    startingTurns: LEGACY_PHP_GAME_CONFIG.playerStart.turns,
     offlineAccrual: true,        // Turns accumulate while offline
     maxOfflineAccrualHours: 24,  // Maximum hours of offline turn accrual
+    maxOfflineTurns: getLegacyMaxOfflineTurns(24),
   },
 };
 

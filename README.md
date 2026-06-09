@@ -28,6 +28,8 @@ The live project is organized around a consistent shell:
 - page routes under [client/src/pages](/d:/New%20folder/StellarDominion-2/client/src/pages)
 - shared configs and imported-source bridges under [shared](/d:/New%20folder/StellarDominion-2/shared)
 - backend routes and storage under [server](/d:/New%20folder/StellarDominion-2/server)
+- legacy PHP game tuning and race metadata in [config/config.php](config/config.php)
+- TypeScript runtime mirror and helper logic in [shared/config/legacyPhpGameConfig.ts](shared/config/legacyPhpGameConfig.ts), exposed through `/api/game/config`
 
 Major active page groups include:
 
@@ -91,6 +93,7 @@ The active migration path is:
 client/                 React pages, components, hooks, layout shell
 server/                 Express routes, auth, storage, health, settings
 shared/                 Shared configs, types, imported-source bridges
+config/                 Legacy PHP/YAML game configuration
 docs/                   Project documentation
 generated/ogamex-ts/    Generated TypeScript migration scaffolds
 ogamex-source/          Vendored upstream source and asset reference

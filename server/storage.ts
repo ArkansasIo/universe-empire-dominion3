@@ -155,6 +155,13 @@ import {
   type InsertPlayerItem,
   adminUsers
 } from "@shared/schema";
+import {
+  LEGACY_PHP_GAME_CONFIG,
+  createLegacyStartingInventory,
+  createLegacyStartingResources,
+  createLegacyStartingTurnsData,
+  getLegacyTurnsPerMinute,
+} from "@shared/config";
 import { db } from "./db/index";
 import { eq, and, or, desc, asc, sql, inArray } from "drizzle-orm";
 
@@ -657,12 +664,17 @@ export class DatabaseStorage implements IStorage {
     if (!existing) {
       return this.createPlayerState({
         userId,
+        resources: (updates.resources as any) || createLegacyStartingResources(),
+        turnsData: (updates.turnsData as any) || createLegacyStartingTurnsData(),
+        currentTurns: (updates.currentTurns as any) ?? LEGACY_PHP_GAME_CONFIG.playerStart.turns,
+        totalTurns: (updates.totalTurns as any) ?? LEGACY_PHP_GAME_CONFIG.playerStart.turns,
+        lastTurnUpdate: (updates.lastTurnUpdate as any) || new Date(),
         commander: (updates.commander as any) || {
-          race: "human",
+          race: LEGACY_PHP_GAME_CONFIG.races.defaultRaceCode,
           class: "warrior",
           stats: { level: 1, xp: 0, warfare: 0, logistics: 0, engineering: 0 },
           equipment: {},
-          inventory: [],
+          inventory: createLegacyStartingInventory(),
           title: "Commander",
         },
         government: (updates.government as any) || {
@@ -1894,10 +1906,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  // Turn operations - 6 turns per minute with offline accrual
+  // Turn operations - backed by the migrated legacy PHP config.
   async accrueAndGetTurns(userId: string): Promise<{ currentTurns: number; totalTurns: number; turnsAccrued: number; lastTurnUpdate: Date }> {
-    const TURNS_PER_MINUTE = 6;
-    const MAX_CURRENT_TURNS = 1000;
+    const TURNS_PER_MINUTE = getLegacyTurnsPerMinute();
+    const MAX_CURRENT_TURNS = LEGACY_PHP_GAME_CONFIG.playerStart.maxTurns;
+    const STARTING_TURNS = LEGACY_PHP_GAME_CONFIG.playerStart.turns;
     const MAX_OFFLINE_HOURS = 24;
     const now = new Date();
     
@@ -1908,16 +1921,23 @@ export class DatabaseStorage implements IStorage {
       // Create new player state with starting turns
       playerState = await this.createPlayerState({
         userId,
-        resources: { metal: 1000, crystal: 500, deuterium: 0, energy: 0, credits: 1000, food: 500, water: 500 },
-        commander: { race: "human", class: "warrior", stats: { level: 1, xp: 0 }, equipment: {}, inventory: [] },
+        resources: createLegacyStartingResources(),
+        turnsData: createLegacyStartingTurnsData(now.getTime()),
+        commander: {
+          race: LEGACY_PHP_GAME_CONFIG.races.defaultRaceCode,
+          class: "warrior",
+          stats: { level: 1, xp: 0 },
+          equipment: {},
+          inventory: createLegacyStartingInventory(),
+        },
         government: { type: "democracy", taxRate: 10, policies: [], stats: { stability: 50, efficiency: 70, publicSupport: 60, militaryReadiness: 50 } },
-        currentTurns: 50,
-        totalTurns: 50,
+        currentTurns: STARTING_TURNS,
+        totalTurns: STARTING_TURNS,
         lastTurnUpdate: now
       });
       return {
-        currentTurns: 50,
-        totalTurns: 50,
+        currentTurns: STARTING_TURNS,
+        totalTurns: STARTING_TURNS,
         turnsAccrued: 0,
         lastTurnUpdate: now
       };
@@ -1927,7 +1947,6 @@ export class DatabaseStorage implements IStorage {
     const deltaMs = now.getTime() - new Date(lastUpdate).getTime();
     const deltaMinutes = Math.min(deltaMs / 60000, MAX_OFFLINE_HOURS * 60);
     
-    // Calculate turns earned (6 per minute)
     const turnsEarned = Math.floor(deltaMinutes * TURNS_PER_MINUTE);
     
     if (turnsEarned > 0) {
