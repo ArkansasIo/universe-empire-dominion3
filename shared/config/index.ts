@@ -675,10 +675,12 @@ export {
   type CraftingCheckResult,
   type CraftingIngredient,
   type CraftingInventory,
+  type CraftingCompletionResult,
   type CraftingQueueItem,
   type CraftingRecipe,
   type CraftingRecipeCategory,
   type CraftingRecipeOutputKind,
+  type CraftingRequirement,
   type CraftingResourceCost,
 } from './craftingSystemConfig';
 export * as CraftingSystemConfig from './craftingSystemConfig';
